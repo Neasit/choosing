@@ -17,9 +17,11 @@ sap.ui.define(['ui2/choosingtech/controller/BaseController', 'sap/m/WizardStep']
       } else if (oObject.count > 13) {
         // result
         oWizardStep.addContent(sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.result', this));
+        oWizardStep.setNextStep();
       } else {
         // questions
         oWizardStep.addContent(sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.question', this));
+        oWizardStep.setNextStep();
       }
       return oWizardStep;
     },
@@ -42,6 +44,14 @@ sap.ui.define(['ui2/choosingtech/controller/BaseController', 'sap/m/WizardStep']
           .getObject(),
         'yes'
       );
+    },
+
+    onRestart: function(oEvent) {
+      let oObject = oEvent
+        .getSource()
+        .getBindingContext()
+        .getObject();
+      this.byId('idWizard').discardProgress(this.byId(this.createStepId(oObject.yes)), true);
     },
 
     onNoNextStep: function(oEvent) {

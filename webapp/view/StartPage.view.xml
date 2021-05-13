@@ -15,7 +15,7 @@
     <sf:title>
       <sf:DynamicPageTitle primaryArea="Middle">
         <sf:heading>
-          <Title text="Choosing" />
+          <Title text="Выбор целевой технологии" />
         </sf:heading>
       </sf:DynamicPageTitle>
     </sf:title>

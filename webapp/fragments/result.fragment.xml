@@ -11,7 +11,7 @@
       <StandardListItem title="{title}" description="{text}" wrapping="true" info="{category}" />
     </List>
     <HBox>
-      <Button text="Заново" press="onYesNextStep" class="sapUiSmallMarginEnd" />
+      <Button text="Заново" press="onRestart" class="sapUiSmallMarginEnd" />
     </HBox>
   </VBox>
 </core:FragmentDefinition>
