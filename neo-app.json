@@ -1,0 +1,60 @@
+{
+  "welcomeFile": "/index.html",
+  "routes": [{
+    "path": "/webapp/resources/tsystems/rus/redefined/m",
+    "target": {
+      "type": "application",
+      "name": "m"
+    },
+    "description": "The controls that were extended based on sap.*"
+  }, {
+    "path": "/resources/tsystems/rus/redefined/m",
+    "target": {
+      "type": "application",
+      "name": "m"
+    },
+    "description": "The controls that were extended based on sap.*"
+  }, {
+    "path": "/webapp/resources/tsystems/rus/custom",
+    "target": {
+      "type": "application",
+      "name": "custom"
+    },
+    "description": "The new controls and components defined in tsystems"
+  }, {
+    "path": "/resources/tsystems/rus/custom",
+    "target": {
+      "type": "application",
+      "name": "custom"
+    },
+    "description": "The new controls and components defined in tsystems"
+  }, {
+    "path": "/resources",
+    "target": {
+      "type": "service",
+      "name": "sapui5",
+      "entryPath": "/resources",
+      "version": "1.52.9"
+    },
+    "description": "SAPUI5 Resources"
+  }, {
+    "path": "/webapp/resources",
+    "target": {
+      "type": "service",
+      "name": "sapui5",
+      "entryPath": "/resources",
+      "version": "1.52.9"
+    },
+    "description": "SAPUI5 Resources"
+  },
+  {
+    "path": "/sap/opu/odata",
+    "target": {
+      "type": "destination",
+      "name": "K45",
+      "entryPath": "/sap/opu/odata"
+    },
+    "description": "K45 description"
+  }],
+  "sendWelcomeFileRedirect": true
+}

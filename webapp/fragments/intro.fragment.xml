@@ -1,0 +1,14 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:f="sap.ui.layout.form"
+  xmlns:l="sap.ui.layout"
+>
+  <VBox>
+    <FormattedText htmlText="{description}" />
+    <HBox>
+      <Button text="Начать" press="onYesNextStep" class="sapUiSmallMarginEnd" />
+    </HBox>
+  </VBox>
+</core:FragmentDefinition>

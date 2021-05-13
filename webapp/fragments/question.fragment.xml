@@ -1,0 +1,18 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:f="sap.ui.layout.form"
+  xmlns:l="sap.ui.layout"
+>
+  <VBox>
+    <FormattedText htmlText="{description}" class="sapUiSmallMarginBotton" />
+    <List mode="MultiSelect" headerText="{title}" items="{criterions}" class="sapUiSmallMarginBotton">
+      <StandardListItem title="{title}" description="{text}" wrapping="true" info="{category}" />
+    </List>
+    <HBox>
+      <Button text="Да" press="onYesNextStep" class="sapUiSmallMarginEnd" />
+      <Button text="Нет" press="onNoNextStep" />
+    </HBox>
+  </VBox>
+</core:FragmentDefinition>
