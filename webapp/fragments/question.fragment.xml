@@ -7,7 +7,7 @@
 >
   <VBox>
     <FormattedText htmlText="{description}" class="sapUiSmallMarginBotton" />
-    <List mode="MultiSelect" headerText="{title}" items="{criterions}" class="sapUiSmallMarginBotton">
+    <List mode="None" headerText="{title}" items="{criterions}" class="sapUiSmallMarginBotton">
       <StandardListItem title="{title}" description="{text}" wrapping="true" info="{category}" />
     </List>
     <HBox>
