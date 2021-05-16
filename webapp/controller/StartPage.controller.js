@@ -1,67 +1,136 @@
-sap.ui.define(['ui2/choosingtech/controller/BaseController', 'sap/m/WizardStep'], function(BaseController, WizardStep) {
+sap.ui.define(['ui2/choosingtech/controller/BaseController', 'sap/ui/model/json/JSONModel', 'sap/ui/export/Spreadsheet'], function(
+  BaseController,
+  JSONModel,
+  Spreadsheet
+) {
   'use strict';
 
   return BaseController.extend('ui2.choosingtech.controller.StartPage', {
     onInit: function() {
       BaseController.prototype.init.apply(this, arguments);
+      this.oRouter.getRoute('StartPage').attachPatternMatched(this.handleRouteMatched, this);
+      this.oDialogModel = new JSONModel();
+      this.getView().setModel(this.oDialogModel, 'addModel');
     },
 
-    factorySteps: function(sId, oContext) {
-      const oObject = oContext.getObject();
-      const sStepId = this.createId(this.createStepId(oObject.count));
-      let oWizardStep = new WizardStep(sStepId, { title: oObject.text });
-      if (oObject.count === 1) {
-        // overview
-        oWizardStep.addContent(sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.intro', this));
-        oWizardStep.setNextStep(this.createId(this.createStepId(oObject.yes)));
-      } else if (oObject.count > 13) {
-        // result
-        oWizardStep.addContent(sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.result', this));
-        oWizardStep.setNextStep();
-      } else {
-        // questions
-        oWizardStep.addContent(sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.question', this));
-        oWizardStep.setNextStep();
+    handleRouteMatched: function() {},
+
+    onListItemPress: function(oEvent) {
+      let oNextUIState = this.getOwnerComponent()
+        .getHelper()
+        .getNextUIState(1);
+      const oSource = oEvent.getSource();
+      const oObject = oSource.getBindingContext('dataModel').getObject();
+      this.goToPage('Detail', { layout: oNextUIState.layout, transaction: oObject.id });
+    },
+
+    onAdd: function() {
+      this.getAddDialog().open();
+    },
+
+    getAddDialog: function() {
+      if (!this.addDialog) {
+        this.addDialog = sap.ui.xmlfragment(this.getView().getId(), 'ui2.choosingtech.fragments.addDialog', this);
+        this.addDialog.setModel(this.oDialogModel);
       }
-      return oWizardStep;
+      this.oDialogModel.setData({
+        id: '',
+        text: '',
+      });
+      return this.addDialog;
     },
 
-    createStepId: function(iCount) {
-      return `Step_${iCount}`;
+    onAddOk: function() {
+      const oModel = this.getView().getModel('dataModel');
+      const oDialogData = this.oDialogModel.getData();
+      if (oDialogData.id) {
+        let aData = oModel.getProperty('/transactions');
+        aData.push({
+          id: oDialogData.id,
+          text: oDialogData.text,
+          technology: null,
+          tech_text: '',
+          cost: null,
+          cost_text: '',
+        });
+        oModel.setProperty('/transactions', aData);
+        this.getAddDialog().close();
+      } else {
+        this.showMessage('Введите транзакцию!');
+      }
     },
 
-    nextStep: function(oObject, sProperty) {
-      let oWizardStep = this.byId(this.createStepId(oObject.count));
-      oWizardStep.setNextStep(this.createId(this.createStepId(oObject[sProperty])));
-      this.byId('idWizard').nextStep();
+    onAddCancel: function() {
+      this.getAddDialog().close();
     },
 
-    onYesNextStep: function(oEvent) {
-      this.nextStep(
-        oEvent
-          .getSource()
-          .getBindingContext()
-          .getObject(),
-        'yes'
-      );
+    getListItemInfo: function(cost, tech) {
+      if (!tech) {
+        return 'Не выбрана целевая технология!';
+      }
+      if (!cost) {
+        return 'Не расчитаны трудозатраты!';
+      }
+      return 'Готово!';
     },
 
-    onRestart: function(oEvent) {
-      let oObject = oEvent
-        .getSource()
-        .getBindingContext()
-        .getObject();
-      this.byId('idWizard').discardProgress(this.byId(this.createStepId(oObject.yes)), true);
+    getListInfoState: function(cost, tech) {
+      return cost && tech ? 'Success' : 'Warning';
     },
 
-    onNoNextStep: function(oEvent) {
-      this.nextStep(
-        oEvent
-          .getSource()
-          .getBindingContext()
-          .getObject(),
-        'no'
-      );
+    onExcelExport: function() {
+      let oData = this.getView()
+        .getModel('dataModel')
+        .getData();
+      if (oData.name) {
+        this.export();
+      } else {
+        this.showMessage('Заполните имя!');
+      }
+    },
+
+    export: function() {
+      let oData = this.getView()
+        .getModel('dataModel')
+        .getData();
+      let aCols = [
+        {
+          label: 'Транзакция',
+          property: 'id',
+          width: '30',
+        },
+        {
+          label: 'Описание',
+          property: 'text',
+          width: '80',
+        },
+        {
+          label: 'Технология',
+          property: 'technology',
+          width: '25',
+        },
+        {
+          label: 'Трудозатраты',
+          property: 'cost',
+          width: '25',
+        },
+      ];
+      let sFileName = `${oData.name.replaceAll(' ', '_')}_${oData.department.replaceAll(' ', '_')}`;
+      let oSettings = {
+        workbook: { columns: aCols },
+        dataSource: oData.transactions,
+        fileName: sFileName,
+      };
+
+      var oSheet = new Spreadsheet(oSettings);
+      oSheet
+        .build()
+        .then(
+          function() {
+            this.showMessage('Готово!');
+          }.bind(this)
+        )
+        .finally(oSheet.destroy);
     },
   });
 });

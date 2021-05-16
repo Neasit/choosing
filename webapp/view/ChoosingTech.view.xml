@@ -1,0 +1,63 @@
+<mvc:View
+  controllerName="ui2.choosingtech.controller.ChoosingTech"
+  xmlns="sap.m"
+  xmlns:l="sap.ui.layout"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:sf="sap.f"
+  height="100%"
+  width="100%"
+>
+  <sf:DynamicPage
+    showFooter="true"
+    stickySubheaderProvider="idWizard"
+    class="sapUiNoContentPadding"
+    fitContent="true"
+  >
+    <sf:title>
+      <sf:DynamicPageTitle primaryArea="Middle">
+        <sf:heading>
+          <Title text="Выбор целевой технологии" />
+        </sf:heading>
+      </sf:DynamicPageTitle>
+    </sf:title>
+    <sf:header>
+      <sf:DynamicPageHeader pinnable="true">
+      </sf:DynamicPageHeader>
+    </sf:header>
+    <sf:content>
+      <NavContainer id="idChoosingNav">
+        <pages>
+            <sf:DynamicPage id="idQuestionPage1" showFooter="true" class="sapUiNoContentPadding" fitContent="true">
+              <sf:content>
+                <l:BlockLayout background="Dashboard">
+                  <l:BlockLayoutRow visible="{= !${textInvisible}}">
+                    <l:BlockLayoutCell title="{text}">
+                      <Text text="{description}" />
+                    </l:BlockLayoutCell>
+                  </l:BlockLayoutRow>
+                  <l:BlockLayoutRow visible="{= !${criterionsInvisible}}">
+                    <l:BlockLayoutCell title="{title}">
+                      <List mode="{ path: 'textInvisible', formatter: '.getListMode' }" items="{criterions}" class="sapUiSmallMarginBotton"
+                            selectionChange="onTechSelect" >
+                        <StandardListItem title="{title}" description="{text}" wrapping="true"  />
+                      </List>
+                    </l:BlockLayoutCell>
+                  </l:BlockLayoutRow>
+                </l:BlockLayout>
+              </sf:content>
+              <sf:footer>
+                <OverflowToolbar>
+                  <Button type="Default" text="Заново" press="onReset" visible="{= !!${textInvisible} }" />
+                  <ToolbarSpacer/>
+                  <Button type="Accept" text="Начать" press="onYes" visible="{= !!${criterionsInvisible} }" />
+                  <Button type="Accept" text="Да" press="onYes" visible="{= !${criterionsInvisible} &amp;&amp; !${textInvisible} }" />
+                  <Button type="Reject" text="Нет" press="onNo" visible="{= !${criterionsInvisible} &amp;&amp; !${textInvisible} }" />
+                  <Button type="Accept" text="Трудозатраты" press="onCostCalculation" visible="{= !!${textInvisible} }" />
+                </OverflowToolbar>
+              </sf:footer>
+            </sf:DynamicPage>
+        </pages>
+      </NavContainer>
+    </sf:content>
+  </sf:DynamicPage>
+</mvc:View>

@@ -29,6 +29,5 @@ framework:
     - name: sap.ui.layout
     - name: sap.ui.commons
     - name: sap.f
-    - name: sap.ui.comp
-    - name: sap.tnt
+    - name: sap.ui.export
     - name: themelib_sap_belize

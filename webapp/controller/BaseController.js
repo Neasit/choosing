@@ -123,5 +123,22 @@ sap.ui.define(['sap/ui/core/mvc/Controller', 'sap/m/MessageToast', 'ui2/choosing
         .getRootControl()
         .byId('appexample');
     },
+
+    handleFullScreen: function() {
+      this.bFocusFullScreenButton = true;
+      var sNextLayout = this.oModel.getProperty('/actionButtonsInfo/midColumn/fullScreen');
+      this.oRouter.navTo('detail', { layout: sNextLayout, product: this._product });
+    },
+
+    handleExitFullScreen: function() {
+      this.bFocusFullScreenButton = true;
+      var sNextLayout = this.oModel.getProperty('/actionButtonsInfo/midColumn/exitFullScreen');
+      this.oRouter.navTo('detail', { layout: sNextLayout, product: this._product });
+    },
+
+    handleClose: function() {
+      var sNextLayout = this.oModel.getProperty('/actionButtonsInfo/midColumn/closeColumn');
+      this.oRouter.navTo('master', { layout: sNextLayout });
+    },
   });
 });

@@ -49,19 +49,18 @@
 		"rootView": {
 			"viewName": "ui2.choosingtech.view.App",
 			"async": true,
-			"id": "web4al",
+			"id": "choosing",
 			"type": "XML"
 		},
 		"dependencies": {
-			"minUI5Version": "1.66.0",
+			"minUI5Version": "1.78.0",
 			"libs": {
 				"sap.ui.core": {},
 				"sap.m": {},
 				"sap.ui.layout": {},
 				"sap.ui.commons": {},
 				"sap.f": {},
-				"sap.ui.comp": {},
-				"sap.tnt": {}
+				"sap.ui.export": {}
 			}
 		},
 		"contentDensities": {
@@ -77,6 +76,9 @@
 			},
 			"": {
 				"dataSource": "main",
+				"settings": {
+					"defaultBindingMode": "TwoWay"
+				},
 				"preload": true
 			}
 		},
@@ -89,11 +91,11 @@
 		},
 		"routing": {
 			"config": {
-				"routerClass": "sap.m.routing.Router",
+				"routerClass": "sap.f.routing.Router",
 				"viewType": "XML",
 				"viewPath": "ui2.choosingtech.view",
 				"controlId": "appexample",
-				"controlAggregation": "pages",
+				"transition": "slide",
 				"bypassed": {
 					"target": "notFound"
 				},
@@ -101,15 +103,55 @@
 			},
 			"routes": [
 				{
-					"pattern": "",
+					"pattern": ":layout:",
 					"name": "StartPage",
-					"target": "StartPage"
+					"target": ["StartPage"]
+				},
+				{
+					"pattern": "details/{transaction}/{layout}",
+					"name": "Detail",
+					"target": [
+						"StartPage",
+						"Details"
+					]
+				},
+				{
+					"pattern": "cost/{transaction}/{layout}",
+					"name": "CostCalculation",
+					"target": [
+						"StartPage",
+						"CostCalculation"
+					]
+				},
+				{
+					"pattern": "choosing/{transaction}/{layout}",
+					"name": "ChoosingTech",
+					"target": [
+						"StartPage",
+						"ChoosingTech"
+					]
 				}
 			],
 			"targets": {
 				"StartPage": {
 					"viewName": "StartPage",
-					"viewId": "StartPage"
+					"viewId": "StartPage",
+					"controlAggregation": "beginColumnPages"
+				},
+				"Details": {
+					"viewName": "Details",
+					"viewId": "Details",
+					"controlAggregation": "midColumnPages"
+				},
+				"CostCalculation": {
+					"viewName": "CostCalculation",
+					"viewId": "CostCalculation",
+					"controlAggregation": "midColumnPages"
+				},
+				"ChoosingTech": {
+					"viewName": "ChoosingTech",
+					"viewId": "ChoosingTech",
+					"controlAggregation": "midColumnPages"
 				},
 				"notFound": {
 					"viewName": "NotFound",

@@ -3,6 +3,8 @@
   xmlns="sap.m"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns:sf="sap.f"
+  xmlns:f="sap.ui.layout.form"
+  xmlns:l="sap.ui.layout"
   height="100%"
   width="100%"
 >
@@ -14,18 +16,59 @@
   >
     <sf:title>
       <sf:DynamicPageTitle primaryArea="Middle">
+        <sf:actions>
+          <Button
+            icon="sap-icon://excel-attachment"
+            press="onExcelExport"
+            tooltip="Выгрузить"
+            type="Transparent"
+          />
+        </sf:actions>
         <sf:heading>
           <Title text="Выбор целевой технологии" />
         </sf:heading>
       </sf:DynamicPageTitle>
     </sf:title>
     <sf:header>
+      <sf:DynamicPageHeader
+        pinnable="true"
+      >
+        <f:SimpleForm
+          editable="true"
+          layout="ResponsiveGridLayout"
+          labelSpanXL="4"
+          labelSpanL="3"
+          labelSpanM="4"
+          labelSpanS="12"
+          emptySpanXL="0"
+          emptySpanL="4"
+          emptySpanM="0"
+          emptySpanS="0"
+          columnsXL="2"
+          columnsL="1"
+          columnsM="1"
+        >
+          <Label text="ФИО" required="true" />
+          <Input value="{dataModel>/name}" />
+
+          <Label text="Подразделение" />
+          <Input value="{dataModel>/department}" />
+
+        </f:SimpleForm>
+      </sf:DynamicPageHeader>
     </sf:header>
     <sf:content>
-      <Wizard id="idWizard" enableBranching="true" showNextButton="false"
-              class="sapUiResponsivePadding--header sapUiResponsivePadding--content"
-              steps="{ path: '/nodes', factory: '.factorySteps' }">
-      </Wizard>
+
+    <List mode="None" headerText="Транзакции" items="{dataModel>/transactions}">
+      <headerToolbar>
+        <Toolbar>
+          <ToolbarSpacer />
+          <Button icon="sap-icon://add" text="Добавить" press="onAdd" />
+        </Toolbar>
+      </headerToolbar>
+      <StandardListItem type="Navigation" title="{dataModel>id}" description="{dataModel>text}" wrapping="true" info="{ parts: ['dataModel>cost', 'dataModel>technology'], formatter: '.getListItemInfo'}" infoState="{ parts: ['dataModel>cost', 'dataModel>technology'], formatter: '.getListInfoState'}" press="onListItemPress" />
+    </List>
+
     </sf:content>
     <sf:footer>
 
