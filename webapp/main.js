@@ -1,45 +1,27 @@
-sap.ui.define([], function() {
-  'use strict';
+sap.ui.define(['sap/m/Shell', 'sap/ui/core/ComponentContainer'], function(Shell, ComponentContainer) {
+  sap.ui.loader.config({
+    // location from where to load all modules by default
+    baseUrl: 'resources/',
+    // activate real async loading and module definitions
+    async: true,
+  });
 
-  var sComponentId = 'ui2.choosingtech';
-  var oPromise = Promise.resolve(true);
-  /*
-  if (jQuery.sap.getUriParameters().get('test') !== 'true') {
-    oPromise = new Promise(function(resolve, reject) {
-      $.ajax('/sap/bc/ui2/app_index/ui5_app_info?id=' + sComponentId)
-        .done(function(data) {
-          if (data && data[sComponentId]) {
-            var moduleDefinition = data[sComponentId];
-            moduleDefinition.dependencies.forEach(function(dependency) {
-              if (dependency.url) {
-                jQuery.sap.registerModulePath(sComponentId, dependency.url);
-              }
-            });
-          } else {
-            reject(new Error("No app info found for component '" + sComponentId + "'."));
-          }
-          resolve(true);
-        })
-        .fail(function() {
-          reject(new Error("Could not fetch app info for component '" + sComponentId + "'. No module paths were registered for dependent libraries."));
-        });
-    });
-  }
-  */
-  oPromise
-    .finally(function() {
-      sap.ui.getCore().attachInit(function() {
-        sap.ui.require(['sap/m/Shell', 'sap/ui/core/ComponentContainer'], function(Shell, ComponentContainer) {
-          new Shell({
-            app: new ComponentContainer({
-              height: '100%',
-              name: sComponentId,
-            }),
-          }).placeAt('content');
-        });
-      });
+  sap.ui.getCore().loadLibrary('sap.ui.core', { async: true });
+  sap.ui.getCore().loadLibrary('sap.ui.layout', { async: true });
+  sap.ui.getCore().loadLibrary('sap.m', { async: true });
+  sap.ui.getCore().loadLibrary('sap.f', { async: true });
+  sap.ui.getCore().loadLibrary('sap.ui.export', { async: true });
+
+  sap.ui
+    .component({
+      name: 'ui2.choosingtech',
+      manifest: true,
+      async: true,
     })
-    .catch(function(error) {
-      jQuery.sap.log.error(error.message || error);
+    .then(function(oComp) {
+      var oContainer = new ComponentContainer({ height: '100%', component: oComp });
+      new Shell({
+        app: oContainer,
+      }).placeAt('content');
     });
 });

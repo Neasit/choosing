@@ -55,12 +55,21 @@
 		"dependencies": {
 			"minUI5Version": "1.78.0",
 			"libs": {
-				"sap.ui.core": {},
-				"sap.m": {},
-				"sap.ui.layout": {},
-				"sap.ui.commons": {},
-				"sap.f": {},
-				"sap.ui.export": {}
+				"sap.ui.core": {
+					"lazy": true
+				},
+				"sap.m": {
+					"lazy": true
+				},
+				"sap.ui.layout": {
+					"lazy": true
+				},
+				"sap.f": {
+					"lazy": true
+				},
+				"sap.ui.export": {
+					"lazy": true
+				}
 			}
 		},
 		"contentDensities": {
@@ -110,26 +119,17 @@
 				{
 					"pattern": "details/{transaction}/{layout}",
 					"name": "Detail",
-					"target": [
-						"StartPage",
-						"Details"
-					]
+					"target": ["StartPage", "Details"]
 				},
 				{
 					"pattern": "cost/{transaction}/{layout}",
 					"name": "CostCalculation",
-					"target": [
-						"StartPage",
-						"CostCalculation"
-					]
+					"target": ["StartPage", "CostCalculation"]
 				},
 				{
 					"pattern": "choosing/{transaction}/{layout}",
 					"name": "ChoosingTech",
-					"target": [
-						"StartPage",
-						"ChoosingTech"
-					]
+					"target": ["StartPage", "ChoosingTech"]
 				}
 			],
 			"targets": {
