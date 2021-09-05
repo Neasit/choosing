@@ -5,7 +5,7 @@ if (workbox) {
   console.log('Workbox is loaded');
   // index.html and JavaScript files
   workbox.routing.registerRoute(
-    new RegExp('(Index.html|.*.js|.*.json)'),
+    new RegExp('(index.html|.*.js|.*.json)'),
     // Fetch from the network, but fall back to cache
     workbox.strategies.networkFirst()
   );
@@ -19,6 +19,10 @@ if (workbox) {
     })
   );
   workbox.precaching.precacheAndRoute([
+      '/resources/sap/ui/export/js/XLSXBuilder.js',
+      '/resources/sap/ui/export/js/SpreadsheetWorker.js',
+      '/resources/sap/ui/export/js/libs/JSZip3.js',
+      '/resources/sap/ui/export/js/libs/uri.all.min.js',
       '/data/main.json',
       '/manifest.json',
       '/Component-preload.js',
