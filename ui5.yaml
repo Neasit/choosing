@@ -5,7 +5,7 @@ type: application
 resources:
   configuration:
     paths:
-      webapp: webapp
+      webapp: dist
 builder:
   customTasks:
   - name: ui5-task-pwa-enabler
@@ -20,6 +20,7 @@ builder:
           - "view/*"
           - "images/*"
           - "*-preload.js"
+          - "manifest.webmanifest"
         networkFirst:
           - /\/api\/.*/
         avoidCaching:
@@ -29,10 +30,10 @@ builder:
         name: Choosing tech
         description: Sample PWA app (Choosing)
         icons:
-          - src: images/SAP_R_192.png
+          - src: images/icon-192x192.png
             type: image/png
             sizes: 192x192
-          - src: images/SAP_R_512.png
+          - src: images/icon-512x512.png
             type: image/png
             sizes: 512x512
         start_url: /index.html
@@ -54,7 +55,7 @@ server:
     httpsPort: 3071
 framework:
   name: SAPUI5
-  version: 1.78.0
+  version: 1.92.2
   libraries:
     - name: sap.ui.core
     - name: sap.m
