@@ -32,13 +32,15 @@
     "js-beautify": "^1.8.9",
     "js-yaml": "^3.14.0",
     "grunt-run": "0.8.1",
-    "mbt": "^1.0.14"
+    "mbt": "^1.0.14",
+    "ui5-task-pwa-enabler": "*"
   },
   "ui5": {
     "dependencies": [
       "ui5-middleware-servestatic",
       "ui5-middleware-proxy",
-      "ui5-task-transpile"
+      "ui5-task-transpile",
+      "ui5-task-pwa-enabler"
     ]
   }
 }
