@@ -53,7 +53,7 @@ sap.ui.define([
 	 *
 	 * This control cannot be used stand-alone, it just renders a <code>Form</code>, so it must be assigned to a <code>Form</code> using the <code>layout</code> aggregation.
 	 * @extends sap.ui.layout.form.FormLayout
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -289,7 +289,7 @@ sap.ui.define([
 				oRm.openEnd();
 
 				// container header
-				oLayout.getRenderer().renderHeader(oRm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, oLayout._sFormSubTitleSize, oContainer.getId());
+				oLayout.getRenderer().renderHeader(oRm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, false, oContainer.getId());
 
 				if (oContent) {
 					oRm.openStart("div");
@@ -308,8 +308,6 @@ sap.ui.define([
 	/* eslint-disable no-lonely-if */
 
 	ResponsiveGridLayout.prototype.init = function(){
-
-		FormLayout.prototype.init.apply(this, arguments);
 
 		this.mContainers = {}; //association of container to panel and Grid
 		this.oDummyLayoutData = new GridData(this.getId() + "--Dummy");
@@ -334,8 +332,6 @@ sap.ui.define([
 	};
 
 	ResponsiveGridLayout.prototype.onBeforeRendering = function( oEvent ){
-
-		FormLayout.prototype.onBeforeRendering.apply(this, arguments);
 
 		var oForm = this.getParent();
 		if (!oForm || !(oForm instanceof Form)) {
@@ -426,7 +422,7 @@ sap.ui.define([
 				if (this.mContainers[sContainerId][0]) {
 					var oPanel = this.mContainers[sContainerId][0];
 					return oPanel.getDomRef();
-				} else if (this.mContainers[sContainerId][1]){
+				}else if (this.mContainers[sContainerId][1]){
 					// no panel used -> return Grid
 					var oGrid = this.mContainers[sContainerId][1];
 					return oGrid.getDomRef();
@@ -908,6 +904,7 @@ sap.ui.define([
 					return oLayout.oDummyLayoutData;
 				}
 
+				return oLD;
 			}
 		};
 

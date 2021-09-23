@@ -44,7 +44,7 @@ sap.ui.define([
 	GridListRenderer.renderGridAttributes = function (oRM, oControl) {
 		var oGridLayout = oControl.getGridLayoutConfiguration();
 		if (oGridLayout) {
-			oGridLayout.addGridStyles(oRM);
+			oGridLayout.renderSingleGridLayout(oRM);
 		} else {
 			oRM.class("sapFGridListDefault");
 		}

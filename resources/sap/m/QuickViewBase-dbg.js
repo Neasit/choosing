@@ -27,7 +27,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -61,6 +61,8 @@ sap.ui.define([
 				/**
 				 * The event is fired when navigation between two pages has been triggered.
 				 * The transition (if any) to the new page has not started yet.
+				 * This event can be aborted by the application with preventDefault(),
+				 * which means that there will be no navigation.
 				 */
 				navigate: {
 					allowPreventDefault : true,

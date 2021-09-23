@@ -92,8 +92,7 @@ sap.ui.define([
 	/**
 	 * Freezes the object and nested objects to avoid later manipulation
 	 *
-	 * @param {object} oObject the object to deep freeze
-	 * @private
+	 * @param oObject the object to deep freeze
 	 */
 	function deepFreeze(oObject) {
 		if (oObject && typeof oObject === 'object' && !Object.isFrozen(oObject)) {
@@ -128,7 +127,7 @@ sap.ui.define([
 	 *            bundle values.
 	 *            To use active terminologies, the <code>sap.app.i18n</code> section in the manifest
 	 *            must be defined in object syntax as described here: {@link topic:eba8d25a31ef416ead876e091e67824e Text Verticalization}.
-	 *            The order of the given active terminologies is significant. The {@link module:sap/base/i18n/ResourceBundle ResourceBundle} API
+	 *            The order of the given active terminologies is significant. The {@link sap.base.i18n.ResourceBundle ResourceBundle} API
 	 *            documentation describes the processing behavior in more detail.
 	 *
 	 *
@@ -137,7 +136,7 @@ sap.ui.define([
 	 * @class The Manifest class.
 	 * @extends sap.ui.base.Object
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.Manifest
 	 * @since 1.33.0
 	 */
@@ -337,7 +336,7 @@ sap.ui.define([
 		 * section and by path allows to specify a concrete path to a dedicated entry
 		 * inside the manifest. The path syntax always starts with a slash (/).
 		 *
-		 * @param {string} sPath Either the manifest section name (namespace) or a concrete path
+		 * @param {string} sKey Either the manifest section name (namespace) or a concrete path
 		 * @return {any|null} Value of the key (could be any kind of value)
 		 * @public
 		 */
@@ -646,8 +645,6 @@ sap.ui.define([
 		/**
 		 * Initializes the manifest which executes checks, define the resource
 		 * roots, load the dependencies and the includes.
-		 *
-		 * @param {sap.ui.core.Component} [oInstance] Reference to the Component instance
 		 * @private
 		 */
 		init: function(oInstance) {
@@ -693,8 +690,6 @@ sap.ui.define([
 
 		/**
 		 * Terminates the manifest and does some final clean-up.
-		 *
-		 * @param {sap.ui.core.Component} [oInstance] Reference to the Component instance
 		 * @private
 		 */
 		exit: function(oInstance) {
@@ -796,9 +791,10 @@ sap.ui.define([
 	 *   }
 	 * }
 	 *
-	 * @param {object} mSettings Map with model config settings
-	 * @param {string} sBaseBundleUrlRelativeTo BundleUrlRelativeTo info from base config
-	 * @param {boolean} [bAlreadyResolvedOnRoot] Whether the bundleUrl was already resolved (usually by the sap.ui.core.Component)
+	 * @param mSettings Map with model config settings
+	 * @param sBaseBundleUrlRelativeTo BundleUrlRelativeTo info from base config
+	 * @param bAlreadyResolvedOnRoot Whether the bundleUrl was already resolved (usually by the sap.ui.core.Component)
+	 *
 	 * @private
 	 * @ui5-restricted sap.ui.core.Component
 	 */
@@ -839,7 +835,7 @@ sap.ui.define([
 	 * The callback receives the parsed manifest object and must return a Promise which resolves with an object.
 	 * It allows to early access and modify the manifest object.
 	 * @param {string[]} [mOptions.activeTerminologies] A list of active terminologies.
-	 * The order of the given active terminologies is significant. The {@link module:sap/base/i18n/ResourceBundle ResourceBundle} API
+	 * The order of the given active terminologies is significant. The {@link sap.base.i18n.ResourceBundle ResourceBundle} API
 	 * documentation describes the processing behavior in more detail.
 	 * Please have a look at this dev-guide chapter for general usage instructions: {@link topic:eba8d25a31ef416ead876e091e67824e Text Verticalization}.
 	 * @return {sap.ui.core.Manifest|Promise} Manifest object or for asynchronous calls an ECMA Script 6 Promise object will be returned.

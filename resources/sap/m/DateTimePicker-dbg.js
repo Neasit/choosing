@@ -139,7 +139,7 @@ sap.ui.define([
 	 * mobile devices, it opens in full screen.
 	 *
 	 * @extends sap.m.DatePicker
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -262,7 +262,7 @@ sap.ui.define([
 		},
 
 		onAfterRendering: function() {
-			this.getAggregation('timeSliders').getAggregation("_columns")[0].setIsExpanded(false);
+
 			if (Device.system.phone || jQuery('html').hasClass("sapUiMedia-Std-Phone")) {
 				var oSwitcher = this.getAggregation("_switcher");
 				var sKey = oSwitcher.getSelectedKey();
@@ -573,6 +573,7 @@ sap.ui.define([
 			return;
 		}
 		this.addStyleClass(InputBase.ICON_PRESSED_CSS_CLASS);
+		this._storeInputSelection(this._$input.get(0));
 
 		var oPopover = this._oPopup.getAggregation("_popup");
 		oPopover.oPopup.setAutoCloseAreas([this.getDomRef()]);
@@ -671,7 +672,7 @@ sap.ui.define([
 
 			if (oDate.getTime() < this._oMinDate.getTime()) {
 				oDate = new Date(this._oMinDate.getTime());
-			} else if (oDate.getTime() > this._oMaxDate.getTime()){
+			}else if (oDate.getTime() > this._oMaxDate.getTime()){
 				oDate = new Date(this._oMaxDate.getTime());
 			}
 		}
@@ -688,7 +689,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {object} Current accessibility state of the control
+	 * @returns {Object} Current accessibility state of the control
 	 * @protected
 	 */
 	DateTimePicker.prototype.getAccessibilityInfo = function() {
@@ -738,6 +739,7 @@ sap.ui.define([
 	function _handleAfterClose(){
 		this.removeStyleClass(InputBase.ICON_PRESSED_CSS_CLASS);
 		this.$("inner").attr("aria-expanded", false);
+		this._restoreInputSelection(this._$input.get(0));
 
 		this._oCalendar._closePickers();
 		Device.media.detachHandler(this._handleWindowResize, this);

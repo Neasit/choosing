@@ -1109,25 +1109,17 @@ sap.ui.define([
 					sPM = oFormat.aDayPeriods[1];
 
 				// check whether the value is one of the ASCII variants for AM/PM
-				// for example: "am", "a.m.", "am.", "a. m." (and their case variants)
-				// if true, remove the '.', the spaces and compare with the defined am/pm case
+				// for example: "am", "a.m.", "am." (and their case variants)
+				// if true, remove the '.' and compare with the defined am/pm case
 				// insensitive
-				var rAMPM = /[aApP](?:\.)?[\x20\xA0]?[mM](?:\.)?/;
+				var rAMPM = /[aApP](?:\.)?[mM](?:\.)?/;
 				var aMatch = sValue.match(rAMPM);
 				var bVariant = (aMatch && aMatch.index === 0);
 
 				if (bVariant) {
-					sValue = aMatch[0];
-
-					// Remove normal and non-breaking spaces
-					sAM = sAM.replace(/[\x20\xA0]/g, "");
-					sPM = sPM.replace(/[\x20\xA0]/g, "");
-					sValue = sValue.replace(/[\x20\xA0]/g, "");
-
-					// Remove dots and make it lowercase
+					sValue = aMatch[0].replace(/\./g, "").toLowerCase() + sValue.substring(aMatch[0].length);
 					sAM = sAM.replace(/\./g, "").toLowerCase();
 					sPM = sPM.replace(/\./g, "").toLowerCase();
-					sValue = sValue.replace(/\./g, "").toLowerCase();
 				}
 				if (sValue.indexOf(sAM) === 0) {
 					bPM = false;
@@ -1379,7 +1371,7 @@ sap.ui.define([
 					iTZDiff = 0;
 				} else {
 					return {
-						error: "cannot be parsed correctly by sap.ui.core.format.DateFormat: The given timezone is not supported!"
+						error: "cannot be parsed correcly by sap.ui.core.format.DateFormat: The given timezone is not supported!"
 					};
 				}
 
@@ -1528,7 +1520,7 @@ sap.ui.define([
 	 * Format a date according to the given format options.
 	 *
 	 * @param {Date|Date[]} vJSDate the value to format
-	 * @param {boolean} [bUTC=false] whether to use UTC
+	 * @param {boolean} bUTC whether to use UTC
 	 * @return {string} the formatted output value. If an invalid date is given, an empty string is returned.
 	 * @public
 	 */
@@ -2398,7 +2390,7 @@ sap.ui.define([
 						sAllowedCharacters += "0123456789";
 						bNumbers = true;
 					}
-				} else {
+				}else {
 					bAll = true;
 				}
 				break;

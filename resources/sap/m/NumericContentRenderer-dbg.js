@@ -11,9 +11,7 @@ sap.ui.define([
 
 	var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
 
-	var DeviationIndicator = library.DeviationIndicator,
-		LoadState = library.LoadState,
-		ValueColor = library.ValueColor;
+	var ValueColor = library.ValueColor;
 
 	/**
 	 * NumericContent renderer.
@@ -43,7 +41,7 @@ sap.ui.define([
 		oRm.attr("role", "img");
 		oRm.attr("aria-roledescription", oResourceBundle.getText("NUMERIC_CONTENT_ROLE_DESCRIPTION"));
 
-		if (sState === LoadState.Failed || sState === LoadState.Loading) {
+		if (sState === library.LoadState.Failed || sState === library.LoadState.Loading) {
 			oRm.attr("aria-disabled", "true");
 		}
 		if (oControl.getAnimateTextChange()) {
@@ -84,13 +82,14 @@ sap.ui.define([
 	NumericContentRenderer._prepareAndRenderIcon = function (oRm, oControl, oIcon, sNumericContentFontClass) {
 		if (oIcon) {
 			var sState,
+			oLoadState = library.LoadState,
 			sCurrentState = oControl.getState();
 
 			//remove state classes from icon and only add the current state's class
-			for (sState in LoadState) {
-				if (LoadState.hasOwnProperty(sState) && sState !== sCurrentState) {
+			for (sState in oLoadState) {
+				if (oLoadState.hasOwnProperty(sState) && sState !== sCurrentState) {
 					oIcon.removeStyleClass(sState);
-				} else if (LoadState.hasOwnProperty(sState) && sState === sCurrentState) {
+				} else if (oLoadState.hasOwnProperty(sState) && sState === sCurrentState) {
 					oIcon.addStyleClass(sState);
 				}
 			}
@@ -123,7 +122,7 @@ sap.ui.define([
 	 * @param {String} sNumericContentFontClass font class of related NumericContent
 	 */
 	NumericContentRenderer._renderScaleAndIndicator = function(oRm, oControl, sWithoutMargin, sValue, sScale, sNumericContentFontClass) {
-		var bIndicator = DeviationIndicator.None !== oControl.getIndicator() && sValue !== "";
+		var bIndicator = library.DeviationIndicator.None !== oControl.getIndicator() && sValue !== "";
 		var bScale = sScale && sValue;
 		if (bIndicator || bScale) {
 			var sState = oControl.getState();
@@ -177,7 +176,7 @@ sap.ui.define([
 		oRm.class("sapMNCValue");
 		oRm.class(sWithoutMargin);
 		if (oControl.getValueColor() === ValueColor.None) {
-			oRm.class("Neutral");
+			oRm.class(oResourceBundle.getText("SEMANTIC_COLOR_NEUTRAL"));
 		} else {
 			oRm.class(oControl.getValueColor());
 		}

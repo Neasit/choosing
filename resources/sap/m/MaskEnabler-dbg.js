@@ -25,7 +25,7 @@ sap.ui.define([
 	 * Applies mask support for input controls.
 	 * It should should be applied to the prototype of a <code>sap.m.InputBase</code>.
 	 *
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @private
 	 * @mixin
 	 * @alias sap.m.MaskEnabler
@@ -213,7 +213,7 @@ sap.ui.define([
 		 * Setter for property <code>value</code>.
 		 *
 		 * @param {string} sValue New value for property <code>value</code>.
-		 * @return {this} <code>this</code> to allow method chaining.
+		 * @return {sap.m.MaskInput} <code>this</code> to allow method chaining.
 		 * @public
 		 */
 		this.setValue = MaskEnabler.setValue = function (sValue) {
@@ -1174,7 +1174,7 @@ sap.ui.define([
 		 * @private
 		 */
 		this._getMinBrowserDelay = function () {
-			return 4;
+			return !Device.browser.msie ? 4 : 50;
 		};
 
 		/**
@@ -1481,7 +1481,7 @@ sap.ui.define([
 
 		/**
 		 * Checks if the current environment is Android PS with browser Chrome
-		 * @returns {boolean} true if it is both Chrome and Android, otherwise - false.
+ 		 * @returns {boolean} true if it is both Chrome and Android, otherwise - false.
 		 * @private
 		 */
 		this._isChromeOnAndroid = function() {

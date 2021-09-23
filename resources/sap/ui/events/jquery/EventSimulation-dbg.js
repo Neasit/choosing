@@ -427,14 +427,24 @@ sap.ui.define([
 			} // else: jQuery 3.0ff already manages these properties
 		}
 
-		oEventSimulation._initTouchEventSimulation();
+		// Windows Phone (<10) doesn't need event emulation because IE supports
+		// touch events but fires mouse events based on pointer events without
+		// delay.
+		// In Edge on Windows Phone 10 the mouse events are delayed like in
+		// other browsers
+
+		var bEmulationNeeded = !(Device.os.windows_phone && Device.os.version < 10);
+
+		if (bEmulationNeeded) {
+			oEventSimulation._initTouchEventSimulation();
+		}
 
 		// polyfill for iOS context menu event (mapped to taphold)
 		if (Device.os.ios) {
 			oEventSimulation._initContextMenuSimulation();
 		}
 
-		if (Device.support.touch) {
+		if (Device.support.touch && bEmulationNeeded) {
 			// Deregister the previous touch to mouse event simulation (see line 25 in this file)
 			oEventSimulation.disableTouchToMouseHandling();
 			oEventSimulation._initMouseEventSimulation(Device.os.blackberry);

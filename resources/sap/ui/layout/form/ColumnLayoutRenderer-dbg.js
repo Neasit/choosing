@@ -112,7 +112,7 @@ sap.ui.define([
 
 		oRm.openEnd();
 
-		this.renderHeader(oRm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, oLayout._sFormSubTitleSize, oContainer.getId());
+		this.renderHeader(oRm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, false, oContainer.getId());
 
 		oRm.openStart("div", oContainer.getId() + "-content")
 			.class("sapUiFormCLContainerCont")

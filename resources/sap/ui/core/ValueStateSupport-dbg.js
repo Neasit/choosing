@@ -16,7 +16,7 @@ sap.ui.define(['./Element', './library', "sap/base/assert"],
 		 * Helper functionality for value state support.
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @public
 		 * @namespace sap.ui.core.ValueStateSupport
 		 */

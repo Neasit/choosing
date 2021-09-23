@@ -18,7 +18,6 @@ sap.ui.define([
 	/**
 	 * Constructor for a new DraftIndicator.
 	 * @param {string} [sId] ID for the new control, generated automatically if no ID is given
-	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
 	 * A draft indicator is {@link sap.m.Label}.
@@ -27,7 +26,7 @@ sap.ui.define([
 	 * @abstract
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public

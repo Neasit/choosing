@@ -201,7 +201,7 @@ sap.ui.define([
 	 * {@link sap.m.PlanningCalendarView PlanningCalendarView}'s properties.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -378,7 +378,7 @@ sap.ui.define([
 				 * This API should not be used in production environment.
 				 *
 				 *<b>Note:</b> The <code>stickyHeader</code> of the <code>PlanningCalendar</code> uses the <code>sticky</code> property of <code>sap.m.Table</code>.
-				 * Therefore, all features and restrictions of the property in <code>sap.m.Table</code> apply to the <code>PlanningCalendar</code> as well.
+				 * Therefore, all features and limitations of the property in <code>sap.m.Table</code> apply to the <code>PlanningCalendar</code> as well.
 				 * @since 1.54
 				 */
 				stickyHeader : {type : "boolean", group : "Appearance", defaultValue : false}
@@ -686,10 +686,10 @@ sap.ui.define([
 		if (Device.system.phone || jQuery('html').hasClass("sapUiMedia-Std-Phone")) {
 			this._iSize = 0;
 			this._iSizeScreen = 0;
-		} else if ((Device.system.tablet || jQuery('html').hasClass("sapUiMedia-Std-Tablet")) && !(Device.system.desktop || jQuery('html').hasClass("sapUiMedia-Std-Desktop"))){
+		}else if ((Device.system.tablet || jQuery('html').hasClass("sapUiMedia-Std-Tablet")) && !(Device.system.desktop || jQuery('html').hasClass("sapUiMedia-Std-Desktop"))){
 			this._iSize = 1;
 			this._iSizeScreen = 1;
-		} else  {
+		}else {
 			this._iSize = 2;
 			this._iSizeScreen = 2;
 		}
@@ -1065,7 +1065,7 @@ sap.ui.define([
 
 	/**
 	 * Getter for the end point in time of the shown interval
-	 * @returns {Date} JavaScript date object with the end date
+	 * @returns {Object} JavaScript date object with the end date
 	 * @public
 	 */
 	PlanningCalendar.prototype.getEndDate = function () {
@@ -2543,7 +2543,7 @@ sap.ui.define([
 			oView = aViews[i];
 			if (oView.getKey() != sKey) {
 				oView = undefined;
-			} else  {
+			}else {
 				break;
 			}
 		}
@@ -2691,37 +2691,36 @@ sap.ui.define([
 	 * @private
 	 */
 	PlanningCalendar.prototype._handleDateSelect = function(oEvent){
-		var oStartDate = oEvent.oSource.getStartDate(),
-			oCurrentStartDate = this.getStartDate();
+		var oStartDate = oEvent.oSource.getStartDate();
 
 		// Checking if the current view (custom or not) is of type Hour
 		if (this._getView(this.getViewKey()).getIntervalType() === CalendarIntervalType.Hour) {
+			var oCurrentStartDate = this.getStartDate();
+
 			oStartDate.setHours(oCurrentStartDate.getHours());
 			oStartDate.setMinutes(oCurrentStartDate.getMinutes());
 			oStartDate.setSeconds(oCurrentStartDate.getSeconds());
 		}
 
-		if (oCurrentStartDate.getTime() !== oStartDate.getTime()){
-			this._changeStartDate(oStartDate);
-			this._dateNav.setCurrent(oStartDate);
+		this._changeStartDate(oStartDate);
+		this._dateNav.setCurrent(oStartDate);
 
-			var sViewKey = this.getViewKey(),
-				oCurrentView = this._getView(sViewKey),
-				sCurrentViewIntervalType = oCurrentView.getIntervalType(),
-				sControlRef;
+		var sViewKey = this.getViewKey(),
+			oCurrentView = this._getView(sViewKey),
+			sCurrentViewIntervalType = oCurrentView.getIntervalType(),
+			sControlRef;
 
-			if (sCurrentViewIntervalType === "Hour") {
-				sCurrentViewIntervalType = "Time";
-			} else if (sCurrentViewIntervalType === "Day") {
-				sCurrentViewIntervalType = "Date";
-			} else if (sCurrentViewIntervalType === "One Month") {
-				sCurrentViewIntervalType = "OneMonth";
-			}
-			sControlRef = "_o" + sCurrentViewIntervalType + "sRow";
+		if (sCurrentViewIntervalType === "Hour") {
+			sCurrentViewIntervalType = "Time";
+		} else if (sCurrentViewIntervalType === "Day") {
+			sCurrentViewIntervalType = "Date";
+		} else if (sCurrentViewIntervalType === "One Month") {
+			sCurrentViewIntervalType = "OneMonth";
+		}
+		sControlRef = "_o" + sCurrentViewIntervalType + "sRow";
 
-			if (this[sControlRef]) {
-				this[sControlRef].setDate(oStartDate);
-			}
+		if (this[sControlRef]) {
+			this[sControlRef].setDate(oStartDate);
 		}
 	};
 
@@ -2912,7 +2911,7 @@ sap.ui.define([
 
 			positionSelectAllCheckBox.call(this);
 			this._updatePickerSelection();
-		} else if (!bNoRowResize) {
+		}else if (!bNoRowResize) {
 			for (i = 0; i < aRows.length; i++) {
 				oRow = aRows[i];
 				getRowTimeline(oRow).handleResize();
@@ -3958,7 +3957,9 @@ sap.ui.define([
 						});
 					});
 
-					oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					if (!Device.browser.msie && !Device.browser.edge) {
+						oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					}
 				},
 
 				/**
@@ -4184,7 +4185,9 @@ sap.ui.define([
 						$Indicator.removeClass("sapUiCalendarApp sapUiCalendarAppType01 sapUiAppCreate");
 					});
 
-					oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					if (!Device.browser.msie && !Device.browser.edge) {
+						oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					}
 				},
 
 				dragEnter: function (oEvent) {
@@ -4522,7 +4525,7 @@ sap.ui.define([
 		if (this.getSingleSelection()) {
 			if (this._oCalendarHeader.getAllCheckBox()) {
 				this._oCalendarHeader.setAllCheckBox();
-			} else if (this._oInfoToolbar.getContent().length > 2) {
+			}else if (this._oInfoToolbar.getContent().length > 2) {
 				this._oInfoToolbar.removeContent(this._oSelectAllCheckBox);
 			}
 		} else {

@@ -7,7 +7,7 @@
 
 		(c) Copyright 2009-2021 SAP SE. All rights reserved
 	</copyright>
-	<version>1.92.0</version>
+	<version>1.87.0</version>
 
 	<documentation>UI5 library: sap.ui.export</documentation>
 
@@ -31,9 +31,6 @@
 			<exclude name="sap.ui.export.js."/>
 		</jscoverage>
 		<packaging xmlns="http://www.sap.com/ui5/buildext/packaging" version="2.0">
-			<module-infos>
-				<raw-module name="sap/ui/export/js/XLSXBuilder.js" requiresTopLevelScope="false" />
-			</module-infos>
 			<all-in-one>
 				<!-- exclude third party bundles and the worker code -->
 				<exclude name="sap/ui/export/js/**" />

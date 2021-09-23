@@ -9,9 +9,8 @@
  */
 sap.ui.define([
 	"sap/m/library",
-	"sap/m/Popover",
-	"sap/m/ValueStateHeader"
-], function (library, Popover, ValueStateHeader) {
+	"sap/m/Popover"
+], function (library, Popover) {
 	"use strict";
 
 	// shortcut for sap.m.PlacementType
@@ -78,7 +77,7 @@ sap.ui.define([
 		 * @public
 		 */
 		this.getShowMoreButton = function() {
-			return this.getPopover() && this.getPopover().getFooter() && this.getPopover().getFooter().getContent()[1];
+			return this.getPopover().getFooter() && this.getPopover().getFooter().getContent()[1];
 		};
 
 		/**
@@ -119,37 +118,5 @@ sap.ui.define([
 
 			return oPopover;
 		}
-
-		/**
-		 * Gets the Value State Header instance.
-		 *
-		 * @private
-		 */
-		this._getValueStateHeader = function () {
-			var oPopover = this.getPopover();
-			var oValueStateHeader = oPopover && oPopover.getCustomHeader();
-
-			if (oPopover && !oValueStateHeader) {
-				oValueStateHeader = this._createValueStateHeader();
-			}
-
-			return oValueStateHeader;
-		};
-
-		/**
-		 * Creates the Value State Header instance.
-		 *
-		 * @private
-		 */
-		this._createValueStateHeader = function () {
-			var oValueStateHeader = new ValueStateHeader();
-			var	oPopover = this.getPopover();
-
-			// when we are using the Popover the value state header is shown in the header of the Popover
-			oPopover.setCustomHeader(oValueStateHeader);
-			oValueStateHeader.setPopup(oPopover);
-
-			return oValueStateHeader;
-		};
 	};
 });

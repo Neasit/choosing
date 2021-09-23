@@ -6,9 +6,10 @@
 
 sap.ui.define([
 	'sap/ui/core/library',
-	'sap/m/library'
+	'sap/m/library',
+	'sap/ui/Device'
 ],
-function(coreLibrary, library) {
+function(coreLibrary, library, Device) {
 	"use strict";
 
 
@@ -140,6 +141,12 @@ function(coreLibrary, library) {
 			rm.openStart("div");
 			rm.class("sapMShellLogo");
 			rm.openEnd();
+			if (Device.browser.msie) {
+				rm.openStart("span");
+				rm.class("sapMShellLogoImgAligner");
+				rm.openEnd();
+				rm.close("span");
+			}
 
 			rm.renderControl(oControl._getImage());
 

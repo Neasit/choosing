@@ -23,6 +23,7 @@
 	background-clip: content-box;
 	background-color: @sapUiContentDragAndDropActiveColor;
 	-webkit-user-select: none;
+	-ms-user-select: none;
 	user-select: none;
 }
 
@@ -38,12 +39,4 @@
 	background: @sapUiWhiteBG;
 	pointer-events: none;
 	margin-top: -0.125rem;
-}
-
-.sapMPluginsColumnResizerSizeDetector {
-	position: absolute;
-	left: -1000px;
-	visibility: hidden;
-	display: flex;
-	flex-direction: column;
 }

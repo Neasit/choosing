@@ -66,6 +66,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarDate', 'sap/ui/core/date/Univers
 			iColumns = oYP.getColumns(),
 			sWidth = "",
 			bEnabled = false,
+			bEnabledCheck = false, // check for disabled years only needed if borders touched
 			oCurrentValidatedDate,
 			bApplySelection,
 			bApplySelectionBetween,
@@ -76,6 +77,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarDate', 'sap/ui/core/date/Univers
 
 		if (!oCurrentValidatedDate.isSame(oCurrentDate)) {
 			oCurrentDate = oCurrentValidatedDate;
+			bEnabledCheck = true;
 		}
 
 		if (iColumns > 0) {
@@ -89,7 +91,11 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarDate', 'sap/ui/core/date/Univers
 			mAccProps = {
 				role: "gridcell"
 			};
-			bEnabled = oYP._checkDateEnabled(oCurrentDate);
+			bEnabled = true;
+
+			if (bEnabledCheck) {
+				bEnabled = oYP._checkDateEnabled(oCurrentDate);
+			}
 
 			if (iColumns > 0 && i % iColumns == 0) {
 				// begin of row
@@ -129,7 +135,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarDate', 'sap/ui/core/date/Univers
 			oRm.accessibilityState(null, mAccProps);
 			oRm.openEnd(); // div element
 			// to render era in Japanese, UniversalDate is used, since CalendarDate.toUTCJSDate() will convert the date in Gregorian
-			oRm.text(oYP._oYearFormat.format(UniversalDate.getInstance(oCurrentDate.toUTCJSDate(), oCurrentDate.getCalendarType()), true)); // to render era in Japanese
+			oRm.text(oYP._oYearFormat.format(UniversalDate.getInstance(oCurrentDate.toUTCJSDate(), oCurrentDate.getCalendarType()))); // to render era in Japanese
 			oRm.close("div");
 
 			oCurrentDate.setYear(oCurrentDate.getYear() + 1);

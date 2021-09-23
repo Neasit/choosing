@@ -59,7 +59,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IContextMenu
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.21.0
 	 *
 	 * @constructor
@@ -84,7 +84,7 @@ sap.ui.define([
 			 * Accessible label / description of the menu for assistive technologies like screenreaders.
 			 * @deprecated as of version 1.27.0, replaced by <code>ariaLabelledBy</code> association
 			 */
-			ariaDescription : {type : "string", group : "Accessibility", defaultValue : null, deprecated: true},
+			ariaDescription : {type : "string", group : "Accessibility", defaultValue : null},
 
 			/**
 			 * The maximum number of items which are displayed before an overflow mechanism takes effect.
@@ -197,9 +197,7 @@ sap.ui.define([
 	Menu.prototype.enhanceAccessibilityState = function(oElement, mAriaProps) {
 		var bIsAccFunctionValid = typeof this._fnCustomEnhanceAccStateFunction === "function";
 
-		if (bIsAccFunctionValid) {
-			this._fnCustomEnhanceAccStateFunction(oElement, mAriaProps);
-		}
+		return bIsAccFunctionValid ? this._fnCustomEnhanceAccStateFunction(oElement, mAriaProps) : mAriaProps;
 	};
 
 	/**
@@ -832,7 +830,7 @@ sap.ui.define([
 
 		if (checkMouseEnterOrLeave(oEvent, this.getDomRef())) {
 			this.setHoveredItem(null);
-		} else if (oEvent.srcControl.isA("sap.ui.unified.MenuItemBase")) {
+		} else {
 			this.setHoveredItem(this.oHoveredItem);
 		}
 

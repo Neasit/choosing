@@ -64,7 +64,7 @@ sap.ui.define([
 	 * @extends sap.m.ListBase
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -93,14 +93,8 @@ sap.ui.define([
 			 * </ul>
 			 *
 			 * By default, the table is rendered with a fixed layout algorithm (<code>fixedLayout=true</code>). This means the horizontal layout only depends on the table's width and the width of the columns, not the content of the cells. Cells in subsequent rows do not affect column width. This allows a browser to provide a faster table layout since the browser can begin to display the table once the first row has been analyzed.
-			 *
-			 * If this property is set to <code>false</code>, <code>sap.m.Table</code> is rendered with an auto layout algorithm. This means, the width of the table and its cells depends on the content of the cells. The column width is set by the widest unbreakable content inside the cells. This can make the rendering slow, since the browser needs to go through all the content in the table before determining the final layout.<br>
-			 *
-			 * If this property is set to <code>Strict</code> and the <code>width</code> property is defined for all columns (and not the expected "auto" value), then the <code>sap.m.Table</code> control renders a placeholder column which occupies the remaining width of the control to ensure the column width setting is strictly applied.<br>
-			 *
-			 * If there is only one remaining column with a width larger than the table, then this column gets the maximum width available in the table. If the column width is smaller than the table, then the column width is retained, and the remaining width of the table is occupied by the placeholder column.<br>
-			 *
-			 * The placeholder column gets rendered only if there are no columns in the pop-in area.<br>
+			 * If this property is set to <code>false</code>, <code>sap.m.Table</code> is rendered with an auto layout algorithm. This means, the width of the table and its cells depends on the content of the cells. The column width is set by the widest unbreakable content inside the cells. This can make the rendering slow, since the browser needs to go through all the content in the table before determining the final layout.
+			 * If this property is set to <code>Strict</code> and the <code>width</code> property is defined for all columns (and not the expected "auto" value), then the <code>sap.m.Table</code> control renders a placeholder column which occupies the remaining width of the control to ensure the column width setting is strictly applied. The placeholder column gets rendered only if there are no columns in the pop-in area.
 			 *
 			 * <b>Note:</b> Since <code>sap.m.Table</code> does not have its own scrollbars, setting <code>fixedLayout</code> to false can force the table to overflow, which may cause visual problems. It is suggested to use this property when a table has a few columns in wide screens or within the horizontal scroll container (e.g <code>sap.m.Dialog</code>) to handle overflow.
 			 * In auto layout mode the <code>width</code> property of <code>sap.m.Column</code> is taken into account as a minimum width.
@@ -231,10 +225,6 @@ sap.ui.define([
 					 */
 					hasPopin: {type: "boolean"},
 					/**
-					 * Returns array of all visible columns in the pop-in area.
-					 */
-					visibleInPopin: {type: "sap.m.Column[]"},
-					/**
 					 * Returns array of columns that are hidden in the pop-in based on their importance.
 					 * See {@link sap.m.Column#getImportance}
 					 */
@@ -325,14 +315,6 @@ sap.ui.define([
 
 	Table.prototype._applyContextualWidth = function(iWidth) {
 		iWidth = parseFloat(iWidth) || 0;
-
-		// when hiddenInPopin is configured, the table size increases due to popins and later decreases as popins are removed due to hiddenInPopin
-		// this can cause scrollbar to appear and disappear causing popin and popout jumping
-		// hence, the table does not change the contextual width if it is less than or equal to 16 (approx. scrollbar size)
-		if (Math.abs(this._oContextualSettings.contextualWidth - iWidth) <= 16) {
-			return;
-		}
-
 		if (iWidth && this._oContextualSettings.contextualWidth != iWidth) {
 			this._applyContextualSettings({
 				contextualWidth : iWidth
@@ -409,46 +391,28 @@ sap.ui.define([
 	Table.prototype.onAfterRendering = function() {
 		ListBase.prototype.onAfterRendering.call(this);
 		this.updateSelectAllCheckbox();
+		// force IE repaint in fixed layout mode
+		if (this.getFixedLayout()) {
+			this._forceStyleChange();
+		}
 		this._renderOverlay();
 
 		if (this._bFirePopinChanged) {
 			this._firePopinChangedEvent();
 			this._bFirePopinChanged = false;
 		} else {
-			var aPopins = this._getPopins();
-			if (this._aPopins && this.getVisibleItems().length) {
-				if (this._aPopins.length != aPopins.length || !aPopins.every(function(oPopinCol) {
-					return this._aPopins.indexOf(oPopinCol) > -1;
+			var aHiddenInPopin = this._getHiddenInPopin();
+			if (this._aHiddenInPopin && this.getVisibleItems().length) {
+				if (aHiddenInPopin.length !== this._aHiddenInPopin.length || !aHiddenInPopin.every(function(oPopinCol) {
+					return this._aHiddenInPopin.indexOf(oPopinCol) > -1;
 				}, this)) {
-					this._aPopins = aPopins;
+					this._aHiddenInPopin = aHiddenInPopin;
 					this._firePopinChangedEvent();
 				}
-			} else if (this._aPopins == null) {
-				this._aPopins = aPopins;
+			} else {
+				this._aHiddenInPopin = aHiddenInPopin;
 			}
 		}
-
-		if (this._bCheckLastColumnWidth && Core.isThemeApplied()) {
-			window.requestAnimationFrame(this._checkLastColumnWidth.bind(this));
-		}
-	};
-
-	Table.prototype.setHiddenInPopin = function(aPriorities) {
-		var aOldPriorities = this.getHiddenInPopin() || [],
-			aNewPriorities = aPriorities || [];
-
-		this.setProperty("hiddenInPopin", aPriorities);
-
-		if (aNewPriorities.length !== aOldPriorities.length) {
-			this._bFirePopinChanged = true;
-		} else {
-			this._bFirePopinChanged = !aNewPriorities.every(function(sPriority) {
-				return aOldPriorities.includes(sPriority);
-			});
-		}
-
-		this._aPopins = this._getPopins();
-		return this;
 	};
 
 	Table.prototype._renderOverlay = function() {
@@ -461,26 +425,6 @@ sap.ui.define([
 		} else if (!bShowOverlay) {
 			$overlay.remove();
 		}
-	};
-
-	/**
-	 * Checks if the only remaining column is larger than the table, then the column width style
-	 * is removed and dummy cell is also adapted according.
-	 * This is to ensure that the the column does not overflow the table.
-	 * @private
-	 */
-	Table.prototype._checkLastColumnWidth = function() {
-		var $this = this.$();
-
-		if (!$this.length) {
-			return;
-		}
-
-		if ($this[0].clientWidth < this.getTableDomRef().clientWidth) {
-			$this.find(".sapMListTblCell:visible").eq(0).addClass("sapMTableLastColumn").width("");
-		}
-
-		this._bCheckLastColumnWidth = false;
 	};
 
 	Table.prototype.setShowOverlay = function(bShow) {
@@ -749,11 +693,7 @@ sap.ui.define([
 
 		// check if only one column is visible
 		if (aVisibleColumns.length == 1) {
-			if (this.getFixedLayout() == "Strict") {
-				this._checkLastColumnWidth();
-			} else {
-				$firstVisibleCol.width("");	// cover the space
-			}
+			$firstVisibleCol.width("");	// cover the space
 		} else {
 			// set original width of columns
 			aVisibleColumns.each(function() {
@@ -771,6 +711,11 @@ sap.ui.define([
 			this.$("tblBody").find(".sapMListTblSubRowCell").attr("colspan", this.getColSpan());
 		}
 
+		// force IE to repaint in fixed layout mode
+		if (this.getFixedLayout()) {
+			this._forceStyleChange();
+		}
+
 		// remove or show column header row(thead) according to column visibility value
 		if (!bColVisible && bHeaderVisible) {
 			$headRow[0].className = "sapMListTblRow sapMLIBFocusable sapMListTblHeader";
@@ -778,6 +723,15 @@ sap.ui.define([
 		} else if (bColVisible && !bHeaderVisible && !aVisibleColumns.length) {
 			$headRow[0].className = "sapMListTblHeaderNone";
 			this._headerHidden = true;
+		}
+	};
+
+	// force IE to repaint
+	Table.prototype._forceStyleChange = function() {
+		if (Device.browser.msie || Device.browser.edge) {
+			var oTableStyle = this.getTableDomRef().style;
+			oTableStyle.listStyleType = "circle";
+			window.setTimeout(function() { oTableStyle.listStyleType = "none"; }, 0);
 		}
 	};
 
@@ -853,7 +807,7 @@ sap.ui.define([
 	 * those controls.
 	 *
 	 * @param {sap.ui.core.Control} oElement - The Control that gets rendered by the RenderManager
-	 * @param {object} mAriaProps - The mapping of "aria-" prefixed attributes
+	 * @param {Object} mAriaProps - The mapping of "aria-" prefixed attributes
 	 * @protected
 	 */
 	Table.prototype.enhanceAccessibilityState = function(oElement, mAriaProps) {
@@ -928,16 +882,15 @@ sap.ui.define([
 			sAnnouncement += oBundle.getText("LIST_ALL_SELECTED");
 		}
 
-		var aHiddenInPopin = this._getHiddenInPopin();
 		this.getColumns(true).forEach(function(oColumn, i) {
 			// only set the header announcement for visible columns
-			if (!oColumn.getVisible() || aHiddenInPopin.indexOf(oColumn) > -1) {
+			if (!oColumn.getVisible()) {
 				return;
 			}
 
 			var oHeader = oColumn.getHeader();
 			if (oHeader && oHeader.getVisible()) {
-				sAnnouncement += ListItemBase.getAccessibilityText(oHeader) + " . ";
+				sAnnouncement += ListItemBase.getAccessibilityText(oHeader) + " ";
 			}
 		});
 
@@ -1039,15 +992,19 @@ sap.ui.define([
 			this._setFirstLastVisibleCells(oTarget);
 		}
 
+		if (this._bThemeChanged) {
+			// force IE/Edge to repaint if theme changed
+			this._bThemeChanged = false;
+			this._forceStyleChange();
+		}
+
 		ListBase.prototype.onfocusin.call(this, oEvent);
 	};
 
 	// event listener for theme changed
 	Table.prototype.onThemeChanged = function() {
 		ListBase.prototype.onThemeChanged.call(this);
-		if (this._bCheckLastColumnWidth) {
-			this._checkLastColumnWidth();
-		}
+		this._bThemeChanged = true;
 	};
 
 	// returns the class that should be added to tbody element
@@ -1083,6 +1040,19 @@ sap.ui.define([
 
 		//var oRow = sap.ui.getCore().byId(jQuery(oEvent.target).closest(".sapMLIB").attr("id"));
 		this.firePaste({data: aData});
+	};
+
+	/**
+	 * Handles key down CTRL+v event and calls onpaste event that fires Paste event of the Table.
+	 * It is a workaround for IE browser as it allows browser paste event on input controls only
+	 * @private
+	 * @param oEvent - browser key down event
+	 */
+	Table.prototype.onkeydown = function(oEvent) {
+		ListBase.prototype.onkeydown.apply(this, arguments);
+		if (Device.browser.msie && oEvent.ctrlKey && oEvent.which === KeyCodes.V) {
+			this.onpaste(oEvent);
+		}
 	};
 
 	Table.prototype.ondragenter = function(oEvent) {
@@ -1123,14 +1093,16 @@ sap.ui.define([
 		};
 
 		aVisibleColumns.forEach(function(oColumn) {
-			var sImportance = oColumn.getImportance();
-			if (sImportance === "None") {
-				sImportance = "Medium";
-			}
-			mPrioColumns[sImportance].push(oColumn);
-		});
+				var sImportance = oColumn.getImportance();
+				if (sImportance === "None") {
+					sImportance = "Medium";
+				}
+				mPrioColumns[sImportance].push(oColumn);
+			});
 
-		var aPrioColumns = Object.values(mPrioColumns);
+		var aPrioColumns = Object.keys(mPrioColumns).map(function(sPriority) {
+			return mPrioColumns[sPriority];
+		});
 		var oMostImportantColumn = aPrioColumns.find(String)[0];
 
 		aPrioColumns.reduce(function(fTotalWidth, aColumns) {
@@ -1150,32 +1122,16 @@ sap.ui.define([
 		// check if table has inset
 		var iInset = this.getInset() ? 4 : 0;
 
-		var $this = this.$(),
-			iThemeDensityWidth = 3;
-
-		if ($this.closest(".sapUiSizeCompact").length || jQuery(document.body).hasClass("sapUiSizeCompact")) {
-			iThemeDensityWidth = 2;
-		} else {
-			var bThemeDensityWidthFound = false;
-			$this.find(".sapMTableTH[aria-hidden=true]:not(.sapMListTblHighlightCol):not(.sapMListTblDummyCell):not(.sapMListTblNavigatedCol)").get().forEach(function(oTH) {
-				var iWidth = jQuery(oTH).width();
-				if (!bThemeDensityWidthFound && iWidth > 0) {
-					iThemeDensityWidth = iWidth / parseFloat(library.BaseFontSize);
-					bThemeDensityWidthFound = true;
-				}
-			});
-		}
-
 		// check if selection control is available
-		var iSelectionWidth = ListBaseRenderer.ModeOrder[this.getMode()] ? iThemeDensityWidth : 0;
+		var iSelectionWidth = ListBaseRenderer.ModeOrder[this.getMode()] ? 3 : 0;
 
 		// check if actions are available on the item
 		var iActionWidth = aItems.some(function(oItem) {
 			var sType = oItem.getType();
 			return sType === "Detail" || sType === "DetailAndActive" || sType === "Navigation";
-		}) ? iThemeDensityWidth : 0;
+		}) ? 3 : 0;
 
-		// Inset + HighlightCol + NavigatedIndicatorCol + borders = ~0.65rem
+		// HighlightCol + NavigatedIndicatorCol + borders = ~0.65rem
 		return iInset + iSelectionWidth + iActionWidth + 0.65;
 	};
 
@@ -1214,31 +1170,20 @@ sap.ui.define([
 	};
 
 	Table.prototype._getHiddenInPopin = function() {
-		return this._getPopins().filter(function(oPopin) {
-			return !oPopin.isPopin();
-		});
-	};
-
-	Table.prototype._getVisiblePopin = function() {
-		return this._getPopins().filter(function(oPopin) {
-			return oPopin.isPopin();
-		});
-	};
-
-	Table.prototype._getPopins = function() {
-		var aVisiblePopinColumns =  this.getColumns().filter(function(oColumn) {
+		var aVisiblePopinColumns = this.getColumns().filter(function(oColumn) {
 			return oColumn.getVisible() && oColumn.getDemandPopin();
 		});
 
-		return aVisiblePopinColumns.filter(function(oVisibleColumn) {
-			return oVisibleColumn._media && !oVisibleColumn._media.matches;
+		var aHiddenPopinColumns = aVisiblePopinColumns.filter(function(oVisibleColumn) {
+			return oVisibleColumn._media && !oVisibleColumn._media.matches && !oVisibleColumn.isPopin();
 		});
+
+		return aHiddenPopinColumns;
 	};
 
 	Table.prototype._firePopinChangedEvent = function() {
 		this.fireEvent("popinChanged", {
 			hasPopin: this.hasPopin(),
-			visibleInPopin: this._getVisiblePopin(),
 			hiddenInPopin: this._getHiddenInPopin()
 		});
 	};

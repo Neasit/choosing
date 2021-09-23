@@ -37,7 +37,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -101,32 +101,6 @@ sap.ui.define([
 		if (this._ariaText) {
 			this._ariaText.destroy();
 			this._ariaText = null;
-		}
-	};
-
-	CardBase.prototype.setAggregation = function (sAggregationName, oObject) {
-		var oPrevObject;
-
-		if (sAggregationName === "header" || sAggregationName === "_header") {
-			oPrevObject = this.getAggregation(sAggregationName);
-
-			if (oPrevObject) {
-				oPrevObject.detachEvent("_change", this._onHeaderVisibilityChange, this);
-			}
-
-			if (oObject) {
-				oObject.attachEvent("_change", this._onHeaderVisibilityChange, this);
-			}
-		}
-
-		return Control.prototype.setAggregation.apply(this, arguments);
-	};
-
-	CardBase.prototype._onHeaderVisibilityChange = function (oEvent) {
-		if (oEvent.getParameters().name === "visible") {
-			setTimeout(function() {
-				this.invalidate();
-			}.bind(this), 0);
 		}
 	};
 

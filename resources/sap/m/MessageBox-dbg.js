@@ -17,7 +17,8 @@ sap.ui.define([
 	'sap/ui/core/library',
 	'sap/ui/core/Control',
 	'sap/m/library',
-	"sap/ui/thirdparty/jquery"
+	"sap/ui/thirdparty/jquery",
+	'sap/ui/core/theming/Parameters'
 ],
 		function(
 			Button,
@@ -31,7 +32,8 @@ sap.ui.define([
 			coreLibrary,
 			Control,
 			library,
-			jQuery
+			jQuery,
+			Parameters
 		) {
 			"use strict";
 
@@ -261,7 +263,7 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Added since version 1.28. Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
+				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a 'Show detail' link is added. When you click the link, the text area containing 'details' information is then displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {sap.ui.core.CSSSize} [mOptions.contentWidth] The width of the MessageBox
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
@@ -279,6 +281,9 @@ sap.ui.define([
 								details: "",
 								contentWidth: null
 							},
+							//set the information icon according to the used theme
+							bInformationIconUsed = Parameters.get("_sap_m_Message_Box_Information_Icon") === "true",
+							sSrcIcon = bInformationIconUsed ? "message-information" : "hint",
 							mClasses = {
 								"INFORMATION": "sapMMessageBoxInfo",
 								"WARNING": "sapMMessageBoxWarning",
@@ -288,11 +293,11 @@ sap.ui.define([
 								"STANDARD":  "sapMMessageBoxStandard"
 							},
 							mIcons = {
-								"INFORMATION": IconPool.getIconURI("information"),
-								"WARNING": IconPool.getIconURI("alert"),
-								"ERROR": IconPool.getIconURI("error"),
-								"SUCCESS": IconPool.getIconURI("sys-enter-2"),
-								"QUESTION": IconPool.getIconURI("sys-help-2")
+								"INFORMATION": IconPool.getIconURI(sSrcIcon),
+								"WARNING": IconPool.getIconURI("message-warning"),
+								"ERROR": IconPool.getIconURI("message-error"),
+								"SUCCESS": IconPool.getIconURI("message-success"),
+								"QUESTION": IconPool.getIconURI("question-mark")
 							};
 
 					_verifyBundle();
@@ -541,7 +546,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Added since version 1.28. Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @static
@@ -622,7 +626,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Added since version 1.28. Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @static
@@ -698,7 +701,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @since 1.30
@@ -759,7 +761,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @since 1.30
@@ -820,7 +821,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @since 1.30
@@ -881,7 +881,6 @@ sap.ui.define([
 				 * @param {sap.ui.core.TextDirection} [mOptions.textDirection] Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 				 * @param {boolean} [mOptions.verticalScrolling] verticalScrolling is deprecated since version 1.30.4. VerticalScrolling, this option indicates if the user can scroll vertically inside the MessageBox when the content is larger than the content area.
 				 * @param {boolean} [mOptions.horizontalScrolling] horizontalScrolling is deprecated since version 1.30.4. HorizontalScrolling, this option indicates if the user can scroll horizontally inside the MessageBox when the content is larger than the content area.
-				 * @param {string} [mOptions.details] Added since version 1.28.0. If 'details' is set in the MessageBox, a link to view details is added. When the user clicks the link, the text area containing 'details' information is displayed. The initial visibility is not configurable and the details are hidden by default.
 				 * @param {boolean} [mOptions.closeOnNavigation=true] Added since version 1.72.0. Whether the MessageBox will be closed automatically when a routing navigation occurs.
 				 * @public
 				 * @since 1.30

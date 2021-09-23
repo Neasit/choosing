@@ -6,32 +6,31 @@
 
 // Provides control sap.ui.core.mvc.XMLView.
 sap.ui.define([
-	"sap/ui/thirdparty/jquery",
-	"./View",
+	'sap/ui/thirdparty/jquery',
+	'./View',
 	"./XMLViewRenderer",
-	"./ViewType",
-	"sap/base/util/merge",
-	"sap/ui/base/ManagedObject",
-	"sap/ui/core/XMLTemplateProcessor",
-	"sap/ui/core/Control",
-	"sap/ui/core/RenderManager",
-	"sap/ui/core/cache/CacheManager",
-	"sap/ui/model/resource/ResourceModel",
-	"sap/ui/util/XMLHelper",
-	"sap/base/strings/hash",
-	"sap/base/Log",
-	"sap/base/util/LoaderExtensions",
-	"sap/ui/performance/trace/Interaction",
-	"sap/ui/core/Core" // to ensure correct behaviour of sap.ui.getCore()
+	"sap/base/util/deepExtend",
+	'sap/ui/base/ManagedObject',
+	'sap/ui/core/XMLTemplateProcessor',
+	'sap/ui/core/library',
+	'sap/ui/core/Control',
+	'sap/ui/core/RenderManager',
+	'sap/ui/core/cache/CacheManager',
+	'sap/ui/model/resource/ResourceModel',
+	'sap/ui/util/XMLHelper',
+	'sap/base/strings/hash',
+	'sap/base/Log',
+	'sap/base/util/LoaderExtensions',
+	"sap/ui/performance/trace/Interaction"
 ],
 	function(
 		jQuery,
 		View,
 		XMLViewRenderer,
-		ViewType,
-		merge,
+		deepExtend,
 		ManagedObject,
 		XMLTemplateProcessor,
+		library,
 		Control,
 		RenderManager,
 		Cache,
@@ -46,28 +45,10 @@ sap.ui.define([
 
 	// actual constants
 	var RenderPrefixes = RenderManager.RenderPrefixes,
+		ViewType = library.mvc.ViewType,
 		sXMLViewCacheError = "XMLViewCacheError",
 		notCacheRelevant = {};
 
-	/**
-	 * Dummy control for after rendering notification before onAfterRendering of
-	 * child controls of the XMLView is called
-	 *
-	 * @extends sap.ui.core.Control
-	 * @alias sap.ui.core.mvc.XMLAfterRenderingNotifier
-	 * @private
-	 */
-	var XMLAfterRenderingNotifier = Control.extend("sap.ui.core.mvc.XMLAfterRenderingNotifier", {
-		metadata: {
-			library: "sap.ui.core"
-		},
-		renderer: {
-			apiVersion: 2,
-			render: function(oRM, oControl) {
-				oRM.text(""); // onAfterRendering is only called if control produces output
-			}
-		}
-	});
 
 	/**
 	 * Constructor for a new <code>XMLView</code>.
@@ -96,7 +77,7 @@ sap.ui.define([
 	 * control's dependents aggregation or add it by using {@link sap.ui.core.mvc.XMLView#addDependent}.
 	 *
 	 * @extends sap.ui.core.mvc.View
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.XMLView
@@ -129,8 +110,13 @@ sap.ui.define([
 
 				/**
 				 * The processing mode of the XMLView.
+				 * The processing mode "sequential" is implicitly activated for the following type of async views:
+				 *      a) root views in the manifest
+				 *      b) XMLViews created with the (XML)View.create factory
+				 *      c) XMLViews used via routing
+				 * Additionally, all declarative nested async subviews are also processed asynchronously.
 				 */
-				processingMode: { type: "sap.ui.core.mvc.XMLProcessingMode", visibility: "hidden" }
+				processingMode: { type: "string", visibility: "hidden" }
 			},
 
 			designtime: "sap/ui/core/designtime/mvc/XMLView.designtime"
@@ -177,7 +163,7 @@ sap.ui.define([
 	 * @param {string | object} vView Name of the view or a view configuration object as described above
 	 * @param {string} [vView.viewName] Name of the view resource in module name notation (without suffix)
 	 * @param {string|Document} [vView.viewContent] XML string or XML document that defines the view
-	 * @param {boolean} [vView.async] whether the view source is loaded asynchronously
+	 * @param {boolean} [vView.async] Defines how the view source is loaded and rendered later on
 	 * @param {object} [vView.cache] Cache configuration, only for <code>async</code> views; caching gets active
 	 * when this object is provided with vView.cache.keys array; keys are used to store data in the cache and for
 	 * invalidation of the cache
@@ -186,7 +172,7 @@ sap.ui.define([
 	 * @param {sap.ui.core.mvc.Controller} [vView.controller] Controller instance to be used for this view
 	 * @public
 	 * @static
-	 * @deprecated Since 1.56. Use {@link sap.ui.core.mvc.XMLView.create XMLView.create} to create view instances
+	 * @deprecated since 1.56: Use {@link sap.ui.core.mvc.XMLView.create XMLView.create} instead
 	 * @returns {sap.ui.core.mvc.XMLView} the created XMLView instance
 	 * @ui5-global-only
 	 */
@@ -237,7 +223,7 @@ sap.ui.define([
 	 * @returns {Promise<sap.ui.core.mvc.XMLView>} A Promise that resolves with the view instance or rejects with any thrown error.
 	 */
 	XMLView.create = function (oOptions) {
-		var mParameters = merge({}, oOptions);
+		var mParameters = deepExtend({}, oOptions);
 
 		// mapping renamed parameters
 		mParameters.viewContent = mParameters.definition;
@@ -245,6 +231,9 @@ sap.ui.define([
 		// defaults for the async API
 		mParameters.async = true;
 		mParameters.type = ViewType.XML;
+
+		// for now the processing mode is always set to default, might be changeable later, e.g. "parallel"
+		mParameters.processingMode = mParameters.processingMode || "sequential";
 
 		return View.create(mParameters);
 	};
@@ -311,10 +300,9 @@ sap.ui.define([
 	}
 
 	/**
-	 * Sets the resource model to the given <code>oView</code>
 	 *
-	 * @param {sap.ui.core.mvc.XMLView} oView The view instance
-	 * @param {map} mSettings The view settings
+	 * @param oView
+	 * @param mSettings
 	 * @returns {undefined|Promise} will return a Promise if ResourceModel is instantiated asynchronously, otherwise undefined
 	 */
 	function setResourceModel(oView, mSettings) {
@@ -476,7 +464,7 @@ sap.ui.define([
 				mCacheOutput.xml = XMLHelper.parse(mCacheOutput.xml, "application/xml").documentElement;
 				if (mCacheOutput.additionalData) {
 					// extend the additionalData which was passed into cache configuration dynamically
-					merge(mCacheInput.additionalData, mCacheOutput.additionalData);
+					deepExtend(mCacheInput.additionalData, mCacheOutput.additionalData);
 				}
 				return mCacheOutput;
 			}
@@ -496,7 +484,7 @@ sap.ui.define([
 			that._xContent = xContent;
 
 			if (View._supportInfo) {
-				View._supportInfo({context: that._xContent, env: {caller:"view", viewinfo: merge({}, that), settings: merge({}, mSettings || {}), type: "xmlview"}});
+				View._supportInfo({context: that._xContent, env: {caller:"view", viewinfo: deepExtend({}, that), settings: deepExtend({}, mSettings || {}), type: "xmlview"}});
 			}
 
 			// extract the properties of the view from the XML element
@@ -571,8 +559,8 @@ sap.ui.define([
 			}).catch(function(error) {
 				if (error.name === sXMLViewCacheError) {
 					// no sufficient cache keys, processing can continue
-					Log.error(error.message, error.name, "sap.ui.core.mvc.XMLView");
-					Log.error("Processing the View without caching.", "sap.ui.core.mvc.XMLView");
+					Log.debug(error.message, error.name, "sap.ui.core.mvc.XMLView");
+					Log.debug("Processing the View without caching.", "sap.ui.core.mvc.XMLView");
 					return processResource(sResourceName);
 				} else {
 					// an unknown error occured and should be exposed
@@ -732,56 +720,41 @@ sap.ui.define([
 	};
 
 	/**
-	 * Register a preprocessor for all views of a specific type.
-	 *
-	 * The preprocessor can be registered for several stages of view initialization, for xml views these are
-	 * either the plain "xml" or the already initialized "controls" , see {@link sap.ui.core.mvc.XMLView.PreprocessorType}.
-	 * For each type one preprocessor is executed. If there is a preprocessor passed to or activated at the
-	 * view instance already, that one is used. When several preprocessors are registered for one hook, it has to be made
-	 * sure, that they do not conflict when being processed serially.
-	 *
-	 * It can be either a module name as string of an implementation of {@link sap.ui.core.mvc.View.Preprocessor} or a
-	 * function with a signature according to {@link sap.ui.core.mvc.View.Preprocessor.process}.
-	 *
-	 * <strong>Note</strong>: Preprocessors work only in async views and will be ignored when the view is instantiated
-	 * in sync mode by default, as this could have unexpected side effects. You may override this behaviour by setting the
-	 * bSyncSupport flag to true.
-	 *
-	 * @public
-	 * @static
-	 * @param {string|sap.ui.core.mvc.XMLView.PreprocessorType} sType
-	 *      the type of content to be processed
-	 * @param {string|function} vPreprocessor
-	 *      module path of the preprocessor implementation or a preprocessor function
-	 * @param {string} [sViewType="XML"]
-	 *      Since 1.89, added for signature compatibility with {@link sap.ui.core.mvc.View#registerPreprocessor
-	 *      View#registerPreprocessor}. Only supported value is "XML".
-	 * @param {boolean} bSyncSupport
-	 *      declares if the vPreprocessor ensures safe sync processing. This means the preprocessor will be executed
-	 *      also for sync views. Please be aware that any kind of async processing (like Promises, XHR, etc) may
-	 *      break the view initialization and lead to unexpected results.
-	 * @param {boolean} [bOnDemand]
-	 *      ondemand preprocessor which enables developers to quickly activate the preprocessor for a view,
-	 *      by setting <code>preprocessors : { xml }</code>, for example.
-	 * @param {object} [mSettings]
-	 *      optional configuration for preprocessor
-	 */
-	XMLView.registerPreprocessor = function(sType, vPreprocessor, sViewType, bSyncSupport, bOnDemand, mSettings) {
-		var sOwnViewType = this.getMetadata().getClass()._sType;
-		if (typeof sViewType === "string") {
-			if (sViewType !== sOwnViewType) {
-				throw new TypeError("View types other than " + sOwnViewType
-					+ " are not supported by XMLView.registerPreprocessor,"
-					+ " check View.registerPreprocessor instead");
-			}
-		} else {
-			mSettings = bOnDemand;
-			bOnDemand = bSyncSupport;
-			bSyncSupport = sViewType;
-		}
+	* Register a preprocessor for all views of a specific type.
+	*
+	* The preprocessor can be registered for several stages of view initialization, for xml views these are
+	* either the plain "xml" or the already initialized "controls" , see {@link sap.ui.core.mvc.XMLView.PreprocessorType}.
+	* For each type one preprocessor is executed. If there is a preprocessor passed to or activated at the
+	* view instance already, that one is used. When several preprocessors are registered for one hook, it has to be made
+	* sure, that they do not conflict when being processed serially.
+	*
+	* It can be either a module name as string of an implementation of {@link sap.ui.core.mvc.View.Preprocessor} or a
+	* function with a signature according to {@link sap.ui.core.mvc.View.Preprocessor.process}.
+	*
+	* <strong>Note</strong>: Preprocessors work only in async views and will be ignored when the view is instantiated
+	* in sync mode by default, as this could have unexpected side effects. You may override this behaviour by setting the
+	* bSyncSupport flag to true.
+	*
+	* @public
+	* @static
+	* @param {string|sap.ui.core.mvc.XMLView.PreprocessorType} sType
+	* 		the type of content to be processed
+	* @param {string|function} vPreprocessor
+	* 		module path of the preprocessor implementation or a preprocessor function
+	* @param {boolean} bSyncSupport
+	* 		declares if the vPreprocessor ensures safe sync processing. This means the preprocessor will be executed
+	* 		also for sync views. Please be aware that any kind of async processing (like Promises, XHR, etc) may
+	* 		break the view initialization and lead to unexpected results.
+	* @param {boolean} [bOnDemand]
+	* 		ondemand preprocessor which enables developers to quickly activate the preprocessor for a view,
+	* 		by setting <code>preprocessors : { xml }</code>, for example.
+	* @param {object} [mSettings]
+	* 		optional configuration for preprocessor
+	*/
+	XMLView.registerPreprocessor = function(sType, vPreprocessor, bSyncSupport, bOnDemand, mSettings) {
 		sType = sType.toUpperCase();
 		if (XMLView.PreprocessorType[sType]) {
-			View.registerPreprocessor(XMLView.PreprocessorType[sType], vPreprocessor, sOwnViewType, bSyncSupport, bOnDemand, mSettings);
+			View.registerPreprocessor(XMLView.PreprocessorType[sType], vPreprocessor, this.getMetadata().getClass()._sType, bSyncSupport, bOnDemand, mSettings);
 		} else {
 			Log.error("Preprocessor could not be registered due to unknown sType \"" + sType + "\"", this.getMetadata().getName());
 		}
@@ -817,6 +790,25 @@ sap.ui.define([
 		 */
 		CONTROLS : "controls"
 	};
+
+	/**
+	 * Dummy control for after rendering notification before onAfterRendering of
+	 * child controls of the XMLView is called
+	 * @extends sap.ui.core.Control
+	 * @alias sap.ui.core.mvc.XMLAfterRenderingNotifier
+	 * @private
+	 */
+	var XMLAfterRenderingNotifier = Control.extend("sap.ui.core.mvc.XMLAfterRenderingNotifier", {
+		metadata: {
+			library: "sap.ui.core"
+		},
+		renderer: {
+			apiVersion: 2,
+			render: function(oRM, oControl) {
+				oRM.text(""); // onAfterRendering is only called if control produces output
+			}
+		}
+	});
 
 	// Register OpenUI5 default preprocessor for templating
 	XMLView.registerPreprocessor("xml", "sap.ui.core.util.XMLPreprocessor", true, true);

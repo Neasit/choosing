@@ -65,7 +65,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -533,6 +533,8 @@ sap.ui.define([
 		// set gradient prefix depending of the browser
 		if (Device.browser.firefox) {
 			sBrowserPrefix = "-moz-linear-gradient";
+		} else if (Device.browser.msie) {
+			sBrowserPrefix = "-ms-linear-gradient";
 		} else if (Device.browser.webkit) {
 			sBrowserPrefix = "-webkit-linear-gradient";
 		} else {
@@ -1764,6 +1766,16 @@ sap.ui.define([
 
 		// set the new cursor position
 		this.$CPCur.css("left", iX).css("top", iY);
+
+		// fixes Edge rendering glitches on (x50%) zoom: 50%, 150%, 250%, etc...
+		if (sap.ui.Device.browser.edge) {
+			var oBox = document.getElementById(this.oCPBox.getId());
+			oBox.style.verticalAlign = "top";
+			setTimeout( function() {
+				oBox.style.verticalAlign = "initial";
+			}, 0);
+		}
+
 	};
 
 	/**

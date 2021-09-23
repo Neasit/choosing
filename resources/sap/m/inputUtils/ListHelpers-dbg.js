@@ -11,14 +11,8 @@ sap.ui.define([
 	"sap/m/library",
 	"sap/base/util/deepEqual",
 	"sap/m/GroupHeaderListItem",
-	"sap/m/StandardListItem",
-	"sap/ui/base/ManagedObject"],
-	function (
-		library,
-		deepEqual,
-		GroupHeaderListItem,
-		StandardListItem,
-		ManagedObject) {
+	"sap/m/StandardListItem"],
+	function (library, deepEqual, GroupHeaderListItem, StandardListItem) {
 	"use strict";
 
 	var ListType = library.ListType;
@@ -152,9 +146,7 @@ sap.ui.define([
 
 		if (oItem.isA("sap.ui.core.SeparatorItem")) {
 			oListItem = new GroupHeaderListItem({
-				// GroupHeaderListItem does not escape the title so we need to do it once more.
-				// The first time this value was escaped is when the Separator item was created.
-				title: ManagedObject.escapeSettingsValue(oItem.getText()),
+				title: oItem.getText(),
 				type: ListType.Inactive,
 				titleTextDirection: sTextDirection
 			});
@@ -180,30 +172,6 @@ sap.ui.define([
 		});
 
 		return oListItem;
-	};
-
-	/**
-	 * Fills an item Container (sap.m.List or sap.m.Table) with items mapped by the <code>fnMapItem</code>.
-	 *
-	 * @param aItems Array of sap.ui.core.Item to be mapped
-	 * @param oItemsContainer A container to be filled with items (List or Table)
-	 * @param fnMapItem Mapping function for core items to listItems
-	 */
-	ListHelpers.fillList = function (aItems, oItemsContainer, fnMapItem) {
-		if (!oItemsContainer || !Array.isArray(aItems)) {
-			return;
-		}
-
-		if (oItemsContainer.isA("sap.m.Table")) {
-			oItemsContainer.removeSelections(true);
-		} else {
-			oItemsContainer.destroyItems();
-		}
-
-		// map the items to list items and add them to the list
-		aItems.forEach(function (oItem) {
-			oItemsContainer.addItem(fnMapItem(oItem));
-		});
 	};
 
 	return ListHelpers;

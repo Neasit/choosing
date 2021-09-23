@@ -16,7 +16,7 @@ sap.ui.define('sap/ui/debug/DebugEnv', ['sap/ui/base/Interface', './ControlTree'
 	 * @class Central Class for the Debug Environment
 	 *
 	 * @author Martin Schaus, Frank Weigel
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @private
 	 * @alias sap.ui.debug.DebugEnv
 	 */
@@ -40,7 +40,7 @@ sap.ui.define('sap/ui/debug/DebugEnv', ['sap/ui/base/Interface', './ControlTree'
 		 * @private
 		 */
 		try {
-			this.bRunsEmbedded = typeof window.top.testfwk === "undefined"; // window || !top.frames["sap-ui-TraceWindow"];
+			this.bRunsEmbedded = typeof window.top.testfwk == "undefined"; // window || !top.frames["sap-ui-TraceWindow"]; // check only with ==, not === as the test otherwise fails on IE8
 
 			Log.info("Starting DebugEnv plugin (" + (this.bRunsEmbedded ? "embedded" : "testsuite") + ")");
 
@@ -199,7 +199,8 @@ sap.ui.define('sap/ui/debug/DebugEnv', ['sap/ui/base/Interface', './ControlTree'
 		this.oLogger.addLogListener(this.oTraceViewer);
 
 		// When debug.js is injected (testsuite), it is not initialized during Core.init() but later.
-		// In Chrome the startPlugin happens after rendering, therefore the first 'UIUpdated' is missed.
+		// In IE the startPlugin happens before rendering, in Chrome and others after rendering
+		// Therefore the first 'UIUpdated' is missed in browsers other than IE.
 		// To compensate this, we register for both, the UIUpdated and for a timer (if we are not called during Core.init)
 		// Whatever happens first.
 		// TODO should be part of core

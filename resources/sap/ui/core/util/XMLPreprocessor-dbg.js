@@ -572,7 +572,7 @@ sap.ui.define([
 		 *   ID of the owning component (since 1.31; needed for extension point support)
 		 * @param {string} oViewInfo.name
 		 *   the view name (since 1.31; needed for extension point support)
-		 * @param {boolean} [oViewInfo.sync]
+		 * @param {boolean} [oViewInfo.sync=false]
 		 *   whether the view is synchronous (since 1.57.0; needed for asynchronous XML templating)
 		 * @param {object} [mSettings={}]
 		 *   map/JSON-object with initial property values, etc.
@@ -891,7 +891,7 @@ sap.ui.define([
 					 *
 					 * @param {object} [mVariables={}]
 					 *   Map from variable name (string) to value ({@link sap.ui.model.Context})
-					 * @param {boolean} [bReplace]
+					 * @param {boolean} [bReplace=false]
 					 *   Whether only the given variables are known in the new callback interface
 					 *   instance, no inherited ones
 					 * @returns {sap.ui.core.util.XMLPreprocessor.ICallback}

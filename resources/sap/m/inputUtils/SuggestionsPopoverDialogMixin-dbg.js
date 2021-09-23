@@ -16,9 +16,8 @@ sap.ui.define([
 	"sap/m/Bar",
 	"sap/m/Title",
 	"sap/m/Toolbar",
-	"sap/m/ToggleButton",
-	"sap/m/ValueStateHeader"
-], function (library, Core, IconPool, Dialog, Button, Bar, Title, Toolbar, ToggleButton, ValueStateHeader) {
+	"sap/m/ToggleButton"
+], function (library, Core, IconPool, Dialog, Button, Bar, Title, Toolbar, ToggleButton) {
 	"use strict";
 
 	// shortcut for sap.m.TitleAlignment
@@ -274,35 +273,5 @@ sap.ui.define([
 				icon: sIconURI
 			});
 		}
-
-		/**
-		 * Gets the Value State Header instance.
-		 *
-		 * @private
-		 */
-		this._getValueStateHeader = function () {
-			var oPopover = this.getPopover();
-
-			if (!oPopover.getContent().length
-				|| (oPopover.getContent().length && !oPopover.getContent()[0].isA("sap.m.ValueStateHeader"))) {
-				this._createValueStateHeader();
-			}
-
-			return oPopover.getContent()[0];
-		};
-
-		/**
-		 * Creates the Value State Header instance.
-		 *
-		 * @private
-		 */
-		this._createValueStateHeader = function () {
-			var oValueStateHeader = new ValueStateHeader();
-			var	oPopover = this.getPopover();
-
-			// on mobile the content is used and sticky position is set on the header
-			oPopover.insertContent(oValueStateHeader, 0);
-			oValueStateHeader.setPopup(oPopover);
-		};
 	};
 });

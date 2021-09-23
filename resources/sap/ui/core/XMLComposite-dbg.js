@@ -143,14 +143,13 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @since 1.56.0
 		 * @alias sap.ui.core.XMLComposite
 		 * @see {@link topic:b83a4dcb7d0e46969027345b8d32fd44 XML Composite Controls}
 		 *
 		 * @abstract
-		 * @public
-		 * @deprecated As of version 1.88, use {@link topic:c1512f6ce1454ff1913e3857bad56392 Standard Composite Controls}
+		   * @public
 		 * @experimental Since 1.56.0
 		 */
 		var XMLComposite = Control.extend("sap.ui.core.XMLComposite", {
@@ -535,7 +534,7 @@ sap.ui.define([
 		 * those controls.
 		 *
 		 * @param {sap.ui.core.Control} oElement - The Control that gets rendered by the RenderManager
-		 * @param {object} mAriaProps - The mapping of "aria-" prefixed attributes
+		 * @param {Object} mAriaProps - The mapping of "aria-" prefixed attributes
 		 * @protected
 		 */
 		XMLComposite.prototype.enhanceAccessibilityState = function(oElement, mAriaProps) {
@@ -543,8 +542,10 @@ sap.ui.define([
 
 			if (oParent && oParent.enhanceAccessibilityState) {
 				// use XMLComposite as control, but aria properties of rendered inner controls.
-				oParent.enhanceAccessibilityState(this, mAriaProps);
+				return oParent.enhanceAccessibilityState(this, mAriaProps);
 			}
+
+			return mAriaProps;
 		};
 
 		/**

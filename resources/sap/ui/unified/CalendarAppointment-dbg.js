@@ -21,7 +21,7 @@ sap.ui.define(['./DateTypeRange', 'sap/ui/core/format/DateFormat', 'sap/ui/core/
 	 *
 	 * Applications could inherit from this element to add own fields.
 	 * @extends sap.ui.unified.DateTypeRange
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -80,10 +80,6 @@ sap.ui.define(['./DateTypeRange', 'sap/ui/core/format/DateFormat', 'sap/ui/core/
 			color: {type : "sap.ui.core.CSSColor", group : "Appearance", defaultValue : null}
 		}
 	}});
-
-	CalendarAppointment.prototype.init = function () {
-		this._sAppointmentPartSuffix = null;
-	};
 
 	CalendarAppointment.prototype.applyFocusInfo = function (oFocusInfo) {
 
@@ -215,22 +211,6 @@ sap.ui.define(['./DateTypeRange', 'sap/ui/core/format/DateFormat', 'sap/ui/core/
 				parseInt(sHex.substr(3, 2), 16), // Green
 				parseInt(sHex.substr(5, 2), 16) // Blue
 			].join(",") + ", 0.2)";
-	};
-
-	CalendarAppointment.prototype._setAppointmentPartSuffix = function (sSuffix) {
-		this._sAppointmentPartSuffix = sSuffix;
-		return this;
-	};
-
-	CalendarAppointment.prototype.getDomRef = function (sSuffix) {
-		if (document.getElementById(this.getId())) {
-			return document.getElementById(sSuffix ? this.getId() + "-" + sSuffix : this.getId());
-		} else if (this._sAppointmentPartSuffix) {
-			return document.getElementById(sSuffix ? this.getId() + "-" + this._sAppointmentPartSuffix + "-" + sSuffix : this.getId() + "-" + this._sAppointmentPartSuffix);
-		}
-
-		var oAppointmentParts = document.querySelectorAll(".sapUiCalendarRowApps[id^=" + this. getId() + "]");
-		return oAppointmentParts.length > 0 ? oAppointmentParts[0] : null;
 	};
 
 	return CalendarAppointment;

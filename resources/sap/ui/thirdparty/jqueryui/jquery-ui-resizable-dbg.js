@@ -70,12 +70,7 @@ $.widget("ui.resizable", $.ui.mouse, {
 
 			//Create a wrapper element and set the wrapper to the new current internal element
 			this.element.wrap(
-				// ##### BEGIN: MODIFIED BY SAP
-				// CSP Modification - remove inline style
-				// $("<div class='ui-wrapper' style='overflow: hidden;'></div>").css({
-				$("<div class='ui-wrapper'></div>").css({
-					overflow: "hidden",
-				// ##### END: MODIFIED BY SAP
+				$("<div class='ui-wrapper' style='overflow: hidden;'></div>").css({
 					position: this.element.css("position"),
 					width: this.element.outerWidth(),
 					height: this.element.outerHeight(),
@@ -584,14 +579,9 @@ $.widget("ui.resizable", $.ui.mouse, {
 
 		if(this._helper) {
 
-			// ##### BEGIN: MODIFIED BY SAP
-			// CSP Modification - remove inline style
-			// this.helper = this.helper || $("<div style='overflow:hidden;'></div>");
-			this.helper = this.helper || $("<div></div>");
+			this.helper = this.helper || $("<div style='overflow:hidden;'></div>");
 
 			this.helper.addClass(this._helper).css({
-				overflow: "hidden",
-			// ##### END: MODIFIED BY SAP
 				width: this.element.outerWidth() - 1,
 				height: this.element.outerHeight() - 1,
 				position: "absolute",

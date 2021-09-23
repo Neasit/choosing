@@ -49,7 +49,7 @@ sap.ui.define([
 	 * @extends sap.ui.unified.calendar.YearPicker
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @private
@@ -123,11 +123,6 @@ sap.ui.define([
 		// check if first date is outside of min and max date
 		var iYears = this.getYears();
 		var oMaxStartYear = new CalendarDate(this._oMaxDate, this.getPrimaryCalendarType());
-
-		if (!oMaxStartYear.isSame(CalendarUtils._maxDate(this.getPrimaryCalendarType()))) {
-			return oDate;
-		}
-
 		oMaxStartYear.setYear(oMaxStartYear.getYear() - Math.floor(iYears / 2) * this.getRangeSize() + 1 - Math.floor(this.getRangeSize() / 2));
 		if (oDate.isAfter(oMaxStartYear) && oDate.getYear() != oMaxStartYear.getYear()) {
 			oDate = new CalendarDate(oMaxStartYear, this.getPrimaryCalendarType());

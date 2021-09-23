@@ -38,7 +38,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 		 *
 		 * @extends sap.ui.base.Object
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @public
 		 * @alias sap.ui.core.Locale
 		 */
@@ -47,10 +47,10 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 			constructor : function(sLocaleId) {
 				BaseObject.apply(this);
 				var aResult = rLocale.exec(sLocaleId.replace(/_/g, "-"));
-				// If the given Locale string cannot be parsed by the regular expression above,
-				// we should at least tell the developer why the Core fails to load.
+				// If the given Locale string cannot be parsed by the regular expression above we
+				// should at least tell the developer why the core fails to load.
 				if (aResult === null ) {
-					throw new TypeError("The given language '" + sLocaleId + "' does not adhere to BCP-47.");
+					throw "The given language '" + sLocaleId + "' does not adhere to BCP-47.";
 				}
 
 				this.sLocaleId = sLocaleId;
@@ -61,10 +61,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 				this.sExtension = (aResult[5] && aResult[5].slice(1)) || null; // remove leading dash from capturing group
 				this.sPrivateUse = aResult[6] || null;
 
-				// convert subtags according to the BCP47 recommendations
-				// - language: all lower case
-				// - script: lower case with the first letter capitalized
-				// - region: all upper case
+				// normalization according to BCP47:
 				if ( this.sLanguage ) {
 					this.sLanguage = this.sLanguage.toLowerCase();
 				}
@@ -201,48 +198,23 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 			},
 
 			toString : function() {
-				return join(
-					this.sLanguage,
-					this.sScript,
-					this.sRegion,
-					this.sVariant,
-					this.sExtension,
-					this.sPrivateUse);
-			},
-
-			/**
-			 * @returns {string} the modern language tag
-			 * @private
-			 * @ui5-restricted sap.ui.core.Configuration
-			 */
-			toLanguageTag : function() {
-				var sLanguage = this.getModernLanguage();
-				var sScript = this.sScript;
-				// special case for "sr_Latn" language: "sh" should then be used
-				// This method is used to set the Accept-Language HTTP Header for ODataModel
-				// requests and .hdbtextbundle resource bundles.
-				// It has to remain backward compatible
-				if (sLanguage === "sr" && sScript === "Latn") {
-					sLanguage = "sh";
-					sScript = null;
+				var r = [this.sLanguage];
+				if ( this.sScript ) {
+					r.push(this.sScript);
 				}
-
-				return join(
-					sLanguage,
-					sScript,
-					this.sRegion,
-					this.sVariant,
-					this.sExtension,
-					this.sPrivateUse);
-			},
-
-			/**
-			 * @returns {string} the modern language
-			 * @private
-			 * @ui5-restricted sap.ui.core.LocaleData
-			 */
-			getModernLanguage: function() {
-				return M_ISO639_OLD_TO_NEW[this.sLanguage] || this.sLanguage;
+				if ( this.sRegion ) {
+					r.push(this.sRegion);
+				}
+				if ( this.sVariant ) {
+					r.push(this.sVariant);
+				}
+				if ( this.sExtension ) {
+					r.push(this.sExtension );
+				}
+				if ( this.sPrivateUse ) {
+					r.push(this.sPrivateUse );
+				}
+				return r.join("-");
 			},
 
 			/**
@@ -252,8 +224,8 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 			 * <ul>
 			 * <li>use the language part only</li>
 			 * <li>convert old ISO639 codes to newer ones (e.g. 'iw' to 'he')</li>
-			 * <li>for Chinese, map 'Traditional Chinese' or region 'TW' to SAP proprietary code 'zf'</li>
-			 * <li>map private extensions x-saptrc, x-sappsd and saprigi to SAP pseudo languages '1Q', '2Q' and '3Q'</li>
+			 * <li>for Chinese, map 'Traditional Chinese' to SAP proprietary code 'zf'</li>
+			 * <li>map private extensions x-sap1q and x-sap2q to SAP pseudo languages '1Q' and '2Q'</li>
 			 * <li>remove ext. language sub tags</li>
 			 * <li>convert to uppercase</li>
 			 * </ul>
@@ -270,7 +242,8 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 			 */
 			getSAPLogonLanguage : function() {
 
-				var sLanguage = this.sLanguage || "";
+				var sLanguage = this.sLanguage || "",
+					m;
 
 				// cut off any ext. language sub tags
 				if ( sLanguage.indexOf("-") >= 0 ) {
@@ -280,69 +253,42 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 				// convert to new ISO codes
 				sLanguage = M_ISO639_OLD_TO_NEW[sLanguage] || sLanguage;
 
-				// handle special case for Chinese: region TW implies Traditional Chinese (ZF)
-				if ( sLanguage === "zh" && !this.sScript && this.sRegion === "TW" ) {
-					return "ZF";
+				// handle special cases for Chinese: map 'Traditional Chinese' (or region TW which implies Traditional) to 'zf'
+				if ( sLanguage === "zh" ) {
+					if ( this.sScript === "Hant" || (!this.sScript && this.sRegion === "TW") ) {
+						sLanguage = "zf";
+					}
 				}
 
-				return (
-					M_LOCALE_TO_ABAP_LANGUAGE[join(sLanguage, this.sScript)]
-					|| M_LOCALE_TO_ABAP_LANGUAGE[join(sLanguage, this.sRegion)]
-					|| M_LOCALE_TO_ABAP_LANGUAGE[getPseudoLanguageTag(this.sPrivateUse)]
-					|| sLanguage.toUpperCase()
-				);
+				// recognize SAP supportability pseudo languages
+				if ( this.sPrivateUse && (m = /-(saptrc|sappsd|saprigi)(?:-|$)/i.exec(this.sPrivateUse)) ) {
+					sLanguage = SAP_PSEUDO_LANGUAGES[m[1].toLowerCase()];
+				}
+
+				// by convention, SAP systems seem to use uppercase letters
+				return sLanguage.toUpperCase();
 			}
 
 		});
 
 		/*
-		 * Maps wellknown private use extensions to pseudo language tags.
+		 * Maps wellknown private use extensions for pseudo languages to the corresponding SAP Logon Language.
 		 */
-		function getPseudoLanguageTag(sPrivateUse) {
-			if ( sPrivateUse ) {
-				var m = /-(saptrc|sappsd|saprigi)(?:-|$)/i.exec(sPrivateUse);
-				return m && "en-US-x-" + m[1].toLowerCase();
-			}
-		}
+		var SAP_PSEUDO_LANGUAGES = {
+			"saptrc"  : "1Q",
+			"sappsd"  : "2Q",
+			"saprigi" : "3Q"
+		};
 
 		var M_ISO639_OLD_TO_NEW = {
 			"iw" : "he",
-			"ji" : "yi"
+			"ji" : "yi",
+			"in" : "id"
 		};
-
-
-		// Note: keys must be uppercase
-		var M_ABAP_LANGUAGE_TO_LOCALE = {
-			"ZH" : "zh-Hans",
-			"ZF" : "zh-Hant",
-			"SH" : "sr-Latn",
-			"6N" : "en-GB",
-			"1P" : "pt-PT",
-			"1X" : "es-MX",
-			"3F" : "fr-CA",
-			"1Q" : "en-US-x-saptrc",
-			"2Q" : "en-US-x-sappsd",
-			"3Q" : "en-US-x-saprigi"
-		};
-
-		var M_LOCALE_TO_ABAP_LANGUAGE = inverse(M_ABAP_LANGUAGE_TO_LOCALE);
 
 		/**
-		 * Helper to analyze and parse designtime (aka buildtime) variables
+		 * Helper to analyze and parse designtime variables
 		 *
-		 * At buildtime, the build can detect a pattern like $some-variable-name:some-value$
-		 * and replace 'some-value' with a value determined at buildtime (here: the actual list of locales).
-		 *
-		 * At runtime, this method removes the surrounding pattern ('$some-variable-name:' and '$') and leaves only the 'some-value'.
-		 * Additionally, this value is parsed as a comma-separated list (because this is the only use case here).
-		 *
-		 * The mimic of the comments is borrowed from the CVS (Concurrent Versions System),
-		 * see http://web.mit.edu/gnu/doc/html/cvs_17.html.
-		 *
-		 * If no valid <code>sValue</code> is given, <code>null</code> is returned
-		 *
-		 * @param {string} sValue The raw designtime property e.g. $cldr-rtl-locales:ar,fa,he$
-		 * @returns {string[]|null} The designtime property e.g. ['ar', 'fa', 'he']
 		 * @private
 		 */
 		function getDesigntimePropertyAsArray(sValue) {
@@ -364,7 +310,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 		 * A list of locales for which CLDR data is bundled with the UI5 runtime.
 		 * @private
 		 */
-		Locale._cldrLocales = getDesigntimePropertyAsArray("$cldr-locales:ar,ar_EG,ar_SA,bg,ca,cy,cs,da,de,de_AT,de_CH,el,el_CY,en,en_AU,en_GB,en_HK,en_IE,en_IN,en_NZ,en_PG,en_SG,en_ZA,es,es_AR,es_BO,es_CL,es_CO,es_MX,es_PE,es_UY,es_VE,et,fa,fi,fr,fr_BE,fr_CA,fr_CH,fr_LU,he,hi,hr,hu,id,it,it_CH,ja,kk,ko,lt,lv,ms,nb,nl,nl_BE,pl,pt,pt_PT,ro,ru,ru_UA,sk,sl,sr,sr_Latn,sv,th,tr,uk,vi,zh_CN,zh_HK,zh_SG,zh_TW$");
+		Locale._cldrLocales = getDesigntimePropertyAsArray("$cldr-locales:ar,ar_EG,ar_SA,bg,ca,cy,cs,da,de,de_AT,de_CH,el,el_CY,en,en_AU,en_GB,en_HK,en_IE,en_IN,en_NZ,en_PG,en_SG,en_ZA,es,es_AR,es_BO,es_CL,es_CO,es_MX,es_PE,es_UY,es_VE,et,fa,fi,fr,fr_BE,fr_CA,fr_CH,fr_LU,he,hi,hr,hu,id,it,it_CH,ja,kk,ko,lt,lv,ms,nb,nl,nl_BE,pl,pt,pt_PT,ro,ru,ru_UA,sk,sl,sr,sv,th,tr,uk,vi,zh_CN,zh_HK,zh_SG,zh_TW$");
 
 		/**
 		 * List of locales for which translated texts have been bundled with the UI5 runtime.
@@ -380,14 +326,12 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 		 * that when a language (e.g. 'ar') is marked as 'RTL', then all language/region
 		 * combinations for that language (e.g. 'ar_SA') will be 'RTL' as well,
 		 * even if the combination is not mentioned in the above configuration.
-		 * There is no means to define RTL=false for a language/region, when RTL=true for
+		 * There is no mean to define RTL=false for a language/region, when RTL=true for
 		 * the language alone.
 		 *
 		 * As of 3/2013 this is true for all locales/regions supported by UI5.
 		 *
 		 * @param {string|sap.ui.core.Locale} vLanguage Locale or language to check
-		 * @returns {boolean} <code>true</code> if <code>vLanguage</code> implies RTL,
-		 *  otherwise <code>false</code>
 		 * @private
 		 */
 		Locale._impliesRTL = function(vLanguage) {
@@ -401,39 +345,6 @@ sap.ui.define(['sap/ui/base/Object', "sap/base/assert"],
 			}
 			return A_RTL_LOCALES.indexOf(sLanguage) >= 0;
 		};
-
-		/**
-		 * Retrieves a Locale for the given SAP logon language or BCP47 tag.
-		 *
-		 * @param {string} sSAPLogonLanguage
-		 *   A SAP logon language, e.g. "ZF" or a BCP47 language tag
-		 * @returns {sap.ui.core.Locale | undefined}
-		 *   The Locale or <code>undefined</code>, if the given string is neither a known
-		 *   SAP logon language nor a valid BCP47 tag
-		 * @private
-		 * @ui5-restricted sap.ui.core.Configuration
-		 */
-		Locale.fromSAPLogonLanguage = function (sSAPLogonLanguage) {
-			if (sSAPLogonLanguage && typeof sSAPLogonLanguage === 'string') {
-				sSAPLogonLanguage = M_ABAP_LANGUAGE_TO_LOCALE[sSAPLogonLanguage.toUpperCase()] || sSAPLogonLanguage;
-				try {
-					return new Locale(sSAPLogonLanguage);
-				} catch (e) {
-					// ignore
-				}
-			}
-		};
-
-		function join() {
-			return Array.prototype.filter.call(arguments, Boolean).join("-");
-		}
-
-		function inverse(obj) {
-			return Object.keys(obj).reduce(function(inv, key) {
-				inv[obj[key]] = key;
-				return inv;
-			}, {});
-		}
 
 	return Locale;
 

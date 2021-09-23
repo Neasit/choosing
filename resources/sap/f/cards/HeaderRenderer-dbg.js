@@ -18,15 +18,12 @@ sap.ui.define([], function () {
 	 * @param {sap.f.cards.Header} oHeader An object representation of the control that should be rendered
 	 */
 	HeaderRenderer.render = function (oRm, oHeader) {
-		var oBindingInfos = oHeader.mBindingInfos,
-			sStatus = oHeader.getStatusText(),
+		var sStatus = oHeader.getStatusText(),
 			oTitle = oHeader.getAggregation("_title"),
 			oSubtitle = oHeader.getAggregation("_subtitle"),
-			bHasSubtitle = oHeader.getSubtitle() || oBindingInfos.subtitle,
 			oAvatar = oHeader.getAggregation("_avatar"),
-			oDataTimestamp = oHeader.getAggregation("_dataTimestamp"),
-			bHasDataTimestamp = oHeader.getDataTimestamp() || oBindingInfos.dataTimestamp,
 			bLoading = oHeader.isLoading(),
+			oBindingInfos = oHeader.mBindingInfos,
 			oToolbar = oHeader.getToolbar(),
 			sTabIndex = oHeader._isInsideGridContainer() ? "-1" : "0";
 
@@ -94,30 +91,11 @@ sap.ui.define([], function () {
 
 			oRm.close("div");
 
-			if (bHasSubtitle || bHasDataTimestamp) {
-				oRm.openStart("div")
-					.class("sapFCardHeaderTextSecondLine");
-
-				if (bHasDataTimestamp) {
-					oRm.class("sapFCardHeaderLineIncludesDataTimestamp");
+			if (oHeader.getSubtitle() || oBindingInfos.subtitle) {
+				if (oBindingInfos.subtitle) {
+					oSubtitle.addStyleClass("sapFCardHeaderItemBinded");
 				}
-
-				oRm.openEnd();
-
-				if (bHasSubtitle) {
-
-					if (oBindingInfos.subtitle) {
-						oSubtitle.addStyleClass("sapFCardHeaderItemBinded");
-					}
-
-					oRm.renderControl(oSubtitle);
-				}
-
-				if (bHasDataTimestamp) {
-					oRm.renderControl(oDataTimestamp);
-				}
-
-				oRm.close("div"); //closes sapFCardHeaderTextSecondLine
+				oRm.renderControl(oSubtitle);
 			}
 		}
 

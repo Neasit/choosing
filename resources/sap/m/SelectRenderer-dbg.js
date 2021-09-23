@@ -39,7 +39,8 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 		 * @param {sap.m.Select} oSelect An object representation of the control that should be rendered.
 		 */
 		SelectRenderer.render = function(oRm, oSelect) {
-			var	sType = oSelect.getType(),
+			var	sTooltip = oSelect.getTooltip_AsString(),
+				sType = oSelect.getType(),
 				bAutoAdjustWidth = oSelect.getAutoAdjustWidth(),
 				bEditable = oSelect.getEditable(),
 				bEnabled = oSelect.getEnabled(),
@@ -86,10 +87,24 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 
 			oRm.style("max-width", oSelect.getMaxWidth());
 
+			if (sTooltip) {
+				oRm.attr("title", sTooltip);
+			} else if (sType === SelectType.IconOnly) {
+				var oIconInfo = IconPool.getIconInfo(oSelect.getIcon());
+
+				if (oIconInfo) {
+					oRm.attr("title", oIconInfo.text);
+				}
+			}
+
+			if (bEnabled) {
+				oRm.attr("tabindex", "-1");
+			}
+
 			oRm.openEnd();
+			// Used to benefit from the div[role="combobox"]. Direct textNode is the value of the div and no other elements should be placed inside.
 			this.renderFocusElement(oRm, oSelect);
 			// Used in case control is in a form submitted by input[type="submit"].
-			// Attribute "value" is holding the selectedKey property value.
 			this.renderHiddenInput(oRm, oSelect);
 			this.renderLabel(oRm, oSelect);
 
@@ -116,18 +131,15 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 		};
 
 		/**
-		 * Renders the element, which receives the focus.
-		 * This element is holding the selectedItem text property in its textContent and it's announced by InvisibleMessage when changed.
+		 * Renders the element, which receives the focus. This is needed because when using [role="combobox"] we benefit from the direct textNode
+		 * which serves as a VALUE and is read out by screen readers when it changes.
 		 *
 		 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
 		 * @param {sap.m.Select} oSelect An object representation of the control that should be rendered.
 		 * @private
 		 */
-		 SelectRenderer.renderFocusElement = function (oRm, oSelect) {
-			var oSelectedItem = oSelect.getSelectedItem(),
-				sTooltip = oSelect.getTooltip_AsString(),
-				sType = oSelect.getType();
-
+		SelectRenderer.renderFocusElement = function (oRm, oSelect) {
+			var oSelectedItem = oSelect.getSelectedItem();
 			oRm.openStart("div", oSelect.getId() + "-hiddenSelect");
 
 			this.writeAccessibilityState(oRm, oSelect);
@@ -139,16 +151,6 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 			// Attributes
 			if (oSelect.getEnabled()) {
 				oRm.attr("tabindex", "0");
-			}
-
-			if (sTooltip) {
-				oRm.attr("title", sTooltip);
-			} else if (sType === SelectType.IconOnly) {
-				var oIconInfo = IconPool.getIconInfo(oSelect.getIcon());
-
-				if (oIconInfo) {
-					oRm.attr("title", oIconInfo.text);
-				}
 			}
 
 			oRm.openEnd();
@@ -295,11 +297,10 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 		 */
 		SelectRenderer.renderShadowItems = function(oRm, oList) {
 			var oListRenderer = oList.getRenderer(),
-				aItems = oList.getSelectableItems(),
-				iSize = aItems.length,
+				iSize = oList.getItems().length,
 				oSelectedItem = oList.getSelectedItem();
 
-			for (var i = 0; i < iSize; i++) {
+			for (var i = 0, aItems = oList.getItems(); i < aItems.length; i++) {
 				oListRenderer.renderItem(oRm, oList, aItems[i], {
 					selected: oSelectedItem === aItems[i],
 					setsize: iSize,

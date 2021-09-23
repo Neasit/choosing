@@ -5,7 +5,7 @@
  */
 
 // Provides element sap.m.FlexItemData
-sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
+sap.ui.define(['./FlexBoxStylingHelper', './library', 'sap/ui/core/LayoutData'],
  function(FlexBoxStylingHelper, library, LayoutData) {
 	"use strict";
 
@@ -24,7 +24,7 @@ sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
 	 * @class
 	 * Holds layout data for a FlexBox / HBox / VBox.
 	 * @extends sap.ui.core.LayoutData
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -37,11 +37,11 @@ sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
 		properties : {
 
 			/**
-			 * Determines cross-axis alignment of individual element.
+			 * Determines cross-axis alignment of individual element (not currently supported in Internet Explorer).
 			 *
 			 * @see http://www.w3.org/TR/css-flexbox-1/#align-items-property
 			 */
-			alignSelf : {type : "sap.m.FlexAlignSelf", group : "Misc", defaultValue : FlexAlignSelf.Auto},
+			alignSelf : {type : "sap.m.FlexAlignSelf", group : "Misc", defaultValue : FlexAlignSelf.Auto}, // TODO remove after the end of support for Internet Explorer
 
 			/**
 			 * Determines the display order of flex items independent of their source code order.
@@ -64,7 +64,7 @@ sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
 			 *
 			 * @since 1.24.0
 			 */
-			shrinkFactor : {type : "float", group : "Misc", defaultValue : 1},
+			shrinkFactor : {type : "float", group : "Misc", defaultValue : 1}, //This property is not supported in Internet Explorer 9, Android Native Browser/Webview <4.4, and Safari <7
 
 			/**
 			 * The base size is the initial main size of the item for the flex algorithm. If set to "auto", this will be the computed size of the item.
@@ -79,30 +79,30 @@ sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
 			 * The minimum height of the flex item.
 			 * @since 1.36.0
 			 */
-			minHeight : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : "auto"},
+			minHeight : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : 'auto'},
 
 			/**
 			 * The maximum height of the flex item.
 			 * @since 1.36.0
 			 */
-			maxHeight : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : ""},
+			maxHeight : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : ''},
 
 			/**
 			 * The minimum width of the flex item.
 			 * @since 1.36.0
 			 */
-			minWidth : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : "auto"},
+			minWidth : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : 'auto'},
 
 			/**
 			 * The maximum width of the flex item.
 			 * @since 1.36.0
 			 */
-			maxWidth : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : ""},
+			maxWidth : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : ''},
 
 			/**
 			 * The style class will be applied to the flex item and can be used for CSS selectors.
 			 */
-			styleClass : {type : "string", group : "Misc", defaultValue : ""},
+			styleClass : {type : "string", group : "Misc", defaultValue : ''},
 
 			/**
 			 * Defines the background style of the flex item.
@@ -271,30 +271,30 @@ sap.ui.define(["./FlexBoxStylingHelper", "./library", "sap/ui/core/LayoutData"],
 		return this;
 	};
 
-	/**
-	 * Returns the correct FlexBox item DOM reference.
-	 *
-	 * @param {string} [sSuffix] ID suffix to get the DOMRef for
-	 * @return {Element} The Element's DOM Element sub DOM Element or null
-	 * @protected
-	 */
-	FlexItemData.prototype.getDomRef = function(sSuffix) {
-		var oParent,
-			oItemDomRef = LayoutData.prototype.getDomRef.call(this, sSuffix);
+	 /**
+	  * Returns the correct FlexBox item DOM reference.
+	  *
+	  * @param {string} [sSuffix] ID suffix to get the DOMRef for
+	  * @return {Element} The Element's DOM Element sub DOM Element or null
+	  * @protected
+	  */
+	 FlexItemData.prototype.getDomRef = function(sSuffix) {
+		 var oParent,
+			 oItemDomRef = LayoutData.prototype.getDomRef.call(this, sSuffix);
 
-		if (oItemDomRef) {
-			return oItemDomRef;
-		}
+		 if (oItemDomRef) {
+			 return oItemDomRef;
+		 }
 
-		oParent = this.getParent();
+		 oParent = this.getParent();
 
-		if (!oParent) {
-			return null;
-		}
+		 if (!oParent) {
+			 return null;
+		 }
 
-		return oParent.getDomRef(sSuffix);
-	};
+		 return oParent.getDomRef(sSuffix);
+	 };
 
-	return FlexItemData;
+	 return FlexItemData;
 
 });

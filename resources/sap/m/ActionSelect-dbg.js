@@ -20,7 +20,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', 'sap/ui/Device', 'sap/ui
 		 * @extends sap.m.Select
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -164,8 +164,6 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', 'sap/ui/Device', 'sap/ui
 			var aButtons = this.getButtons(),
 				oPicker = this.getPicker(),
 				i;
-
-			this._bProcessChange = false;
 
 			// check whether event is marked or not
 			if ( oEvent.isMarked() || !this.getEnabled()) {
@@ -315,8 +313,6 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', 'sap/ui/Device', 'sap/ui
 		 * @private
 		 */
 		ActionSelect.prototype.exit = function () {
-			Select.prototype.exit.call(this);
-
 			if (this._oTutorMessageText) {
 				this._oTutorMessageText.destroy();
 				this._oTutorMessageText = null;

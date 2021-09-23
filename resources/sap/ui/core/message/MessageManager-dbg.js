@@ -46,7 +46,7 @@ sap.ui.define([
 	 * @extends sap.ui.base.EventProvider
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.core.message.MessageManager
@@ -151,7 +151,7 @@ sap.ui.define([
 
 		if (!vMessages) {
 			return;
-		} else if (Array.isArray(vMessages)) {
+		}else if (Array.isArray(vMessages)) {
 			for (var i = 0; i < vMessages.length; i++) {
 				oMessage = vMessages[i];
 				this._importMessage(oMessage);

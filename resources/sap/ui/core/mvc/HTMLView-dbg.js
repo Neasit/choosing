@@ -9,10 +9,10 @@ sap.ui.define([
 	'sap/ui/thirdparty/jquery',
 	'./View',
 	'./HTMLViewRenderer',
-	'./ViewType',
 	'sap/base/util/merge',
 	'sap/ui/base/ManagedObject',
 	'sap/ui/core/DeclarativeSupport',
+	'sap/ui/core/library',
 	'sap/ui/model/resource/ResourceModel',
 	'sap/base/util/LoaderExtensions'
 ],
@@ -20,14 +20,17 @@ sap.ui.define([
 		jQuery,
 		View,
 		HTMLViewRenderer,
-		ViewType,
 		merge,
 		ManagedObject,
 		DeclarativeSupport,
+		library,
 		ResourceModel,
 		LoaderExtensions
 	) {
 	"use strict";
+
+	// shortcut for enum(s)
+	var ViewType = library.mvc.ViewType;
 
 	/**
 	 * Constructor for a new <code>HTMLView</code>.
@@ -45,7 +48,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.mvc.View
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @since 1.9.2
@@ -99,10 +102,10 @@ sap.ui.define([
 	 *
 	 * @param {string} [sId] id of the newly created view, only allowed for instance creation
 	 * @param {string | object} vView name or implementation of the view.
-	 * @param {boolean} [vView.async] whether the view source is loaded asynchronously
+	 * @param {boolean} [vView.async] defines how the view source is loaded and rendered later on
 	 * @public
 	 * @static
-	 * @deprecated Since 1.56. Use {@link sap.ui.core.mvc.HTMLView.create HTMLView.create} to create view instances
+	 * @deprecated since 1.56: Use {@link sap.ui.core.mvc.HTMLView.create HTMLView.create} instead
 	 * @return {sap.ui.core.mvc.HTMLView | undefined} the created HTMLView instance in the creation case, otherwise undefined
 	 * @ui5-global-only
 	 */

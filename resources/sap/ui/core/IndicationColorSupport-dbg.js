@@ -16,7 +16,7 @@ sap.ui.define(['./library'],
 		 * Helper functionality for indication color support.
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @public
 		 * @namespace sap.ui.core.IndicationColorSupport
 		 * @since 1.66

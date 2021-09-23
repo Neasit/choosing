@@ -22,7 +22,7 @@ sap.ui.define(["sap/m/OverflowToolbarToggleButton", "sap/m/ToggleButtonRenderer"
 		 * @extends sap.m.OverflowToolbarToggleButton
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @private
@@ -34,7 +34,7 @@ sap.ui.define(["sap/m/OverflowToolbarToggleButton", "sap/m/ToggleButtonRenderer"
 			metadata: {
 				library: "sap.m"
 			},
-			renderer: ToggleButtonRenderer
+			renderer: ToggleButtonRenderer.render
 		});
 
 		SemanticOverflowToolbarToggleButton.prototype._getTooltip = function() {

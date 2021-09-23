@@ -13,8 +13,6 @@ sap.ui.define(['./TileRenderer', 'sap/ui/core/Renderer'],
 	 */
 	var CustomTileRenderer = Renderer.extend(TileRenderer);
 
-	CustomTileRenderer.apiVersion = 2;
-
 	/**
 	 * Renders the HTML for the given control, using the provided {@link sap.ui.core.RenderManager}.
 	 *
@@ -27,30 +25,32 @@ sap.ui.define(['./TileRenderer', 'sap/ui/core/Renderer'],
 		var oTileContainer,
 			aVisibleTiles;
 
-		rm.openStart("div", oControl).attr("tabindex", "0");
-		rm.class("sapMCustomTile");
+		rm.write("<div tabindex=\"0\"");
+		rm.writeControlData(oControl);
+		rm.addClass("sapMCustomTile");
+		rm.writeClasses();
 		if (oControl._invisible) {
-			rm.style("visibility", "hidden");
+			rm.addStyle("visibility", "hidden");
+			rm.writeStyles();
 		}
 
 		/* WAI ARIA if in TileContainer context */
 		if (oControl.getParent() instanceof sap.m.TileContainer) {
-			// @ui5-non-local-rendering
 			oTileContainer = oControl.getParent();
 			aVisibleTiles = oTileContainer._getVisibleTiles();
 
-			rm.accessibilityState(oControl, {
+			rm.writeAccessibilityState(oControl, {
 				role: "option",
 				posinset: oTileContainer._indexOfVisibleTile(oControl, aVisibleTiles) + 1,
 				setsize: aVisibleTiles.length
 			});
 		}
 
-		rm.openEnd();
-		rm.openStart("div", oControl.getId() + "-remove").class("sapMTCRemove").openEnd().close("div");
-		rm.openStart("div").class("sapMCustomTileContent").openEnd();
-		this._renderContent(rm, oControl);
-		rm.close("div").close("div");
+		rm.write(">");
+		rm.write("<div id=\"" + oControl.getId() + "-remove\" class=\"sapMTCRemove\"></div>");
+		rm.write("<div class=\"sapMCustomTileContent\">");
+		this._renderContent(rm,oControl);
+		rm.write("</div></div>");
 	};
 
 	CustomTileRenderer._renderContent = function (rm, oTile) {

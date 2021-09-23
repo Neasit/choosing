@@ -16,25 +16,25 @@
 	padding-top: 1rem;
 }
 
-.sapMITH.sapMITBTextOnly .sapMITHEndOverflow {
+.sapMITH.sapMITBTextOnly .sapMITHOverflow {
 	margin-top: 1rem;
 }
 
 .sapUiSizeCompact .sapMITH,
 .sapUiSizeCompact.sapMITH {
-	&.sapMITBTextOnly .sapMITHEndOverflow {
+	&.sapMITBTextOnly .sapMITHOverflow {
 		margin-top: 0;
-
+	
 		.sapMITBText {
 			padding: 0;
 		}
-
+	
 		.sapMITBFilterExpandBtn {
 			padding-bottom: 0.5rem;
 		}
 	}
 
-	&.sapMITBTextOnly.sapMITBInLine .sapMITHEndOverflow .sapMITBText {
+	&.sapMITBTextOnly.sapMITBInLine .sapMITHOverflow .sapMITBText {
 		padding-bottom: 0.25rem;
 	}
 }
@@ -214,6 +214,19 @@ html.sap-desktop {
 		&.sapMITBTextOnly .sapMITBHead .sapMITBItem:focus .sapMITBText {
 			&::after {
 				top: 0.25rem;
+			}
+		}
+	}
+
+	&[data-sap-ui-browser^="ie"],
+	&[data-sap-ui-browser^="ed"] {
+
+		.sapMITBItem:focus .sapMITBFilterIcon,
+		.sapMITBTextOnly .sapMITBItem:focus .sapMITBText,
+		.sapMITHOverflow .sapMITBItem:focus .sapMITBText,
+		.sapMITBItem:focus.sapMITBAll {
+			&::after {
+				border: 0.125rem dashed @sapUiContentFocusColor;
 			}
 		}
 	}

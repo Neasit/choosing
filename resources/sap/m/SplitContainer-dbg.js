@@ -41,6 +41,8 @@ function(
 ) {
 	"use strict";
 
+
+
 	// shortcut for sap.m.ButtonType
 	var ButtonType = library.ButtonType;
 
@@ -57,36 +59,12 @@ function(
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * A container control that is used to display a master-detail view.
+	 * SplitContainer maintains two NavContainers if running on tablet or desktop and one NavContainer - on phone.
+	 * The display of the master NavContainer depends on the portrait/landscape mode of the device and the mode of SplitContainer.
 	 *
-	 * <h3>Overview</h3>
-	 * The SplitContainer divides the screen into two areas:
-	 * <ul>
-	 * <li>Master area - contains a list of available items where the user can search and filter.</li>
-	 * <li>Details area - contains a control which shows further details on the item(s) selected from the master view.</li>
-	 * </ul>
-	 * Both areas have separate headers and footer bars with navigation and actions.
-	 *
-	 * <h3>Usage</h3>
-	 * SplitContainer should take the full width of the page in order to work properly.
-	 * <h4>When to use</h4>
-	 * <ul>
-	 * <li>You need to review and process different items quickly with minimal navigation.</li>
-	 * </ul>
-	 * <h4>When not to use</h4>
-	 * <ul>
-	 * <li>You need to offer complex filters for the list of items.</li>
-	 * <li>You need to see different attributes for each item in the list, and compare these values across items.</li>
-	 * <li>You want to display a single object. Do not use the master list to display different facets of the same object.</li>
-	 * </ul>
-	 *
-	 * <h3>Responsive Behavior</h3>
-	 * On narrow screens, such as phones or tablet devices in portrait mode, the master list and the details are split into two separate pages.
-	 * The user can navigate between the list and details, and see all the available information for each area.
-	 *
+	 * NOTE: This control must be rendered as a full screen control in order to make the show/hide master area work properly.
 	 * @extends sap.ui.core.Control
-	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -96,9 +74,6 @@ function(
 	var SplitContainer = Control.extend("sap.m.SplitContainer", /** @lends sap.m.SplitContainer.prototype */ { metadata : {
 
 		library : "sap.m",
-		interfaces: [
-			"sap.ui.core.IPlaceholderSupport"
-		],
 		properties : {
 
 			/**
@@ -179,16 +154,16 @@ function(
 
 			/**
 			 * Determines the content entities, between which the SplitContainer navigates in master area.
-			 * These can be of type sap.m.Page, sap.ui.core.mvc.View, sap.m.Carousel or any other control with fullscreen/page semantics.
-			 * These aggregated controls receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow},
+			 * These can be of type sap.m.Page, sap.ui.core.View, sap.m.Carousel or any other control with fullscreen/page semantics.
+			 * These aggregated controls receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow},
 			 * they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 			 */
 			masterPages : {type : "sap.ui.core.Control", multiple : true, singularName : "masterPage"},
 
 			/**
 			 * Determines the content entities, between which the SplitContainer navigates in detail area.
-			 * These can be of type sap.m.Page, sap.ui.core.mvc.View, sap.m.Carousel or any other control with fullscreen/page semantics.
-			 * These aggregated controls receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow},
+			 * These can be of type sap.m.Page, sap.ui.core.View, sap.m.Carousel or any other control with fullscreen/page semantics.
+			 * These aggregated controls receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow},
 			 * they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 			 */
 			detailPages : {type : "sap.ui.core.Control", multiple : true, singularName : "detailPage"},
@@ -498,6 +473,7 @@ function(
 		designtime: "sap/m/designtime/SplitContainer.designtime"
 	}});
 
+
 	/**************************************************************
 	* START - Life Cycle Methods
 	**************************************************************/
@@ -667,6 +643,10 @@ function(
 		}
 		Device.resize.attachHandler(this._fnResize);
 
+		if (Device.os.windows && Device.browser.internet_explorer) { // not for windows_phone// TODO remove after the end of support for Internet Explorer
+			this._oMasterNav.$().append('<iframe class="sapMSplitContainerMasterBlindLayer" src="about:blank"></iframe>');
+		}
+
 		// "sapMSplitContainerNoTransition" prevents initial flickering, after that it needs to be removed
 		setTimeout(function () {
 			this._oMasterNav.removeStyleClass("sapMSplitContainerNoTransition");
@@ -805,7 +785,7 @@ function(
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can or should not directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -817,7 +797,7 @@ function(
 	 *
 	 *         NOTE: It depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @since 1.10.0
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -836,10 +816,10 @@ function(
 	 * The transition effect, which had been used to get to the current page is inverted and used for this navigation.
 	 *
 	 * Calling this navigation method, first triggers the (cancelable) navigate event on the SplitContainer,
-	 * then the BeforeHide pseudo event on the source page, BeforeFirstShow (if applicable),
-	 * and BeforeShow on the target page. Later, after the transition has completed,
-	 * the AfterShow pseudo event is triggered on the target page and AfterHide - on the page, which has been left.
-	 * The given backData object is available in the BeforeFirstShow, BeforeShow, and AfterShow event objects as data
+	 * then the beforeHide pseudo event on the source page, beforeFirstShow (if applicable),
+	 * and beforeShow on the target page. Later, after the transition has completed,
+	 * the afterShow pseudo event is triggered on the target page and afterHide - on the page, which has been left.
+	 * The given backData object is available in the beforeFirstShow, beforeShow, and afterShow event objects as data
 	 * property. The original "data" object from the "to" navigation is also available in these event objects.
 	 *
 	 * @param {string} sPageId
@@ -859,7 +839,7 @@ function(
 	 *         In order to use the transitionParameters property, the data property must be used (at least "null" must be given) for a proper parameter order.
 	 *
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @since 1.10.0
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -901,7 +881,7 @@ function(
 	 *         Options are "slide" (horizontal movement from the right), "baseSlide", "fade", "flip", and "show" and the names of any registered custom transitions.
 	 * @param {object} oData
 	 *         This optional object can carry any payload data which would have been given to the inserted previous page if the user would have done a normal forward navigation to it.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -927,7 +907,7 @@ function(
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         Since version 1.7.1. This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         Since version 1.7.1. This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -939,7 +919,7 @@ function(
 	 *
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -966,7 +946,7 @@ function(
 	 *         In order to use the transitionParameters property, the data property must be used (at least "null" must be given) for a proper parameter order.
 	 *
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -989,7 +969,7 @@ function(
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can or should not directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1001,7 +981,7 @@ function(
 	 *
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1027,7 +1007,7 @@ function(
 	 *         In order to use the transitionParameters property, the data property must be used (at least "null" must be given) for a proper parameter order.
 	 *
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1282,10 +1262,10 @@ function(
 	 * The method is provided mainly for providing API consistency between sap.m.SplitContainer and sap.m.App. So that the same code line can be reused.
 	 *
 	 * @param {sap.ui.core.Control} oPage
-	 *         The content entities between which this SplitContainer navigates in either master area or detail area depending on the master parameter. These can be of type sap.m.Page, sap.ui.core.mvc.View, sap.m.Carousel or any other control with fullscreen/page semantics.
+	 *         The content entities between which this SplitContainer navigates in either master area or detail area depending on the master parameter. These can be of type sap.m.Page, sap.ui.core.View, sap.m.Carousel or any other control with fullscreen/page semantics.
 	 * @param {boolean} bMaster
 	 *         States if the page should be added to the master area. If it's set to false, the page is added to detail area.
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @since 1.11.1
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -1302,7 +1282,7 @@ function(
 	/**
 	 * Used to make the master page visible when in ShowHideMode and the device is in portrait mode.
 	 *
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1358,7 +1338,7 @@ function(
 	/**
 	 * Used to hide the master page when in ShowHideMode and the device is in portrait mode.
 	 *
-	 * @type this
+	 * @type sap.m.SplitContainer
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -2132,69 +2112,6 @@ function(
 		});
 	};
 
-		/**
-	 * Shows the placeholder on the corresponding column for the provided aggregation name.
-	 *
-	 * @param {object} mSettings Object containing the aggregation name
-	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be shown
-	 *
-	 * @public
-	 * @since 1.91
-	 */
-	SplitContainer.prototype.showPlaceholder = function(mSettings) {
-		switch (mSettings.aggregation) {
-			case "masterPages":
-				this.getAggregation("_navMaster").showPlaceholder(mSettings);
-				break;
-			default:
-				this.getAggregation("_navDetail").showPlaceholder(mSettings);
-		}
-	};
-
-	/**
-	 * Hides the placeholder on the corresponding column for the provided aggregation name.
-	 *
-	 * @param {object} mSettings Object containing the aggregation name
-	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be hidden
-	 *
-	 * @public
-	 * @since 1.91
-	 */
-	SplitContainer.prototype.hidePlaceholder = function(mSettings) {
-		switch (mSettings.aggregation) {
-			case "masterPages":
-				this.getAggregation("_navMaster").hidePlaceholder(mSettings);
-				break;
-			default:
-				this.getAggregation("_navDetail").hidePlaceholder(mSettings);
-		}
-	};
-
-	/**
-	 * Checks whether a placeholder is needed by comparing the currently displayed page with
-	 * the page object that is going to be displayed. If they are the same, no placeholder needs
-	 * to be shown.
-	 *
-	 * @param {string} sAggregationName The aggregation name for the corresponding column
-	 * @param {sap.ui.core.Control} oObject The page object to be displayed
-	 * @returns {boolean} Whether placeholder is needed or not
-	 *
-	 * @private
-	 * @ui5-restricted sap.ui.core.routing
-	 */
-	SplitContainer.prototype.needPlaceholder = function(sAggregationName, oObject) {
-		var oContainer;
-
-		switch (sAggregationName) {
-			case "masterPages":
-				oContainer = this.getAggregation("_navMaster");
-				break;
-			default:
-				oContainer = this.getAggregation("_navDetail");
-		}
-
-		return oContainer.getCurrentPage() !== oObject;
-	};
 	/**************************************************************
 	* END - Private methods
 	**************************************************************/

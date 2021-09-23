@@ -66,7 +66,7 @@ sap.ui.define([
 		 * @implements sap.ui.core.IContextMenu
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -192,7 +192,7 @@ sap.ui.define([
 
 		/**
 		 * Sets the title of the <code>Menu</code>.
-		 * @param {string} sTitle The new title of the <code>Menu</code>
+		 * @param {String} sTitle The new title of the <code>Menu</code>
 		 * @returns {this} <code>this</code> to allow method chaining
 		 * @public
 		 */
@@ -270,7 +270,7 @@ sap.ui.define([
 			});
 			oDialog.addStyleClass("sapMRespMenuDialog");
 			// remove padding for the menu on phone
-			oDialog.addStyleClass("sapUiNoContentPadding");
+			oDialog.removeStyleClass("sapUiPopupWithPadding");
 			this.setAggregation("_dialog", oDialog, true);
 			oDialog.attachAfterClose(this._menuClosed, this);
 		};
@@ -455,14 +455,13 @@ sap.ui.define([
 		Menu.prototype._createMenuListItemFromItem = function(oItem) {
 			return new MenuListItem({
 				id  : this._generateListItemId(oItem.getId()),
-				type: oItem.getEnabled() ? ListType.Active : ListType.Inactive,
+				type: ListType.Active,
 				icon: oItem.getIcon(),
 				title: oItem.getText(),
 				startsSection: oItem.getStartsSection(),
 				menuItem: oItem,
 				tooltip: oItem.getTooltip(),
-				visible: oItem.getVisible(),
-				enabled: oItem.getEnabled()
+				visible: oItem.getVisible()
 			});
 		};
 
@@ -934,7 +933,7 @@ sap.ui.define([
 		 * Opens the menu as a context menu.
 		 * @param {jQuery.Event | object} oEvent The event object or an object containing offsetX, offsetY
 		 * values and left, top values of the element's position
-		 * @param {sap.ui.core.Element|HTMLElement} oOpenerRef The reference of the opener
+		 * @param {object} oOpenerRef The reference of the opener
 		 * @public
 		 */
 		Menu.prototype.openAsContextMenu = function(oEvent, oOpenerRef) {

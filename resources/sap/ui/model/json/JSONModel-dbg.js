@@ -14,17 +14,27 @@
 
 // Provides the JSON object based model implementation
 sap.ui.define([
-	"./JSONListBinding",
-	"./JSONPropertyBinding",
-	"./JSONTreeBinding",
+	'sap/ui/model/ClientModel',
+	'sap/ui/model/Context',
+	'./JSONListBinding',
+	'./JSONPropertyBinding',
+	'./JSONTreeBinding',
 	"sap/base/Log",
-	"sap/base/util/deepExtend",
-	"sap/base/util/isPlainObject",
-	"sap/ui/model/ClientModel",
-	"sap/ui/model/Context"
-], function(JSONListBinding, JSONPropertyBinding, JSONTreeBinding, Log, deepExtend, isPlainObject,
-		ClientModel, Context) {
+	"sap/ui/thirdparty/jquery",
+	"sap/base/util/isPlainObject"
+],
+	function(
+		ClientModel,
+		Context,
+		JSONListBinding,
+		JSONPropertyBinding,
+		JSONTreeBinding,
+		Log,
+		jQuery,
+		isPlainObject
+	) {
 	"use strict";
+
 
 	/**
 	 * Constructor for a new JSONModel.
@@ -42,7 +52,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.ClientModel
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @public
 	 * @alias sap.ui.model.json.JSONModel
 	 */
@@ -75,7 +85,7 @@ sap.ui.define([
 	JSONModel.prototype.setData = function(oData, bMerge){
 		if (bMerge) {
 			// do a deep copy
-			this.oData = deepExtend(Array.isArray(this.oData) ? [] : {}, this.oData, oData);
+			this.oData = jQuery.extend(true, Array.isArray(this.oData) ? [] : {}, this.oData, oData);
 		} else {
 			this.oData = oData;
 		}
@@ -154,8 +164,9 @@ sap.ui.define([
 
 	/**
 	 * Serializes the current JSON data of the model into a string.
+	 * Note: May not work in Internet Explorer 8 because of lacking JSON support (works only if IE 8 mode is enabled)
 	 *
-	 * @return {string} The JSON data serialized as string
+	 * @return {string} the JSON data serialized as string
 	 * @public
 	 */
 	JSONModel.prototype.getJSON = function(){

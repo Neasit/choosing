@@ -53,17 +53,13 @@ sap.ui.define([
 	 *
 	 * Each message can have a close button, so that it can be removed from the UI if needed.
 	 *
-	 * You can use a limited set of formatting tags for the message text by setting <code>enableFormattedText</code>. The allowed tags are:
-	 * With version 1.50
+	 * With version 1.50 you can use a limited set of formatting tags for the message text by setting <code>enableFormattedText</code>. The allowed tags are:
 	 * <ul>
 	 * <li>&lt;a&gt;</li>
+	 * <li>&lt;br&gt;</li>
 	 * <li>&lt;em&gt;</li>
 	 * <li>&lt;strong&gt;</li>
 	 * <li>&lt;u&gt;</li>
-	 * </ul>
-	 * With version 1.85
-	 * <ul>
-	 * <li>&lt;br&gt;</li>
 	 * </ul>
 	 *
 	 * <h3>Dynamically generated Message Strip</h3>
@@ -83,7 +79,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -186,11 +182,6 @@ sap.ui.define([
 		this._initCloseButton();
 	};
 
-	MessageStrip.prototype.onBeforeRendering = function () {
-		this._normalizeType(this.getType());
-		this._setButtonAriaLabelledBy(this.getType());
-	};
-
 	/**
 	 * Setter for property text.
 	 * Default value is empty/undefined
@@ -210,6 +201,25 @@ sap.ui.define([
 
 		return this.setProperty("text", sText);
 	};
+
+	/**
+	 * Setter for property type.
+	 * Default value is sap.ui.core.MessageType.Information
+	 * @public
+	 * @param {sap.ui.core.MessageType} sType The Message type
+	 * @returns {this} this to allow method chaining
+	 */
+	MessageStrip.prototype.setType = function (sType) {
+		if (!sType || sType === MessageType.None) {
+			Log.warning(MSUtils.MESSAGES.TYPE_NOT_SUPPORTED);
+			sType = MessageType.Information;
+		}
+
+		this.getType() !== sType && this._setButtonAriaLabelledBy(sType);
+
+		return this.setProperty("type", sType);
+	};
+
 
 	/**
 	 * Closes the MessageStrip.
@@ -249,8 +259,7 @@ sap.ui.define([
 
 	MessageStrip.prototype.setAggregation = function (sName, oControl, bSupressInvalidate) {
 		if (sName === "link" && oControl instanceof Link) {
-			var sId = this.getId() + "-info" + " " + this.getId() + "-content";
-			oControl.addAriaDescribedBy(sId);
+			oControl.addAriaDescribedBy(this.getId());
 		}
 
 		Control.prototype.setAggregation.call(this, sName, oControl, bSupressInvalidate);
@@ -284,13 +293,6 @@ sap.ui.define([
 	MessageStrip.prototype.ontouchmove = function (oEvent) {
 		// mark the event for components that needs to know if the event was handled
 		oEvent.setMarked();
-	};
-
-	MessageStrip.prototype._normalizeType = function (sType) {
-		if (sType === MessageType.None) {
-			Log.warning(MSUtils.MESSAGES.TYPE_NOT_SUPPORTED);
-			this.setProperty("type", MessageType.Information, true);
-		}
 	};
 
 	/**
@@ -332,8 +334,8 @@ sap.ui.define([
 		}
 
 		if (oCloseButton) {
-			oCloseButton.removeAllAssociation("ariaLabelledBy", true);
-			oCloseButton.addAssociation("ariaLabelledBy", this._oInvisibleText.getId(), true);
+			oCloseButton.removeAllAriaLabelledBy();
+			oCloseButton.addAriaLabelledBy(this._oInvisibleText.getId());
 		}
 	};
 

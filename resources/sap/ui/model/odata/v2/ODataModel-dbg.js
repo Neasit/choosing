@@ -22,9 +22,7 @@ sap.ui.define([
 	"sap/base/Log",
 	"sap/base/security/encodeURL",
 	"sap/base/util/deepEqual",
-	"sap/base/util/deepExtend",
 	"sap/base/util/each",
-	"sap/base/util/extend",
 	"sap/base/util/isEmptyObject",
 	"sap/base/util/isPlainObject",
 	"sap/base/util/merge",
@@ -47,12 +45,13 @@ sap.ui.define([
 	"sap/ui/model/odata/OperationMode",
 	"sap/ui/model/odata/UpdateMethod",
 	"sap/ui/thirdparty/datajs",
+	"sap/ui/thirdparty/jquery",
 	"sap/ui/thirdparty/URI"
 ], function(ODataAnnotations, ODataContextBinding, ODataListBinding, ODataTreeBinding, assert, Log,
-		encodeURL, deepEqual, deepExtend, each, extend, isEmptyObject, isPlainObject, merge, uid,
-		UriParameters, coreLibrary, Message, MessageParser, BindingMode, Context, FilterProcessor,
-		Model, CountMode, MessageScope, ODataMetadata, ODataMetaModel, ODataMessageParser,
-		ODataPropertyBinding, ODataUtils, OperationMode, UpdateMethod, OData, URI
+		encodeURL, deepEqual, each, isEmptyObject, isPlainObject, merge, uid, UriParameters,
+		coreLibrary, Message, MessageParser, BindingMode, Context, FilterProcessor, Model,
+		CountMode, MessageScope, ODataMetadata, ODataMetaModel, ODataMessageParser,
+		ODataPropertyBinding, ODataUtils, OperationMode, UpdateMethod, OData, jQuery, URI
 ) {
 
 	"use strict";
@@ -70,7 +69,7 @@ sap.ui.define([
 	/**
 	 * Constructor for a new ODataModel.
 	 *
-	 * @param {string|object} vServiceUrl
+	 * @param {string|object} serviceUrl
 	 *   Base URI of the service to request data from; additional URL parameters appended here will
 	 *   be appended to every request. If you pass an object, it will be interpreted as the
 	 *   parameter object (second parameter). Then <code>mParameters.serviceUrl</code> becomes a
@@ -151,10 +150,7 @@ sap.ui.define([
 	 * @param {boolean} [mParameters.persistTechnicalMessages]
 	 *   Whether technical messages should always be treated as persistent, since 1.83.0
 	 * @param {boolean} [mParameters.preliminaryContext=false]
-	 *   Whether a preliminary context will be created/used by a binding. When set to
-	 *   <code>true</code>, the model can bundle the OData calls for dependent bindings into fewer
-	 *   $batch requests. For more information, see
-	 *   {@link topic:6c47b2b39db9404582994070ec3d57a2#loio62149734b5c24507868e722fe87a75db Optimizing Dependent Bindings}
+	 *   Whether a preliminary context will be created/used by a binding
 	 * @param {boolean} [mParameters.refreshAfterChange=true]
 	 *   Enable/disable automatic refresh after change operations
 	 * @param {boolean} [mParameters.sequentializeRequests=false]
@@ -194,7 +190,7 @@ sap.ui.define([
 	 * introduction.
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.model.odata.v2.ODataModel
@@ -203,7 +199,7 @@ sap.ui.define([
 	 */
 	var ODataModel = Model.extend("sap.ui.model.odata.v2.ODataModel", /** @lends sap.ui.model.odata.v2.ODataModel.prototype */ {
 
-		constructor : function(vServiceUrl, mParameters) {
+		constructor : function(sServiceUrl, mParameters) {
 			Model.apply(this, arguments);
 
 			var sUser,
@@ -238,16 +234,10 @@ sap.ui.define([
 				bPersistTechnicalMessages,
 				that = this;
 
-			if (typeof (vServiceUrl) === "object") {
-				mParameters = vServiceUrl;
-				this.sServiceUrl = mParameters.serviceUrl;
-			} else {
-				this.sServiceUrl = vServiceUrl;
+			if (typeof (sServiceUrl) === "object") {
+				mParameters = sServiceUrl;
+				sServiceUrl = mParameters.serviceUrl;
 			}
-
-			// Creates a parameters map to be used for the instantiation of the code list model,
-			// based on this OData model's parameters
-			this.mCodeListModelParams = this.createCodeListModelParameters(mParameters);
 
 			if (mParameters) {
 				sUser = mParameters.user;
@@ -360,7 +350,8 @@ sap.ui.define([
 			this.pReadyForRequest = Promise.resolve();
 
 			// determine the service base url and the url parameters
-			var aUrlParts = this.sServiceUrl.split("?");
+			this.sServiceUrl = sServiceUrl;
+			var aUrlParts = sServiceUrl.split("?");
 			if (aUrlParts.length > 1) {
 				this.sServiceUrl = aUrlParts[0];
 				if (aUrlParts[1]) {
@@ -389,18 +380,18 @@ sap.ui.define([
 			// Get/create shared data containers
 			var sServerUrl = this._getServerUrl();
 			//use warmup url if provided
-			this.sMetadataUrl = this.sWarmupUrl || this._createMetadataUrl("/$metadata");
+			var sMetadataUrl = this.sWarmupUrl || this._createMetadataUrl("/$metadata");
 			this.oSharedServerData = ODataModel._getSharedData("server", sServerUrl);
 			this.oSharedServiceData = ODataModel._getSharedData("service", this.sServiceUrl);
-			this.oSharedMetaData = ODataModel._getSharedData("meta", this.sMetadataUrl);
+			this.oSharedMetaData = ODataModel._getSharedData("meta", sMetadataUrl);
 
-			this.bUseCache = this._cacheSupported(this.sMetadataUrl);
+			this.bUseCache = this._cacheSupported(sMetadataUrl);
 
 			if (!this.oSharedMetaData.oMetadata || this.oSharedMetaData.oMetadata.bFailed) {
 				//create Metadata object
-				this.oMetadata = new ODataMetadata(this.sMetadataUrl, {
+				this.oMetadata = new ODataMetadata(sMetadataUrl,{
 					async: true,
-					cacheKey: this.bUseCache ? this.sMetadataUrl : undefined,
+					cacheKey: this.bUseCache ? sMetadataUrl : undefined,
 					user: this.sUser,
 					password: this.sPassword,
 					headers: this.mCustomHeaders,
@@ -420,7 +411,7 @@ sap.ui.define([
 				skipMetadata: this.bSkipMetadataAnnotationParsing,
 				headers: this.mCustomHeaders,
 				combineEvents: true,
-				cacheKey: this._getAnnotationCacheKey(this.sMetadataUrl),
+				cacheKey: this._getAnnotationCacheKey(sMetadataUrl),
 				useCache: this.bUseCache
 			});
 			if (!this.bDisableSoftStateHeader) {
@@ -1367,26 +1358,27 @@ sap.ui.define([
 	};
 
 	/**
-	 * Adds the passed URL parameters to the given <code>sUrl</code> to request data. Data URL
-	 * parameters stored at this model are also added.
+	 * Adds the passed url parameters to the url. If bMeta set to true
+	 * also the metadata url params are added. In all other cases the
+	 * global defined url parameters are added.
 	 *
 	 * @param {string} sUrl The metadata url
-	 * @param {string[]} aUrlParams An array of url params
+	 * @param {array} aUrlParams An array of url params
+	 * @returns {boolean} Wether consider metadata url params or the not metadata ones
 	 * @returns {string} The request URL
-	 *
 	 * @private
 	 */
 	ODataModel.prototype._addUrlParams = function(sUrl, aUrlParams) {
-		var aAllUrlParams = [];
+		var aAllUrlParameters = [];
 
 		if (this.aUrlParams) {
-			aAllUrlParams = aAllUrlParams.concat(this.aUrlParams);
+			aAllUrlParameters = aAllUrlParameters.concat(this.aUrlParams);
 		}
 		if (aUrlParams) {
-			aAllUrlParams = aAllUrlParams.concat(aUrlParams);
+			aAllUrlParameters = aAllUrlParameters.concat(aUrlParams);
 		}
-		if (aAllUrlParams.length > 0) {
-			sUrl += "?" + aAllUrlParams.join("&");
+		if (aAllUrlParameters && aAllUrlParameters.length > 0) {
+			sUrl += "?" + aAllUrlParameters.join("&");
 		}
 		return sUrl;
 	};
@@ -1730,15 +1722,13 @@ sap.ui.define([
 	/**
 	 * Invalidate the model data.
 	 *
-	 * Mark all entries in the model cache as invalid. Next time a context or list is bound
-	 * (binding), the respective entries will be detected as invalid and will be refreshed from the
-	 * server.
+	 * Mark all entries in the model cache as invalid. Next time a context or list is bound (binding),
+	 * the respective entries will be detected as invalid and will be refreshed from the server.
 	 *
-	 * To refresh all model data use {@link sap.ui.model.odata.v2.ODataModel#refresh}
+	 * To refresh all model data use @link sap.ui.model.odata.v2.ODatamModel#refresh
 	 *
-	 * @param {function} [fnCheckEntry]
-	 *   A function which can be used to restrict invalidation to specific entries, gets the entity
-	 *   key and object as parameters and should return true for entities to invalidate.
+	 * @param {function} [fnCheckEntry] A function which can be used to restrict invalidation to specific entries,
+	 *     gets the entity key and object as parameters and should return true for entities to invalidate.
 	 * @public
 	 * @since 1.52.1
 	 */
@@ -1781,17 +1771,10 @@ sap.ui.define([
 	/**
 	 * Invalidate all entries of the given entity type in the model data.
 	 *
-	 * Mark entries of the provided entity type in the model cache as invalid. Next time a context
-	 * binding or list binding is done, the entry will be detected as invalid and will be refreshed
-	 * from the server.
+	 * Mark entries of the provided entity type in the model cache as invalid. Next time a context binding or list binding is done,
+	 * the entry will be detected as invalid and will be refreshed from the server.
 	 *
-	 * @param {string} sEntityType
-	 *   The qualified name of the entity type. A qualified name consists of two parts separated by
-	 *   a dot. The first part is the namespace of the schema in which the entity type is defined,
-	 *   such as "NorthwindModel". The second part is the entity type name such as "Customer". This
-	 *   results in a qualified name such as "NorthwindModel.Customer". The qualified name can be
-	 *   found in the data sent from the server in JSON format under <code>__metadata.type</code> or
-	 *   in XML format in the <code>term</code> attribute of the entity's <code>category</code> tag.
+	 * @param {string} sEntityType the qualified name of the entity type
 	 * @public
 	 * @since 1.52.1
 	 */
@@ -1880,7 +1863,6 @@ sap.ui.define([
 			}
 			return;
 		}
-		bForceUpdate = this.bForceUpdate || bForceUpdate;
 		if (this.sUpdateTimer) {
 			clearTimeout(this.sUpdateTimer);
 			this.sUpdateTimer = null;
@@ -2125,11 +2107,7 @@ sap.ui.define([
 	 * @param {object} [mParameters] Map which contains additional parameters for the binding
 	 * @param {string} [mParameters.expand] Value for the OData <code>$expand</code> query parameter which should be included in the request
 	 * @param {string} [mParameters.select] Value for the OData <code>$select</code> query parameter which should be included in the request
-	 * @param {boolean} [mParameters.preliminaryContext]
-	 *   Whether a preliminary context will be created. When set to <code>true</code>, the model
-	 *   can bundle the OData calls for dependent bindings into fewer $batch requests. For more
-	 *   information, see
-	 *   {@link topic:6c47b2b39db9404582994070ec3d57a2#loio62149734b5c24507868e722fe87a75db Optimizing Dependent Bindings}
+	 * @param {boolean} [mParameters.preliminaryContext] Whether a preliminary Context will be created
 	 * @param {Object<string,string>} [mParameters.custom] Optional map of custom query parameters, names of custom parameters must not start with <code>$</code>.
 	 * @param {function} [fnCallBack] Function to be called when context has been created. The parameter of the callback function is the newly created binding context.
 	 * @param {boolean} [bReload] Whether to reload data
@@ -2297,23 +2275,17 @@ sap.ui.define([
 	};
 
 	/**
-	 * Updates an existing context with a new path and deep path. This is used for contexts with
-	 * a temporary, non-canonical path, which is replaced once the canonical path is known, without
-	 * creating a new context instance.
+	 * Updates an existing context with a new path. This is useful for contexts with a temporary, non-canonical path, which should
+	 * be replaced once the canonical path is known, without creating a new context instance.
 	 *
-	 * @param {sap.ui.model.Context} oContext The context
-	 * @param {string} sPath The new path for the context
-	 * @param {string} [sDeepPath]
-	 *   If set, the new deep path for the context; if not set, the context's deep path is not
-	 *   updated
-	 *
-	 * @private
+	 * @param {sap.ui.model.Context} oContext the context
+	 * @param {string} sPath the path
 	 */
-	ODataModel.prototype._updateContext = function(oContext, sPath, sDeepPath) {
-		oContext.sPath = sPath;
-		if (sDeepPath !== undefined) {
-			oContext.sDeepPath = sDeepPath;
+	ODataModel.prototype._updateContext = function(oContext, sPath) {
+		if (!sPath.startsWith("/")) {
+			throw new Error("Path " + sPath + " must start with a / ");
 		}
+		oContext.sPath = sPath;
 		this.mContexts[sPath] = oContext;
 	};
 
@@ -2793,56 +2765,34 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns a JSON object that is a copy of the entity data referenced by the given
-	 * <code>sPath</code> and <code>oContext</code>. It does not load any data and may not return
-	 * all requested data if it is not available.
+	 * Returns the JSON object for an entity with the given <code>sPath</code> and optional <code>oContext</code>.
 	 *
-	 * With the <code>mParameters.select</code> parameter it is possible to specify comma-separated
-	 * property or navigation property names which should be included in the result object. This
-	 * works like the OData <code>$select</code> URL parameter. With the
-	 * <code>mParameters.expand</code> parameter it is possible to specify comma-separated
-	 * navigation property names which should be included inline in the result object. This works
-	 * like the OData <code>$expand</code> parameter.
+	 * With the <code>mParameters.select</code> parameter it is possible to specify comma-separated property or navigation property
+	 * names which should be included in the result object. This works like the OData <code>$select</code> parameter.
+	 * With the <code>mParameters.expand</code> parameter it is possible to specify comma-separated navigation property names
+	 * which should be included inline in the result object. This works like the OData <code>$expand</code> parameter.
 	 *
-	 * <b>Note:</b> <code>mParameters.expand</code> can only be used if the corresponding navigation
-	 * properties have been read via {@link sap.ui.model.odata.v2.ODataModel#read} using the OData
-	 * <code>$expand</code> URL parameter. If a navigation property has not been read via the OData
-	 * <code>$expand</code> URL parameter, it is left out in the result. Keep in mind that
-	 * navigation properties referencing a collection are usually not loaded via the OData
-	 * <code>$expand</code> URL parameter but directly via its navigation property.
-	 *
-	 * <b>Note:</b> If <code>mParameters.select</code> is not specified, the returned object may
-	 * contain model-internal attributes. This may lead to problems when submitting this data to the
-	 * service for an update or create operation. To get a copy of the entity without internal
-	 * attributes, use <code>{select: "*"}</code> instead.
-	 *
-	 * <b>Note:</b> If <code>mParameters.select</code> is given and not all selected properties are
-	 * available, this method returns <code>undefined</code> instead of incomplete data. If
-	 * <code>mParameters.select</code> is not given, all properties available on the client are
-	 * returned.
+	 * This method will return a copy and not a reference of the entity. It does not load any data and may not return all requested
+	 * data if it is not available/loaded. If select entries are contained in the parameters and not all selected properties are
+	 * available, this method will return <code>undefined</code> instead of incomplete data. If no select entries are defined,
+	 * all properties available on the client will be returned.
 	 *
 	 * Example:<br>
-	 * With <code>mParameters</code> given as
-	 * <code>{select: "Products/ProductName, Products", expand:"Products"}</code> no properties of
-	 * the entity itself are returned, but only the <code>ProductName</code> property of the
-	 * <code>Products</code> navigation property. If <code>Products/ProductName</code> has not been
-	 * loaded before, <code>undefined</code> is returned.
+	 * <code>{select: "Products/ProductName, Products", expand:"Products"}</code> will return no properties of the entity itself, but
+	 * only the ProductName property of the Products navigation property. If Products/ProductName has not been loaded before, so is not
+	 * available on the client, it will return <code>undefined</code>.
 	 *
+	 * Note:<br>
+	 * If <code>mParameters.select</code> is not specified, the returned object could contain model-internal attributes. This may lead to
+	 * problems when submitting this data to the service for an update/create operation.
+	 * To get a copy of the entity without containing such internal attributes, use <code>{select: "*"}</code> instead.
 	 *
-	 * @param {string} sPath
-	 *   The path referencing the object
-	 * @param {sap.ui.model.Context} [oContext]
-	 *   The optional context which is used with the <code>sPath</code> to reference the object.
-	 * @param {object} [mParameters]
-	 *   Map of parameters
-	 * @param {string} [mParameters.select]
-	 *   Comma-separated list of properties or paths to properties to select
-	 * @param {string} [mParameters.expand]
-	 *   Comma-separated list of navigation properties or paths to navigation properties to expand
-	 * @returns {any}
-	 *   The value for the given path and context or <code>undefined</code> if data or entity type
-	 *   cannot be found or if not all selected properties are available
-	 *
+	 * @param {string} sPath Path referencing the object
+	 * @param {object} [oContext] Context the path should be resolved with, in case it is relative
+	 * @param {object} [mParameters] Map of parameters
+	 * @param {string} [mParameters.select] Comma-separated list of properties/paths to select
+	 * @param {string} [mParameters.expand] Comma-separated list of navigation properties/paths to expand
+	 * @returns {any} The value for the given path/context or <code>undefined</code> if data or entity type could not be found or was incomplete
 	 * @public
 	 */
 	ODataModel.prototype.getObject = function(sPath, oContext, mParameters) {
@@ -2971,9 +2921,8 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataModel.prototype._getObject = function(sPath, oContext, bOriginalValue) {
-		var oChangedNode, oCodeListPromise, sCodeListTerm, sDataPath, sKey, oMetaContext,
-			oMetaModel, sMetaPath, oOrigNode, sResolvedPath, iSeparator,
-			oNode = this.isLegacySyntax() ? this.oData : null;
+		var oNode = this.isLegacySyntax() ? this.oData : null, oChangedNode, oOrigNode, sResolvedPath,
+			iSeparator, sDataPath, sMetaPath, oMetaContext, sKey, oMetaModel;
 
 		sResolvedPath = this.resolve(sPath, oContext, this.bCanonicalRequests);
 		if (!sResolvedPath && this.bCanonicalRequests) {
@@ -2989,24 +2938,11 @@ sap.ui.define([
 			if (this.oMetadata && this.oMetadata.isLoaded())  {
 				if (this.isMetaModelPath(sResolvedPath)) {
 					// Metadata binding resolved by ODataMetaModel
+					iSeparator = sResolvedPath.indexOf('/##');
 					oMetaModel = this.getMetaModel();
-					sCodeListTerm = ODataMetaModel.getCodeListTerm(sResolvedPath);
-					if (sCodeListTerm) {
-						oCodeListPromise = oMetaModel.fetchCodeList(sCodeListTerm);
-						if (oCodeListPromise.isFulfilled()) {
-							return oCodeListPromise.getResult();
-						}
-						if (oCodeListPromise.isRejected()) {
-							// if the code list promise rejects we rely on error logging in
-							// ODataMetaModel#fetchCodeList
-							oCodeListPromise.caught();
-						}
-						return undefined;
-					}
 					if (!this.bMetaModelLoaded) {
 						return null;
 					}
-					iSeparator = sResolvedPath.indexOf('/##');
 					sDataPath = sResolvedPath.substr(0, iSeparator);
 					sMetaPath = sResolvedPath.substr(iSeparator + 3);
 					oMetaContext = oMetaModel.getMetaContext(sDataPath);
@@ -3015,8 +2951,6 @@ sap.ui.define([
 					// Metadata binding resolved by ODataMetadata
 					oNode = this.oMetadata._getAnnotation(sResolvedPath);
 				}
-			} else if (ODataMetaModel.getCodeListTerm(sResolvedPath)) {
-				return undefined;
 			}
 		} else {
 			// doesn't make any sense, but used to work
@@ -3141,14 +3075,16 @@ sap.ui.define([
 	 * @public
 	 */
 	ODataModel.prototype.refreshSecurityToken = function(fnSuccess, fnError, bAsync) {
-		var oRequest, sToken,
-			mTokenRequest = {
-				abort: function() {
-					this.request.abort();
-				}
-			},
-			sUrl = this._createRequestUrlWithNormalizedPath("/"),
-			that = this;
+		var sToken;
+		var that = this;
+		var sUrl = this._createRequestUrlWithNormalizedPath("/");
+
+		var mTokenRequest = {
+			abort: function() {
+				this.request.abort();
+			}
+		};
+
 
 		function handleSuccess(oData, oResponse) {
 			if (oResponse) {
@@ -3177,7 +3113,7 @@ sap.ui.define([
 			// Disable token handling, if token request returns an error
 			that.resetSecurityToken();
 			that.bTokenHandling = false;
-			that._handleError(oError, oRequest);
+			that._handleError(oError);
 
 			if (fnError) {
 				fnError(oError);
@@ -3191,8 +3127,7 @@ sap.ui.define([
 
 		function requestToken(sRequestType, fnError) {
 			// trigger a read to the service url to fetch the token
-			oRequest = that._createRequest(sUrl, "", sRequestType,
-				that._getHeaders(undefined, true), null, null, !!bAsync);
+			var oRequest = that._createRequest(sUrl, "", sRequestType, that._getHeaders(undefined, true), null, null, !!bAsync);
 			oRequest.headers["x-csrf-token"] = "Fetch";
 			return that._request(oRequest, handleSuccess, fnError, undefined, undefined, that.getServiceMetadata());
 		}
@@ -3317,7 +3252,7 @@ sap.ui.define([
 				fireEvent("Sent", oRequest, null);
 				delete oRequest.eventInfo;
 			}
-			if (bAborted && oRequestHandle) {
+			if (bAborted) {
 				oRequestHandle.abort();
 			}
 		}
@@ -3657,7 +3592,7 @@ sap.ui.define([
 			sUrl += "?" + this.aUrlParams.join("&");
 		}
 
-		extend(oChangeHeader, this.mCustomHeaders, this.oHeaders);
+		jQuery.extend(oChangeHeader, this.mCustomHeaders, this.oHeaders);
 
 		// Set Accept header for $batch requests
 		oChangeHeader["Accept"] = "multipart/mixed";
@@ -4199,12 +4134,12 @@ sap.ui.define([
 						var sKey = this._getKey(oResultData); // e.g. /myEntity-4711
 						// rewrite context for new path
 						var oContext = this.getContext("/" + oRequest.key);
+						this._updateContext(oContext, '/' + sKey);
 						sDeepPath = oRequest.deepPath;
 						if (oContext.bCreated && sDeepPath.endsWith(")")) {
 							oRequest.deepPath = sDeepPath.slice(0, sDeepPath.lastIndexOf("("))
 								+ sKey.slice(sKey.indexOf("("));
 						}
-						this._updateContext(oContext, '/' + sKey, oRequest.deepPath);
 						oContext.bCreated = false;
 						oContext.setUpdated(true);
 						// register function to reset updated flag call as callAfterUpdate
@@ -4216,14 +4151,8 @@ sap.ui.define([
 						if (oEntity) {
 							delete oEntity.__metadata.created;
 						}
-						this._removeEntity(oRequest.key);
-					} else {
-						// do not call _removeEntity after successful function import call as
-						// _removeEntity would delete also the cached object which would cause that
-						// the path to $result cannot be resolved any more; delete only the entry in
-						// changed entities to avoid pending changes
-						delete this.mChangedEntities[oRequest.key];
 					}
+					this._removeEntity(oRequest.key);
 				}
 			}
 
@@ -4231,8 +4160,8 @@ sap.ui.define([
 			this._parseResponse(oResponse, oRequest, mLocalGetEntities, mLocalChangeEntities);
 
 			// Add the Get and Change entities from this request to the main ones (which differ in case of batch requests)
-			extend(mGetEntities, mLocalGetEntities);
-			extend(mChangeEntities, mLocalChangeEntities);
+			jQuery.extend(mGetEntities, mLocalGetEntities);
+			jQuery.extend(mChangeEntities, mLocalChangeEntities);
 
 			this._updateETag(oRequest, oResponse);
 		}
@@ -4537,12 +4466,12 @@ sap.ui.define([
 	 * Error handling for requests.
 	 *
 	 * @param {object} oError The error object
-	 * @param {object} oRequest The request object
+	 * @param {object} [oRequest] The request object
 	 * @returns {map} A map of error information
 	 * @private
 	 */
 	ODataModel.prototype._handleError = function(oError, oRequest) {
-		var sToken,
+		var sErrorDetails, sErrorMsg, sToken,
 			mParameters = {message : oError.message};
 
 		if (oError.response) {
@@ -4559,13 +4488,21 @@ sap.ui.define([
 						this.resetSecurityToken();
 					}
 				}
+				sErrorMsg = oRequest
+					? "'" + oError.message + "' while processing " + oRequest.method + " "
+						+ oRequest.requestUri
+					: oError.message;
+				sErrorDetails = JSON.stringify(oError.response);
 			}
 			mParameters.statusCode = oError.response.statusCode;
 			mParameters.statusText = oError.response.statusText;
 			mParameters.headers = oError.response.headers;
 			mParameters.responseText = oError.response.body;
-		} else if (!oError.$reported) {
-			Log.error("The following problem occurred: " + oError.message, undefined, sClassName);
+		} else {
+			sErrorMsg = "The following problem occurred: " + oError.message;
+		}
+		if (!oError.$reported) {
+			Log.error(sErrorMsg, sErrorDetails, sClassName);
 		}
 		oError.$reported = true;
 
@@ -4596,7 +4533,7 @@ sap.ui.define([
 			return OData.batchHandler;
 		} else if (sUrl.indexOf("$count") > -1) {
 			return undefined;
-		} else if (this.bJSON) {
+		}else if (this.bJSON) {
 			return OData.jsonHandler;
 		} else {
 			return OData.atomHandler;
@@ -4677,8 +4614,6 @@ sap.ui.define([
 	 */
 	ODataModel.prototype._createRequest = function(sUrl, sDeepPath, sMethod, mHeaders, oData, sETag,
 			bAsync, bUpdateAggregatedMessages) {
-		var oRequest;
-
 		bAsync = bAsync !== false;
 
 		if (sETag && sMethod !== "GET") {
@@ -4721,11 +4656,7 @@ sap.ui.define([
 			&& this.sMessageScope === MessageScope.BusinessObject
 			&& this.bIsMessageScopeSupported;
 
-		if (this.bUseBatch && sMethod !== "GET" && sMethod !== "HEAD" && !mHeaders["Content-ID"]) {
-			mHeaders["Content-ID"] = uid();
-		}
-
-		oRequest = {
+		var oRequest = {
 			headers : mHeaders,
 			requestUri : sUrl,
 			method : sMethod,
@@ -5351,7 +5282,7 @@ sap.ui.define([
 	};
 
 	ODataModel.prototype._createFunctionImportParameters = function(sFunctionName, sMethod, mParams) {
-		var mUrlParams = deepExtend({}, mParams);
+		var mUrlParams = jQuery.extend(true, {}, mParams);
 		delete mUrlParams.__metadata;
 		delete mUrlParams["$result"];
 		var oFunctionMetadata = this.oMetadata._getFunctionImportMetadata(sFunctionName, sMethod);
@@ -5624,17 +5555,13 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns a promise that resolves with an array containing information about the initially
-	 * loaded annotations.
+	 * Returns a promise that resolves with an array containing information about the initially loaded annotations.
 	 *
-	 * <b>Important</b>: This covers the annotations that were given to the model constructor, not
-	 * the ones that might have been added later on using the protected API method
-	 * {@link #addAnnotationUrl}. In order to get information about those, the event
-	 * <code>annotationsLoaded</code> can be used.
+	 * <b>Important</b>: This covers the annotations that were given to the model constructor, not the ones that might have
+	 * been added later on using the protected API method {@link #addAnnotationUrl}. In order to get information about those,
+	 * the event <code>annotationsLoaded</code> can be used.
 	 *
-	 * @returns {Promise}
-	 *   A promise that resolves with an array containing information about the initially loaded
-	 *   annotations
+	 * @returns {Promise} A promise to load the annotation URLs that were given to the model on instantiation
 	 *
 	 * @public
 	 * @since 1.42
@@ -5911,7 +5838,7 @@ sap.ui.define([
 				} else {
 					that.mChangedEntities[sKey] = oChangedEntry;
 					oChangedEntry.__metadata = {deepPath: sDeepPath};
-					extend(oChangedEntry.__metadata, oEntry.__metadata);
+					jQuery.extend(oChangedEntry.__metadata, oEntry.__metadata);
 				}
 			}
 		});
@@ -6233,7 +6160,7 @@ sap.ui.define([
 			});
 		}
 		//The 'sap-cancel-on-close' header marks the OData request as cancelable. This helps to save resources at the back-end.
-		return extend({'sap-cancel-on-close': !!bCancelOnClose}, this.mCustomHeaders, mCheckedHeaders, this.oHeaders);
+		return jQuery.extend({'sap-cancel-on-close': !!bCancelOnClose}, this.mCustomHeaders, mCheckedHeaders, this.oHeaders);
 	};
 
 	/**
@@ -6243,7 +6170,7 @@ sap.ui.define([
 	 * @public
 	 */
 	ODataModel.prototype.getHeaders = function() {
-		return extend({}, this.mCustomHeaders, this.oHeaders);
+		return jQuery.extend({}, this.mCustomHeaders, this.oHeaders);
 	};
 
 	/**
@@ -7115,7 +7042,10 @@ sap.ui.define([
 	ODataModel.prototype.getMetaModel = function() {
 		var that = this;
 		if (!this.oMetaModel) {
-			this.oMetaModel = new ODataMetaModel(this.oMetadata, this.oAnnotations, this);
+			this.oMetaModel = new ODataMetaModel(this.oMetadata, this.oAnnotations, {
+				addAnnotationUrl : this.addAnnotationUrl.bind(this),
+				annotationsLoadedPromise : this.pAnnotationsLoaded
+			});
 			// Call checkUpdate when metamodel has been loaded to update metamodel bindings
 			this.oMetaModel.loaded().then(function() {
 				that.bMetaModelLoaded = true;
@@ -7743,7 +7673,7 @@ sap.ui.define([
 
 	/**
 	 * Sets the flag whether technical messages should always be treated as persistent. Works only
-	 * with {@link sap.ui.model.odata.ODataMessageParser}.
+	 * with {@link class sap.ui.model.odata.ODataMessageParser}.
 	 *
 	 * @param {boolean} bPersistTechnicalMessages
 	 *   Whether technical messages should always be treated as persistent
@@ -7765,64 +7695,6 @@ sap.ui.define([
 		if (this.oMessageParser) {
 			this.oMessageParser._setPersistTechnicalMessages(bPersistTechnicalMessages);
 		}
-	};
-
-	/**
-	 * Creates the parameters map to be used for the instantiation of the code list model, based on
-	 * the parameters of this OData model.
-	 *
-	 * @param {Object<string,any>} [mParameters]
-	 *   The original <code>mParameters</code> map which was passed into the constructor of this
-	 *   OData model instance
-	 * @returns {Object<string,any>}
-	 *   The parameters that can be used to instantiate the related code list model to this OData
-	 *   model instance
-	 *
-	 * @private
-	 */
-	ODataModel.prototype.createCodeListModelParameters = function (mParameters) {
-		mParameters = mParameters || {};
-
-		return {
-			defaultCountMode : CountMode.None,
-			disableSoftStateHeader : true,
-			headers : mParameters.headers && Object.assign({}, mParameters.headers),
-			json : mParameters.json,
-			metadataUrlParams : mParameters.metadataUrlParams
-				&& Object.assign({}, mParameters.metadataUrlParams),
-			persistTechnicalMessages : mParameters.persistTechnicalMessages,
-			serviceUrl : this.sServiceUrl,
-			serviceUrlParams : mParameters.serviceUrlParams
-				&& Object.assign({}, mParameters.serviceUrlParams),
-			tokenHandling : false,
-			useBatch : false,
-			warmupUrl : mParameters.warmupUrl
-		};
-	};
-
-	/**
-	 * Gets the map of parameters that are required to instantiate a code list model for this OData
-	 * model.
-	 *
-	 * @returns {Object<string,any>} The parameter map used to instantiate the code list model
-	 *
-	 * @private
-	 * @see #createCodeListModelParameters
-	 */
-	ODataModel.prototype.getCodeListModelParameters = function () {
-		return this.mCodeListModelParams;
-	};
-
-	/**
-	 * Gets the URL to this OData service's metadata document as created by
-	 * {@link #_createMetadataUrl} in the constructor.
-	 *
-	 * @returns {string} The metadata URL
-	 *
-	 * @private
-	 */
-	ODataModel.prototype.getMetadataUrl = function () {
-		return this.sMetadataUrl;
 	};
 
 	return ODataModel;

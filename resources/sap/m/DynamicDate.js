@@ -1,6 +1,0 @@
-/*!
- * OpenUI5
- * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
- * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
- */
-sap.ui.define(["sap/m/DynamicDateUtil","sap/ui/model/SimpleType","sap/ui/model/FormatException","sap/ui/model/ParseException"],function(e,t,a,r){"use strict";var n=t.extend("sap.m.DynamicDate",{constructor:function(){this.sName="DynamicDate";t.apply(this,arguments)}});n.prototype.formatValue=function(t){var a={};if(!t){return}a.operator=t.operator;a.values=t.values.slice(0);var r=e.getOption(t.operator).getValueTypes();a.values=a.values.map(function(e,t){if(r[t]==="date"){return o.parse(e)}return e},this);return a};n.prototype.parseValue=function(t){var a={},n;if(!t){return}if(t.operator==="PARSEERROR"){throw new r(t.values[0])}a.operator=t.operator;a.values=t.values.slice(0);n=e.getOption(t.operator).getValueTypes();a.values=a.values.map(function(e,t){if(n[t]==="date"){return o.format(e)}return e},this);return a};n.prototype.validateValue=function(){};var o={format:function(e){if(e instanceof Date){return e.getTime()}return null},parse:function(e){if(isNaN(e)){throw new a("Cannot format date: "+e+" is not a valid Timestamp")}else if(typeof e!=="number"){e=parseInt(e)}e=new Date(e);return e}};return n});

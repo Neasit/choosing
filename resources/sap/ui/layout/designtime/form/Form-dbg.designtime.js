@@ -82,9 +82,6 @@ sap.ui.define([
 				}
 
 			}
-		},
-		actions: {
-			localReset: "localReset"
 		}
 	};
 

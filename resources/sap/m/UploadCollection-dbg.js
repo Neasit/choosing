@@ -87,17 +87,17 @@ sap.ui.define([
 	 * This control allows you to upload single or multiple files from your devices (desktop, tablet or phone) and attach them to the application.
 	 *
 	 * The consuming application needs to take into account that the consistency checks of the model during the upload of the file need to be performed, for example, if the user is editing or deleting a file.
-	 * <br> As of version 1.63, there is an {@link sap.m.upload.UploadSet} control available that is based on this control.
+	 * <br> As of version 1.62, there is an {@link sap.m.upload.UploadSet} control available that is based on this control.
 	 * {@link sap.m.upload.UploadSet} provides enhanced handling of headers and requests, unified behavior of instant
 	 * and deferred uploads, as well as improved progress indication.
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
-	 * @deprecated as of version 1.88, replaced by {@link sap.m.upload.UploadSet}
+	 * @since 1.26.0
 	 * @alias sap.m.UploadCollection
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -208,7 +208,6 @@ sap.ui.define([
 
 				/**
 				 * Enables the upload of a file.
-				 * If property instantUpload is false it is not allowed to change uploadEnabled at runtime.
 				 */
 				uploadEnabled: {type: "boolean", group: "Behavior", defaultValue: true},
 
@@ -218,7 +217,7 @@ sap.ui.define([
 				uploadUrl: {type: "string", group: "Data", defaultValue: "../../../upload"},
 
 				/**
-				 * If false, no upload is triggered when a file is selected. In addition, if a file was selected, a new FileUploader instance is created to ensure that multiple files can be chosen.
+				 * If false, no upload is triggered when a file is selected. In addition, if a file was selected, a new FileUploader instance is created to ensure that multiple files from multiple folders can be chosen.
 				 * @since 1.30.0
 				 */
 				instantUpload: {type: "boolean", group: "Behavior", defaultValue: true},
@@ -339,7 +338,7 @@ sap.ui.define([
 			events: {
 				/**
 				 * The event is triggered when files are selected in the FileUploader dialog. Applications can set parameters and headerParameters which will be dispatched to the embedded FileUploader control.
-				 * Restriction: parameters and headerParameters are not supported by Internet Explorer 9.
+				 * Limitation: parameters and headerParameters are not supported by Internet Explorer 9.
 				 */
 				change: {
 					parameters: {
@@ -351,7 +350,7 @@ sap.ui.define([
 						documentId: {type: "string"},
 						/**
 						 * A FileList of individually selected files from the underlying system. See www.w3.org for the FileList Interface definition.
-						 * Restriction: Internet Explorer 9 supports only single file with property file.name.
+						 * Limitation: Internet Explorer 9 supports only single file with property file.name.
 						 * Since version 1.28.0.
 						 * @since 1.28.0
 						 */
@@ -392,7 +391,7 @@ sap.ui.define([
 						documentId: {type: "string"},
 						/**
 						 * A FileList of individually selected files from the underlying system.
-						 * Restriction: Internet Explorer 9 supports only single file with property file.name.
+						 * Limitation: Internet Explorer 9 supports only single file with property file.name.
 						 * Since version 1.28.0.
 						 * @since 1.28.0
 						 */
@@ -450,7 +449,7 @@ sap.ui.define([
 
 						/**
 						 * A FileList of individually selected files from the underlying system.
-						 * Restriction: Internet Explorer 9 supports only single file with property file.name.
+						 * Limitation: Internet Explorer 9 supports only single file with property file.name.
 						 * Since 1.28.0.
 						 * @since 1.28.0
 						 */
@@ -486,7 +485,7 @@ sap.ui.define([
 
 						/**
 						 * A FileList of individually selected files from the underlying system.
-						 * Restriction: Internet Explorer 9 supports only single file.
+						 * Limitation: Internet Explorer 9 supports only single file.
 						 * Since 1.28.0.
 						 * @since 1.28.0
 						 */
@@ -646,10 +645,9 @@ sap.ui.define([
 		this._requestIdValue = 0;
 		this._iFUCounter = 0; // it is necessary to count FileUploader instances in case of 'instantUpload' = false
 
-		var sNoDataTextDescription = this.getNoDataText() + " " + this.getNoDataDescription();
 		this._oList = new List(this.getId() + "-list", {
 			selectionChange: [this._handleSelectionChange, this],
-			noDataText:sNoDataTextDescription
+			noDataText:this.getNoDataText()
 		});
 		this.setAggregation("_list", this._oList, true);
 		this._oList.addStyleClass("sapMUCList");
@@ -676,7 +674,6 @@ sap.ui.define([
 		this._oListEventDelegate = null;
 		this._oItemToUpdate = null;
 		this._sReziseHandlerId = null;
-		this.oInvisibleText = new sap.ui.core.InvisibleText().toStatic();
 	};
 
 	/* =========================================================== */
@@ -812,20 +809,10 @@ sap.ui.define([
 	UploadCollection.prototype.setNoDataText = function(sNoDataText) {
 		this.setProperty("noDataText", sNoDataText, true);
 		this.$().find("#" + this.getId() + "-no-data-text").text(sNoDataText);
-		var sNoDataTextDescription = sNoDataText + " " + this.getNoDataDescription();
-		this._oList.setNoDataText(sNoDataTextDescription);
+		this._oList.setNoDataText(sNoDataText);
 		return this;
 	};
 
-	UploadCollection.prototype.setNoDataDescription = function(sNoDataDescription) {
-		this.setProperty("noDataDescription", sNoDataDescription, true);
-		var sNoDataTextDescription = this.getNoDataText() + " " + sNoDataDescription;
-		this._oList.setNoDataText(sNoDataTextDescription);
-		if (this.getUploadEnabled() && this._oList.getItems().length == 0) {
-			this.rerender();
-		}
-		return this;
-	};
 
 	UploadCollection.prototype.setUploadButtonInvisible = function(uploadButtonInvisible) {
 		if (this.getUploadButtonInvisible() === uploadButtonInvisible) {
@@ -940,7 +927,7 @@ sap.ui.define([
 
 	/**
 	 * Select all items in "MultiSelection" mode.
-	 * @returns {this} this to allow method chaining
+	 * @returns {sap.m.UploadCollection} this to allow method changing
 	 * @since 1.34.0
 	 * @public
 	 */
@@ -1121,10 +1108,6 @@ sap.ui.define([
 							});
 						}
 						$oEditBox.trigger("focus");
-						//Create dummy InvisibleText to reset the ariaLabel value read out
-						this.oInvisibleText.setText("");
-						sap.ui.getCore().byId(this.editModeItem + "-cli").removeAllAriaLabelledBy();
-						sap.ui.getCore().byId(this.editModeItem + "-cli").addAriaLabelledBy(this.oInvisibleText.getId());
 						this._oListEventDelegate = {
 							onclick: function(event) {
 								this._handleClick(event, sId);
@@ -1179,21 +1162,15 @@ sap.ui.define([
 			this._aFileUploadersForPendingUpload = null;
 		}
 		// destroy items with status "uploading" because they are not destroyed with "items" aggregation
-		if (this.aItems && this.aItems.length > 0) {
-			for (i = 0; i < this.aItems.length; i++) {
-				if (this.aItems[i]._status === UploadCollection._uploadingStatus) {
-					oItemToDestroy = this.aItems.splice(i, 1)[0];
-					if (oItemToDestroy.destroy) {
-						oItemToDestroy.destroy();
-					}
+		for (i = 0; i < this.aItems.length; i++) {
+			if (this.aItems[i]._status === UploadCollection._uploadingStatus) {
+				oItemToDestroy = this.aItems.splice(i, 1)[0];
+				if (oItemToDestroy.destroy) {
+					oItemToDestroy.destroy();
 				}
 			}
 		}
 		this._deregisterSizeHandler();
-		//Destroy the created InvisibleText
-		if (this.oInvisibleText) {
-			this.oInvisibleText.destroy();
-		}
 	};
 
 	/* =========================================================== */
@@ -1503,7 +1480,7 @@ sap.ui.define([
 		var oFileUploader, i, j;
 		this._setNumberOfAttachmentsTitle(count);
 		if (!this._oHeaderToolbar) {
-			if (this._oFileUploader && !this.getInstantUpload()) {
+			if (!!this._oFileUploader && !this.getInstantUpload()) {
 				this._oFileUploader.destroy();
 			}
 			oFileUploader = this._getFileUploader();
@@ -1708,26 +1685,26 @@ sap.ui.define([
 				oRm.close("div"); // end of attributes container
 			}
 			if (iStatusesCounter > 0) {
+				var visibleStatuses = [];
+				for (i = 0; i < iStatusesCounter; i++) {
+					if (aStatuses[i].getVisible()) {
+						visibleStatuses.push(aStatuses[i]);
+					}
+				}
 				oRm.openStart("div"); // begin of statuses container
 				oRm.class("sapMUCStatusContainer");
 				oRm.attr("tabindex", "-1");
 				oRm.openEnd();
-				for (i = 0; i < iStatusesCounter; i++) {
-					aStatuses[i].detachBrowserEvent("hover");
-					aStatuses[i].setTooltip(aStatuses[i].getTitle() +  ":" + aStatuses[i].getText());
-					oRm.renderControl(aStatuses[i]);
-
-					for (var j = i + 1; j < iStatusesCounter; j++) {
-						if (!aStatuses[i].getVisible()) {
-							break;
-						} else if (aStatuses[j] && aStatuses[j].getVisible()) {
-							oRm.openStart("div"); // separator between statuses
-							oRm.class("sapMUCSeparator");
-							oRm.openEnd();
-							oRm.unsafeHtml("&nbsp&#x00B7&#160");
-							oRm.close("div");
-							break;
-						}
+				for (i = 0; i < visibleStatuses.length; i++) {
+					visibleStatuses[i].detachBrowserEvent("hover");
+					visibleStatuses[i].setTooltip(visibleStatuses[i].getTitle() +  ":" + visibleStatuses[i].getText());
+					oRm.renderControl(visibleStatuses[i]);
+					if (visibleStatuses[i + 1]) {
+						oRm.openStart("div"); // separator between statuses
+						oRm.class("sapMUCSeparator");
+						oRm.openEnd();
+						oRm.unsafeHtml("&nbsp&#x00B7&#160");
+						oRm.close("div");
 					}
 				}
 				oRm.close("div"); // end of statuses container
@@ -2908,6 +2885,7 @@ sap.ui.define([
 			this._oFileUploader = new FileUploader(this.getId() + "-" + this._iFUCounter + "-uploader", {
 				buttonOnly: true,
 				buttonText: sTooltip,
+				tooltip: sTooltip,
 				iconOnly: false,
 				enabled: this.getUploadEnabled(),
 				fileType: this.getFileType(),

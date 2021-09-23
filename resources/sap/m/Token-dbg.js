@@ -13,6 +13,7 @@ sap.ui.define([
 	'./TokenRenderer',
 	'sap/ui/core/InvisibleText',
 	'sap/ui/events/KeyCodes',
+	'sap/ui/core/theming/Parameters',
 	'sap/ui/core/Core'
 ],
 	function(
@@ -23,6 +24,7 @@ sap.ui.define([
 		TokenRenderer,
 		InvisibleText,
 		KeyCodes,
+		Parameters,
 		Core
 	) {
 	"use strict";
@@ -52,7 +54,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public

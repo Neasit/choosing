@@ -29,7 +29,7 @@ sap.ui.define([], function () {
 			oRM.style("width", oControl.getWidth());
 		}
 
-		oControl.getGridLayoutConfiguration().addGridStyles(oRM);
+		oControl.getGridLayoutConfiguration().renderSingleGridLayout(oRM);
 
 		oRM.openEnd();
 

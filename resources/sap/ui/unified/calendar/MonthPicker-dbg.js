@@ -51,7 +51,7 @@ sap.ui.define([
 	 * renders a MonthPicker with ItemNavigation
 	 * This is used inside the calendar. Not for stand alone usage
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -114,14 +114,6 @@ sap.ui.define([
 			 * @since 1.74
 			 */
 			selectedDates : {type : "sap.ui.unified.DateRange", multiple : true, singularName : "selectedDate" }
-		},
-		associations: {
-			/**
-			 * Association to controls / IDs that label this control (see WAI-ARIA attribute aria-labelledby).
-			 * @since 1.92
-			 */
-			ariaLabelledBy: { type: "sap.ui.core.Control", multiple: true, singularName: "ariaLabelledBy" }
-
 		},
 		events : {
 
@@ -653,7 +645,7 @@ sap.ui.define([
 
 	MonthPicker.prototype._handleMousedown = function(oEvent, iIndex){
 
-		if (oEvent.button || Device.support.touch && !Device.system.combi) {
+		if (oEvent.button || Device.support.touch) {
 			// only use left mouse button or not touch
 			return;
 		}

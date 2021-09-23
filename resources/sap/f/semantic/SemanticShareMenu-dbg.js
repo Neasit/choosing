@@ -10,7 +10,6 @@
 sap.ui.define([
 	"sap/ui/core/IconPool",
 	"sap/ui/base/EventProvider",
-	"sap/ui/core/library",
 	"sap/m/library",
 	"sap/m/OverflowToolbarButton",
 	"sap/m/OverflowToolbarLayoutData",
@@ -18,7 +17,6 @@ sap.ui.define([
 ], function(
 	IconPool,
 	EventProvider,
-	coreLibrary,
 	mobileLibrary,
 	OverflowToolbarButton,
 	OverflowToolbarLayoutData,
@@ -27,9 +25,6 @@ sap.ui.define([
 
 	// shortcut for sap.m.ButtonType
 	var ButtonType = mobileLibrary.ButtonType;
-
-	// shortcut for sap.ui.core.aria.HasPopup
-	var AriaHasPopup = coreLibrary.aria.HasPopup;
 
 	/**
 	* Constructor for a <code>sap.f.semantic.SemanticShareMenu</code>.
@@ -240,7 +235,6 @@ sap.ui.define([
 
 		if (!this._oShareMenuBtn) {
 			this._oShareMenuBtn = new OverflowToolbarButton(oContainer.getId() + "-shareButton", {
-				ariaHasPopup: AriaHasPopup.Menu,
 				icon: IconPool.getIconURI("action"),
 				tooltip: sap.ui.getCore().getLibraryResourceBundle("sap.f").getText("SEMANTIC_CONTROL_ACTION_SHARE"),
 				layoutData: new OverflowToolbarLayoutData({
@@ -252,6 +246,12 @@ sap.ui.define([
 					oContainer.openBy(this._oShareMenuBtn);
 				}.bind(this)
 			});
+
+			this._oShareMenuBtn.addEventDelegate({
+				onAfterRendering: function() {
+					this._oShareMenuBtn.$().attr("aria-haspopup", "menu");
+				}.bind(this)
+			}, this);
 		}
 
 		return this._oShareMenuBtn;

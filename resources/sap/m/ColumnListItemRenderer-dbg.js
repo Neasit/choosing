@@ -22,6 +22,9 @@ sap.ui.define([
 	// shortcut for sap.ui.core.VerticalAlign
 	var VerticalAlign = coreLibrary.VerticalAlign;
 
+	// shortcut for sap.m.PopinLayout
+	var PopinLayout = library.PopinLayout;
+
 	/**
 	 * ColumnListItem renderer.
 	 * @namespace
@@ -159,7 +162,7 @@ sap.ui.define([
 				bRenderCell = true,
 				oCell = aCells[oColumn.getInitialOrder()];
 
-			if (!oColumn.getVisible() || !oCell || oColumn.isPopin()) {
+			if (!oCell || !oColumn.getVisible() || oColumn.isPopin()) {
 				// update the visible index of the column
 				oColumn.setIndex(-1);
 				return;
@@ -281,6 +284,11 @@ sap.ui.define([
 		rm.attr("colspan", oTable.shouldRenderDummyColumn() ? oTable.getColSpan() + 1 : oTable.getColSpan());
 
 		var sPopinLayout = oTable.getPopinLayout();
+		// overwrite sPopinLayout=Block to avoid additional margin-top in IE and Edge
+		if (Device.browser.msie || (Device.browser.edge && Device.browser.version < 16)) {
+			sPopinLayout = PopinLayout.Block;
+		}
+
 		rm.attr("aria-labelledby", this.getAriaAnnouncement(null, "TABLE_POPIN_ROLE_DESCRIPTION"));
 		rm.openEnd();
 
@@ -360,6 +368,10 @@ sap.ui.define([
 	 * @param {sap.m.ListItemBase} [oLI] List item
 	 */
 	ColumnListItemRenderer.addLegacyOutlineClass = function(rm, oLI) {
+		if (Device.browser.msie) {
+			return;
+		}
+
 		var oTable = oLI.isA("sap.m.Table") ? oLI : oLI.getTable();
 		if (oTable && !oTable.hasPopin() && oTable.shouldRenderDummyColumn()) {
 			rm.class("sapMTableRowCustomFocus");

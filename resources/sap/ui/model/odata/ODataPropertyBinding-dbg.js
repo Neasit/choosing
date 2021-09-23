@@ -6,14 +6,13 @@
 
 // Provides class sap.ui.model.odata.ODataPropertyBinding
 sap.ui.define([
-	'./ODataMetaModel',
 	'sap/ui/model/Context',
 	'sap/ui/model/ChangeReason',
 	'sap/ui/model/PropertyBinding',
 	"sap/base/util/deepEqual",
 	'sap/ui/model/ChangeReason'
 ],
-	function(ODataMetaModel, Context, ChangeReason, PropertyBinding, deepEqual) {
+	function(Context, ChangeReason, PropertyBinding, deepEqual) {
 	"use strict";
 
 
@@ -123,24 +122,7 @@ sap.ui.define([
 	 *
 	 */
 	ODataPropertyBinding.prototype.checkUpdate = function(bForceUpdate){
-		var sCodeListTerm,
-			that = this;
-
 		if (this.bSuspended && !bForceUpdate) {
-			return;
-		}
-
-		sCodeListTerm = ODataMetaModel.getCodeListTerm(this.sPath);
-		if (sCodeListTerm) {
-			if (this.bInitial) {
-				this.oModel.getMetaModel().fetchCodeList(sCodeListTerm).then(function (mCodeList) {
-					that.oValue = mCodeList;
-					that._fireChange({reason: ChangeReason.Change});
-				}, function () {
-					// if the code list promise rejects the binding's value remains undefined; we
-					// rely on error logging in ODataMetaModel#fetchCodeList
-				});
-			}
 			return;
 		}
 
@@ -176,7 +158,7 @@ sap.ui.define([
 	 */
 	ODataPropertyBinding.prototype.checkDataState = function(mPaths) {
 		var sCanonicalPath = this.oModel.resolve(this.sPath, this.oContext, true)
-			|| this.getResolvedPath();
+			|| this.oModel.resolve(this.sPath, this.oContext);
 
 		this.getDataState().setLaundering(!!mPaths && !!(sCanonicalPath in mPaths));
 		PropertyBinding.prototype._checkDataState.call(this, sCanonicalPath, mPaths);

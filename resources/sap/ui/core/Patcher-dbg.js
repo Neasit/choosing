@@ -5,15 +5,12 @@
  */
 
 // Provides the Patcher for RenderManager
-sap.ui.define([], function() {
+sap.ui.define(["sap/ui/Device", "sap/ui/thirdparty/jquery"], function(Device, jQuery) {
 	"use strict";
 
-	// points a dummy CSSStyleDeclaration for style validation purposes
-	var oCSSStyleDeclaration = document.createElement("title").style;
 
 	/**
 	 * Provides custom mutators for attributes.
-	 * Custom mutators ensure that the attribute value is aligned with the property value.
 	 *
 	 * Mutator functions are executed before the properties are set or removed.
 	 * If the return value of the function is <code>true</code>, then the attribute will not be set.
@@ -24,21 +21,24 @@ sap.ui.define([], function() {
 	 */
 	var AttributeMutators = {
 		value: function(oElement, sNewValue) {
-			if (oElement.tagName == "INPUT") {
-				oElement.value = (sNewValue == null) ? "" : sNewValue;
-			}
+			oElement.value = (sNewValue == null) ? "" : sNewValue;
 		},
 		checked: function(oElement, sNewValue) {
-			if (oElement.tagName == "INPUT") {
-				oElement.checked = (sNewValue == null) ? false : true;
-			}
+			oElement.checked = (sNewValue == null) ? false : true;
 		},
 		selected: function(oElement, sNewValue) {
-			if (oElement.tagName == "OPTION") {
-				oElement.selected = (sNewValue == null) ? false : true;
-			}
+			oElement.selected = (sNewValue == null) ? false : true;
 		}
 	};
+
+	// in IE11 the order of the style rules might differ
+	if (Device.browser.msie) {
+		AttributeMutators.style = function(oElement, sNewValue, sOldValue) {
+			if (sNewValue && sOldValue && sNewValue != sOldValue && sNewValue.length == sOldValue.length) {
+				return (sNewValue + " ").split("; ").sort().toString() == (sOldValue + " ").split("; ").sort().toString();
+			}
+		};
+	}
 
 	/**
 	 * Creates an HTML element from the given tag name and parent namespace
@@ -48,8 +48,8 @@ sap.ui.define([], function() {
 			return document.createElementNS("http://www.w3.org/2000/svg", "svg");
 		}
 
-		var sNamespaceURI = oParent && oParent.namespaceURI;
-		if (!sNamespaceURI || sNamespaceURI == "http://www.w3.org/1999/xhtml" || oParent.localName == "foreignObject") {
+		var sNamespaceURI = oParent.namespaceURI;
+		if (sNamespaceURI == "http://www.w3.org/1999/xhtml" || oParent.localName == "foreignObject") {
 			return document.createElement(sTagName);
 		}
 
@@ -74,12 +74,11 @@ sap.ui.define([], function() {
 	};
 
 	/**
-	 * Sets the root node from which the patching will be started.
+	 * Sets the root node where the patching is going to be started.
 	 *
 	 * The root node must be set once before calling any other APIs.
-	 * If the root node parameter is not provided, a <code>DocumentFragment</code> is created as the root node.
 	 *
-	 * @param {HTMLElement} [oRootNode] The DOM node from which the patching will be started
+	 * @param {Node} The DOM node where the patching is going to be started
 	 */
 	Patcher.setRootNode = function(oRootNode) {
 		if (this._oRoot) {
@@ -87,17 +86,8 @@ sap.ui.define([], function() {
 		}
 
 		this._setContext({
-			_oRoot: oRootNode || document.createDocumentFragment()
+			_oRoot: oRootNode
 		});
-	};
-
-	/**
-	 * Returns the root node from which the patching was started or a <code>DocumentFragment</code> created as a root node.
-	 *
-	 * @return {Node} The root node of the Patcher
-	 */
-	Patcher.getRootNode = function() {
-		return this._oRoot;
 	};
 
 	/**
@@ -115,6 +105,39 @@ sap.ui.define([], function() {
 	Patcher.reset = function() {
 		this._setContext(this._aContexts.pop());
 		this._oParent = this._oReference = null;
+	};
+
+	/**
+	 * Defines a hook method that will be called in order to find an element corresponding to the element currently being patched.
+	 *
+	 * By default, <code>Patcher</code> tries to map elements by their ID to prevent different logical subtrees from being reused.
+	 * This hook method gets called only if the default matching fails.
+	 *
+	 * @param {string} sId ID of the element defined by <code>openStart</code> or <code>voidStart</code>
+	 * @param {string} sTagName Tag name of the element defined by <code>openStart</code> or <code>voidStart</code>
+	 * @param {HTMLElement} oCurrent HTML element being patched
+	 * @param {HTMLElement} oParent Parent of the HTML element being patched
+	 * @returns {HTMLElement|null} Matching HTML element or null if there is no match
+	 * @virtual
+	 */
+	Patcher.matchElement = function(sId, sTagName, oCurrent, oParent) {
+		return null;
+	};
+
+	/**
+	 * Defines a hook method that will be called before creating new elements.
+	 *.
+	 * If this hook method returns an HTML element, then patching continues on this element and its subtree,
+	 * otherwise new elements to be inserted into the document are created from scratch.
+ 	 *
+ 	 * @param {string} sId ID of the element defined by <code>openStart</code> or <code>voidStart</code>
+	 * @param {string} sTagName Tag name of the element defined by <code>openStart</code> or <code>voidStart</code>
+	 * @param {HTMLElement} oParent HTML element where the returned element is to be inserted
+	 * @returns {HTMLElement|null} Clone of the corresponding HTML element to be patched or null to create elements from scratch
+	 * @virtual
+	 */
+	Patcher.createElement = function(sId, sTagName, oParent) {
+		return null;
 	};
 
 	/**
@@ -156,23 +179,12 @@ sap.ui.define([], function() {
 	Patcher._walkOnTree = function() {
 		this._oReference = null;
 		if (!this._oCurrent) {
-			// if the current node does not exist yet, that means we are on the first call after the root node is set
-			if (this._oRoot.nodeType == 11 /* Node.DOCUMENT_FRAGMENT_NODE */) {
-				// for the initial rendering the Patcher creates a DocumentFragment to assemble all created DOM nodes within it
-				// if there is nothing to patch the Patcher will start to create elements, here we do not set the current node to force the rendering starts
-				// the first created element must be appended to the DocumentFragment, so let the parent be the DocumentFragment node
-				this._oParent = this._oRoot;
-			} else {
-				// during the re-rendering, the root node points to where the patching must be started
-				this._oParent = this._oRoot.parentNode;
-				this._oCurrent = this._oRoot;
-			}
+			this._oParent = this._oRoot.parentNode;
+			this._oCurrent = this._oRoot;
 		} else if (this._iTagOpenState) {
-			// a new tag is opened while the previous tag was already open e.g. <div><span
 			this._oParent = this._oCurrent;
 			this._oCurrent = this._oCurrent.firstChild;
 		} else {
-			// after the previous tag has been closed a new tag is opened e.g. <div></div><span
 			this._oParent = this._oCurrent.parentNode;
 			this._oCurrent = this._oCurrent.nextSibling;
 		}
@@ -181,30 +193,36 @@ sap.ui.define([], function() {
 	/**
 	 * Finds the matching HTML element from the given ID and moves the corresponding element to the correct location.
 	 */
-	Patcher._matchElement = function(sId) {
+	Patcher._matchElement = function(sId, sTagName) {
 		if (!sId) {
 			return;
 		}
 
-		// TODO: the element with the given ID might exists in the DOM tree
-		// See the Patcher.qunit.js - Rendering:existing elements test
+		if (this._oCurrent) {
+			if (this._oCurrent == this._oRoot || this._oCurrent.id == sId) {
+				return;
+			}
+
+			var oCurrent = document.getElementById(sId);
+			if (oCurrent) {
+				this._oCurrent = this._oParent.insertBefore(oCurrent, this._oCurrent);
+				return;
+			}
+
+			var oMatched = this.matchElement(sId, sTagName, this._oCurrent, this._oParent);
+			if (oMatched) {
+				if (oMatched !== this._oCurrent) {
+					this._oCurrent = this._oParent.insertBefore(oMatched, this._oCurrent);
+				}
+			} else if (this._oCurrent.id) {
+				this._oReference = this._oCurrent;
+				this._oCurrent = null;
+			}
+		}
+
 		if (!this._oCurrent) {
-			return;
-		}
-
-		if (this._oCurrent.id == sId || this._oCurrent == this._oRoot) {
-			return;
-		}
-
-		var oCurrent = document.getElementById(sId);
-		if (oCurrent) {
-			this._oCurrent = this._oParent.insertBefore(oCurrent, this._oCurrent);
-			return;
-		}
-
-		if (this._oCurrent.id) {
-			this._oReference = this._oCurrent;
-			this._oCurrent = null;
+			this._oCurrent = this.createElement(sId, sTagName, this._oParent);
+			this._setNewElement(this._oCurrent);
 		}
 	};
 
@@ -217,7 +235,7 @@ sap.ui.define([], function() {
 			return;
 		}
 
-		var sCurrentNodeName = (this._oCurrent.nodeType == 1 /* Node.ELEMENT_NODE */) ? this._oCurrent.localName : this._oCurrent.nodeName;
+		var sCurrentNodeName = (this._oCurrent.nodeType == 1) ? this._oCurrent.localName : this._oCurrent.nodeName;
 		if (sCurrentNodeName == sNodeName) {
 			return;
 		}
@@ -230,9 +248,14 @@ sap.ui.define([], function() {
 	 * Gets and stores attributes of the current node.
 	 *
 	 * Using getAttributeNames along with getAttribute is a memory-efficient and performant alternative to accessing Element.attributes.
+	 * Edge 44 is supporting getAttributeNames, but it does not return qualified names of attributes.
 	 * For more information, see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttributeNames}.
 	 */
-	Patcher._getAttributes = function() {
+	Patcher._getAttributes = (Device.browser.msie || Device.browser.edge) ? function() {
+		for (var i = 0, aAttributes = this._oCurrent.attributes, iLength = aAttributes.length; i < iLength; i++) {
+			this._mAttributes[aAttributes[i].name] = aAttributes[i].value;
+		}
+	} : function() {
 		for (var i = 0, aAttributeNames = this._oCurrent.getAttributeNames(); i < aAttributeNames.length; i++) {
 			this._mAttributes[aAttributeNames[i]] = this._oCurrent.getAttribute(aAttributeNames[i]);
 		}
@@ -271,12 +294,12 @@ sap.ui.define([], function() {
 	 * This must be followed by <code>openEnd</code> and concluded with <code>close</code>.
 	 *
 	 * @param {string} sTagName Tag name of the HTML element; all lowercase
-	 * @param {sap.ui.core.ID} [sId] ID to identify the element
+ 	 * @param {sap.ui.core.ID} [sId] ID to identify the element
 	 * @return {this} Reference to <code>this</code> in order to allow method chaining
 	 */
 	Patcher.openStart = function(sTagName, sId) {
 		this._walkOnTree();
-		this._matchElement(sId);
+		this._matchElement(sId, sTagName);
 		this._matchNodeName(sTagName);
 
 		if (this._oCurrent) {
@@ -301,7 +324,7 @@ sap.ui.define([], function() {
 	 * This must be followed by <code>voidEnd</code>.
 	 *
 	 * @param {string} sTagName Tag name of the HTML element; all lowercase
-	 * @param {sap.ui.core.ID} [sId] ID to identify the element
+ 	 * @param {sap.ui.core.ID} [sId] ID to identify the element
 	 * @return {this} Reference to <code>this</code> in order to allow method chaining
 	 */
 	Patcher.voidStart = Patcher.openStart;
@@ -374,13 +397,6 @@ sap.ui.define([], function() {
 			return this;
 		}
 
-		vValue = vValue + "";
-		if (vValue.includes(";")) {
-			// sanitize the semicolon to ensure that a single style rule can be set per style API call
-			oCSSStyleDeclaration.setProperty(sName, vValue);
-			vValue = oCSSStyleDeclaration.getPropertyValue(sName);
-		}
-
 		this._sStyles += (this._sStyles ? " " : "") + (sName + ": " + vValue + ";");
 		return this;
 	};
@@ -394,29 +410,12 @@ sap.ui.define([], function() {
 	 */
 	Patcher.openEnd = function() {
 		if (this._sClasses) {
-			// className can also be an instance of SVGAnimatedString if the element is an SVGElement. Therefore do not use
-			// HTMLElement.className property, it is better to set the classes of an element using HTMLElement.setAttribute.
 			this.attr("class", this._sClasses);
 			this._sClasses = "";
 		}
 
 		if (this._sStyles) {
-			// For styles, to be CSP compliant, we use the style property instead of setting the style attribute.
-			// However, using the style property instead of the style attribute might report a mismatch because of
-			// the serialization algorithm of the CSSStyleDeclaration. e.g.
-			// $0.style = "background-color: RED;";  // background-color: red;
-			// $0.style = "background: red;";        // background: red none repeat scroll 0% 0%;
-			// https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block
-			// While it is true that this mismatch might cause a style property call unnecessarily, trying to solve
-			// this problem would not bring a better performance since the possibility of changed styles is much more
-			// less than unchanged styles in the overall rendering.
-			// Therefore, to compare faster, here we do only string-based comparison of retrived and applied styles.
-			// In worst case, we will try to update the style property unnecessarily but this will not be a real
-			// style update for the engine since the parsed CSS declaration blocks will be equal at the end.
-			if (this._mAttributes.style != this._sStyles) {
-				this._oCurrent.style = this._sStyles;
-			}
-			delete this._mAttributes.style;
+			this.attr("style", this._sStyles);
 			this._sStyles = "";
 		}
 
@@ -499,50 +498,54 @@ sap.ui.define([], function() {
 	/**
 	 * Replaces the given HTML of the current element being patched.
 	 *
-	 * <b>Note:</b> This API must not be used to replace the output of the root node.
-	 *
 	 * @param {string} sHtml HTML markup
-	 * @param {sap.ui.core.ID} [sId] ID to identify the element
-	 * @param {function} [fnCallback] The callback that can process the inserted DOM nodes after the HTML markup is injected into the DOM tree
+  	 * @param {sap.ui.core.ID} [sId] ID to identify the element
 	 * @return {this} Reference to <code>this</code> in order to allow method chaining
 	 * @SecSink {*|XSS}
 	 */
-	Patcher.unsafeHtml = function(sHtml, sId, fnCallback) {
+	Patcher.unsafeHtml = function(sHtml, sId) {
 		var oReference = null;
-		var oCurrent = this._oCurrent;
 
-		if (!oCurrent) {
+		if (!this._oCurrent) {
 			oReference = this._oRoot;
+			if (sHtml) {
+				oReference.outerHTML = sHtml;
+			}
 		} else if (this._iTagOpenState) {
-			oReference = oCurrent.firstChild;
+			oReference = this._oCurrent.firstChild;
 			if (sHtml) {
 				this._iTagOpenState = 0;
-				oCurrent.insertAdjacentHTML("afterbegin", sHtml);
-				this._oCurrent = oReference ? oReference.previousSibling : oCurrent.lastChild;
+				this._oCurrent.insertAdjacentHTML("afterbegin", sHtml);
+				if (oReference) {
+					this._oCurrent = oReference.previousSibling;
+					if (!this._oCurrent) { // IE & Edge normalize text nodes
+						oReference.data = sHtml;
+						this._oCurrent = oReference;
+					}
+				} else {
+					this._oCurrent = this._oCurrent.lastChild;
+				}
 			}
 		} else {
-			oReference = oCurrent.nextSibling;
+			oReference = this._oCurrent.nextSibling;
 			if (sHtml) {
-				if (oCurrent.nodeType == 1 /* Node.ELEMENT_NODE */) {
-					oCurrent.insertAdjacentHTML("afterend", sHtml);
-				} else {
+				var oParent = this._oCurrent.parentNode;
+				if (this._oCurrent.nodeType == 1) {
+					this._oCurrent.insertAdjacentHTML("afterend", sHtml);
+				} else if ("content" in this._oTemplate) {
 					this._oTemplate.innerHTML = sHtml;
-					oCurrent.parentNode.insertBefore(this._oTemplate.content, oReference);
+					oParent.insertBefore(this._oTemplate.content, oReference);
+				} else {
+					jQuery.parseHTML(sHtml).forEach(function(oNode) {
+						oParent.insertBefore(oNode, oReference);
+					});
 				}
-				this._oCurrent = oReference ? oReference.previousSibling : oCurrent.parentNode.lastChild;
+				this._oCurrent = oReference ? oReference.previousSibling : oParent.lastChild;
 			}
-		}
-
-		if (sHtml && fnCallback) {
-			var aNodes = [this._oCurrent];
-			for (var oNode = this._oCurrent.previousSibling; oNode && oNode != oCurrent; oNode = oNode.previousSibling) {
-				aNodes.unshift(oNode);
-			}
-			fnCallback(aNodes);
 		}
 
 		if (sId && oReference && oReference.id == sId) {
-			oReference.remove();
+			oReference.parentNode.removeChild(oReference);
 		}
 
 		return this;

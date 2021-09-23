@@ -56,7 +56,7 @@ sap.ui.define([
 	 * As in all date-time controls, all pubic JS Date objects that are given (e.g. <code>setDate()</code>) or read
 	 * (e.g. <code>getFirstRenderedDate</code>) with values which are considered as date objects in browser(local) timezone.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -74,7 +74,7 @@ sap.ui.define([
 			 * The value must be between 0 and 9999
 			 * @deprecated as of version 1.34.0, replaced by <code>date</code> property
 			 */
-			year : {type : "int", group : "Data", defaultValue : 2000, deprecated: true},
+			year : {type : "int", group : "Data", defaultValue : 2000},
 
 			/**
 			 * number of displayed years
@@ -203,7 +203,7 @@ sap.ui.define([
 	/**
 	 * Sets a date.
 	 * @param {Date} oDate a JavaScript date
-	 * @returns {this} <code>this</code> for method chaining
+	 * @return {sap.ui.unified.YearPicker} <code>this</code> for method chaining
 	 */
 	YearPicker.prototype.setDate = function(oDate){
 		var oCalDate, iYear, iYears, iHalfRange;
@@ -493,10 +493,6 @@ sap.ui.define([
 		var iYears = this.getYears(),
 			oMaxStartYear = new CalendarDate(this._oMaxDate, this.getPrimaryCalendarType());
 
-		if (!oMaxStartYear.isSame(CalendarUtils._maxDate(this.getPrimaryCalendarType()))) {
-			return oDate;
-		}
-
 		oMaxStartYear.setYear(oMaxStartYear.getYear() - iYears + 1);
 		if (oDate.isAfter(oMaxStartYear) && oDate.getYear() != oMaxStartYear.getYear()) {
 			oDate = new CalendarDate(oMaxStartYear, this.getPrimaryCalendarType());
@@ -751,7 +747,7 @@ sap.ui.define([
 
 	YearPicker.prototype._handleMousedown = function(oEvent, iIndex){
 
-		if (oEvent.button || Device.support.touch && !Device.system.combi) {
+		if (oEvent.button || Device.support.touch) {
 			// only use left mouse button or not touch
 			return;
 		}

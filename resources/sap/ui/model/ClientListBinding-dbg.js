@@ -89,7 +89,7 @@ sap.ui.define([
 		var iEndIndex = Math.min(iStartIndex + iLength, this.aIndices.length),
 		oContext,
 		aContexts = [],
-		sPrefix = this.getResolvedPath();
+		sPrefix = this.oModel.resolve(this.sPath, this.oContext);
 
 		if (sPrefix && !sPrefix.endsWith("/")) {
 			sPrefix += "/";
@@ -198,11 +198,11 @@ sap.ui.define([
 	 * When no <code>sFilterType</code> is given, any previously configured application
 	 * filters are cleared and the given filters are used as control filters
 	 *
-	 * @param {sap.ui.model.Filter|sap.ui.model.Filter[]} aFilters Single filter object or an array of filter objects
+	 * @param {sap.ui.model.Filter[]} aFilters Array of filter objects
 	 * @param {sap.ui.model.FilterType} [sFilterType=undefined] Type of the filter which should
 	 *  be adjusted; if no type is given, then any previously configured application filters are
 	 *  cleared and the given filters are used as control filters
-	 * @returns {this} returns <code>this</code> to facilitate method chaining
+	 * @return {sap.ui.model.ListBinding} returns <code>this</code> to facilitate method chaining
 	 * @throws {Error} When one of the filters uses an operator that is not supported by the underlying model implementation
 	 * @public
 	 */

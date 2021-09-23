@@ -14,7 +14,6 @@ sap.ui.define([
 	'sap/m/Button',
 	'sap/m/GenericTileRenderer',
 	'sap/m/GenericTileLineModeRenderer',
-	'sap/m/Image',
 	'sap/ui/Device',
 	'sap/ui/core/ResizeHandler',
 	"sap/base/strings/camelize",
@@ -31,7 +30,6 @@ sap.ui.define([
 	Button,
 	GenericTileRenderer,
 	LineModeRenderer,
-	Image,
 	Device,
 	ResizeHandler,
 	camelize,
@@ -63,7 +61,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.34.0
 	 *
 	 * @public
@@ -95,25 +93,11 @@ sap.ui.define([
 				 * The size of the tile. If not set, then the default size is applied based on the device.
 				 * @deprecated Since version 1.38.0. The GenericTile control has now a fixed size, depending on the used media (desktop, tablet or phone).
 				 */
-				size: {type: "sap.m.Size", group: "Misc", defaultValue: Size.Auto, deprecated: true},
+				size: {type: "sap.m.Size", group: "Misc", defaultValue: Size.Auto},
 				/**
 				 * The FrameType: OneByOne, TwoByOne, OneByHalf, or TwoByHalf. Default set to OneByOne if property is not defined or set to Auto by the app.
 				 */
 				frameType: {type: "sap.m.FrameType", group: "Misc", defaultValue: FrameType.OneByOne},
-				/**
-				 * Backend system context information
-				 * @private
-				 * @since 1.92.0
-				 * @experimental Since 1.92
-				 */
-				systemInfo: {type:"string",  group: "Misc", defaultValue:null},
-				/**
-				 * Application information such as ID/Shortcut
-				 * @private
-				 * @since 1.92.0
-				 * @experimental Since 1.92
-				 */
-				appShortcut: {type:"string",  group: "Misc", defaultValue:null},
 				/**
 				 * The URI of the background image.
 				 */
@@ -188,7 +172,7 @@ sap.ui.define([
 				 * This aggregation is deprecated since version 1.36.0, to display an icon or image use sap.m.ImageContent control instead.
 				 * @deprecated since version 1.36.0. This aggregation is deprecated, use sap.m.ImageContent control to display an icon instead.
 				 */
-				icon: {type: "sap.ui.core.Control", multiple: false, deprecated: true},
+				icon: {type: "sap.ui.core.Control", multiple: false},
 				/**
 				 * The hidden aggregation for the title.
 				 */
@@ -227,14 +211,11 @@ sap.ui.define([
 				}
 			}
 		},
-		renderer: {
-			apiVersion: 2,
-			render: function (oRm, oControl) {
-				if (oControl.getMode() === GenericTileMode.LineMode) {
-					LineModeRenderer.render(oRm, oControl);
-				} else {
-					GenericTileRenderer.render(oRm, oControl);
-				}
+		renderer: function (oRm, oControl) {
+			if (oControl.getMode() === library.GenericTileMode.LineMode) {
+				LineModeRenderer.render(oRm, oControl);
+			} else {
+				GenericTileRenderer.render(oRm, oControl);
 			}
 		}
 	});
@@ -260,15 +241,6 @@ sap.ui.define([
 		this._oTitle.addStyleClass("sapMGTTitle");
 		this._oTitle.cacheLineHeight = false;
 		this.setAggregation("_titleText", this._oTitle, true);
-
-
-		this._oAppShortcut = new Text(this.getId() + "-appShortcut");
-		this._oAppShortcut.cacheLineHeight = false;
-		this.addDependent(this._oAppShortcut);
-
-		this._oSystemInfo = new Text(this.getId() + "-systemInfo");
-		this._oSystemInfo.cacheLineHeight = false;
-		this.addDependent(this._oSystemInfo);
 
 		this._oSubTitle = new Text(this.getId() + "-subTitle");
 		this._oSubTitle.cacheLineHeight = false;
@@ -310,26 +282,12 @@ sap.ui.define([
 		this._oTitle.setWrappingType(sWrappingType);
 		this._oFailedText.setWrappingType(sWrappingType);
 		this._oSubTitle.setWrappingType(sWrappingType);
-		this._oAppShortcut.setWrappingType(sWrappingType);
-		this._oSystemInfo.setWrappingType(sWrappingType);
 		return this;
 	};
 
 	GenericTile.prototype.setSubheader = function (sSubheader) {
 		this.setProperty("subheader", sSubheader);
 		this._oSubTitle.setText(sSubheader);
-		return this;
-	};
-
-	GenericTile.prototype.setAppShortcut = function (sAppShortcut) {
-		this.setProperty("appShortcut", sAppShortcut);
-		this._oAppShortcut.setText(sAppShortcut);
-		return this;
-	};
-
-	GenericTile.prototype.setSystemInfo = function (sSystemInfo) {
-		this.setProperty("systemInfo", sSystemInfo);
-		this._oSystemInfo.setText(sSystemInfo);
 		return this;
 	};
 
@@ -364,7 +322,7 @@ sap.ui.define([
 	 * @private
 	 */
 	GenericTile.prototype._initScopeContent = function (sTileClass) {
-		if (!this.getState || this.getState() !== LoadState.Disabled) {
+		if (!this.getState || this.getState() !== library.LoadState.Disabled) {
 			this._oMoreIcon = this._oMoreIcon || IconPool.createControlByURI({
 				id: this.getId() + "-action-more",
 				size: "1rem",
@@ -381,15 +339,15 @@ sap.ui.define([
 			this._oRemoveButton._bExcludeFromTabChain = true;
 
 			switch (this.getScope()) {
-				case GenericTileScope.Actions:
+				case library.GenericTileScope.Actions:
 					this._oMoreIcon.setVisible(true);
 					this._oRemoveButton.setVisible(true);
 					break;
-				case GenericTileScope.ActionMore:
+				case library.GenericTileScope.ActionMore:
 					this._oMoreIcon.setVisible(true);
 					this._oRemoveButton.setVisible(false);
 					break;
-				case GenericTileScope.ActionRemove:
+				case library.GenericTileScope.ActionRemove:
 					this._oRemoveButton.setVisible(true);
 					this._oMoreIcon.setVisible(false);
 					break;
@@ -435,14 +393,14 @@ sap.ui.define([
 
 	GenericTile.prototype.onBeforeRendering = function () {
 		var bSubheader = !!this.getSubheader();
-		if (this.getMode() === GenericTileMode.HeaderMode) {
+		if (this.getMode() === library.GenericTileMode.HeaderMode) {
 			this._applyHeaderMode(bSubheader);
 		} else {
 			this._applyContentMode(bSubheader);
 		}
 		var iTiles = this.getTileContent().length;
 		for (var i = 0; i < iTiles; i++) {
-			this.getTileContent()[i].setProperty("disabled", this.getState() === LoadState.Disabled, true);
+			this.getTileContent()[i].setProperty("disabled", this.getState() === library.LoadState.Disabled, true);
 		}
 
 		this._initScopeContent("sapMGT");
@@ -462,8 +420,8 @@ sap.ui.define([
 			this._$RootNode.off(this._getAnimationEvents());
 		}
 
-		if (this.getFrameType() === FrameType.Auto) {
-			this.setProperty("frameType", FrameType.OneByOne, true);
+		if (this.getFrameType() === library.FrameType.Auto) {
+			this.setProperty("frameType", library.FrameType.OneByOne, true);
 		}
 	};
 
@@ -478,7 +436,7 @@ sap.ui.define([
 
 		var sMode = this.getMode();
 		var bScreenLarge = this._isScreenLarge();
-		if (sMode === GenericTileMode.LineMode) {
+		if (sMode === library.GenericTileMode.LineMode) {
 			var $Parent = this.$().parent();
 			if (bScreenLarge) {
 				this._updateHoverStyle(true); //force update
@@ -493,12 +451,12 @@ sap.ui.define([
 
 		// triggers update of all adjacent GenericTile LineMode siblings
 		// this is needed for their visual update if this tile's properties change causing it to expand or shrink
-		if (sMode === GenericTileMode.LineMode && this._bUpdateLineTileSiblings) {
+		if (sMode === library.GenericTileMode.LineMode && this._bUpdateLineTileSiblings) {
 			this._updateLineTileSiblings();
 			this._bUpdateLineTileSiblings = false;
 		}
 
-		if (sMode === GenericTileMode.LineMode) {
+		if (sMode === library.GenericTileMode.LineMode) {
 			// attach handler in order to check the device type based on width and invalidate on change
 			Device.media.attachHandler(this._handleMediaChange, this, DEVICE_SET);
 		}
@@ -517,7 +475,7 @@ sap.ui.define([
 			if (this.$("hover-overlay").length > 0) {
 				this.$("hover-overlay").removeClass("sapMGTPressActive");
 			}
-			if (this.getMode() === GenericTileMode.LineMode) {
+			if (this.getMode() === library.GenericTileMode.LineMode) {
 				this.removeStyleClass("sapMGTLineModePress");
 			}
 		}
@@ -530,7 +488,7 @@ sap.ui.define([
 	 * @private
 	 */
 	GenericTile.prototype._handleResize = function () {
-		if (this.getMode() === GenericTileMode.LineMode && this._isScreenLarge() && this.getParent()) {
+		if (this.getMode() === library.GenericTileMode.LineMode && this._isScreenLarge() && this.getParent()) {
 			this._queueAnimationEnd();
 		}
 	};
@@ -809,7 +767,7 @@ sap.ui.define([
 				x: oPosition.left,
 				y: oPosition.top
 			},
-			width: this.$().outerWidth(),
+			width: this.$().width(),
 			height: this.$().height()
 		}];
 	};
@@ -821,13 +779,13 @@ sap.ui.define([
 	 */
 	GenericTile.prototype._updateLineTileSiblings = function () {
 		var oParent = this.getParent();
-		if (this.getMode() === GenericTileMode.LineMode && this._isScreenLarge() && oParent) {
+		if (this.getMode() === library.GenericTileMode.LineMode && this._isScreenLarge() && oParent) {
 			var i = oParent.indexOfAggregation(this.sParentAggregationName, this);
 			var aSiblings = oParent.getAggregation(this.sParentAggregationName).splice(i + 1);
 
 			for (i = 0; i < aSiblings.length; i++) {
 				var oSibling = aSiblings[i];
-				if (oSibling instanceof GenericTile && oSibling.getMode() === GenericTileMode.LineMode) {
+				if (oSibling instanceof library.GenericTile && oSibling.getMode() === library.GenericTileMode.LineMode) {
 					oSibling._updateHoverStyle();
 				}
 			}
@@ -840,7 +798,7 @@ sap.ui.define([
 		if (this.$("hover-overlay").length > 0) {
 			this.$("hover-overlay").addClass("sapMGTPressActive");
 		}
-		if (this.getMode() === GenericTileMode.LineMode) {
+		if (this.getMode() === library.GenericTileMode.LineMode) {
 			this.addStyleClass("sapMGTLineModePress");
 		}
 	};
@@ -857,14 +815,14 @@ sap.ui.define([
 		if (this.$("hover-overlay").length > 0) {
 			this.$("hover-overlay").removeClass("sapMGTPressActive");
 		}
-		if (this.getMode() === GenericTileMode.LineMode) {
+		if (this.getMode() === library.GenericTileMode.LineMode) {
 			this.removeStyleClass("sapMGTLineModePress");
 		}
 	};
 
 	GenericTile.prototype.ontap = function (event) {
 		var oParams;
-		if (this._bTilePress && this.getState() !== LoadState.Disabled) {
+		if (this._bTilePress && this.getState() !== library.LoadState.Disabled) {
 			this.$().trigger("focus");
 			oParams = this._getEventParams(event);
 			if (!(this.isInActionRemoveScope() && oParams.action === GenericTile._Action.Press)) {
@@ -882,7 +840,7 @@ sap.ui.define([
 				event.preventDefault();
 			}
 		}
-		if (PseudoEvents.events.sapselect.fnCheck(event) && this.getState() !== LoadState.Disabled) {
+		if (PseudoEvents.events.sapselect.fnCheck(event) && this.getState() !== library.LoadState.Disabled) {
 			this.addStyleClass("sapMGTPressActive");
 			if (this.$("hover-overlay").length > 0) {
 				this.$("hover-overlay").addClass("sapMGTPressActive");
@@ -913,7 +871,7 @@ sap.ui.define([
 		var oParams,
 			bFirePress = false,
 			sScope = this.getScope(),
-			bActionsScope = sScope === GenericTileScope.Actions || sScope === GenericTileScope.ActionRemove;
+			bActionsScope = sScope === library.GenericTileScope.Actions || sScope === library.GenericTileScope.ActionRemove;
 
 		if (bActionsScope && (PseudoEvents.events.sapdelete.fnCheck(event) || PseudoEvents.events.sapbackspace.fnCheck(event))) {
 			oParams = {
@@ -923,7 +881,7 @@ sap.ui.define([
 			};
 			bFirePress = true;
 		}
-		if (PseudoEvents.events.sapselect.fnCheck(event) && this.getState() !== LoadState.Disabled) {
+		if (PseudoEvents.events.sapselect.fnCheck(event) && this.getState() !== library.LoadState.Disabled) {
 			this.removeStyleClass("sapMGTPressActive");
 			if (this.$("hover-overlay").length > 0) {
 				this.$("hover-overlay").removeClass("sapMGTPressActive");
@@ -945,7 +903,7 @@ sap.ui.define([
 		Control.prototype.setProperty.apply(this, arguments);
 
 		//If properties in GenericTile.LINEMODE_SIBLING_PROPERTIES are being changed, update all sibling controls that are GenericTiles in LineMode
-		if (this.getMode() === GenericTileMode.LineMode && GenericTile.LINEMODE_SIBLING_PROPERTIES.indexOf(sPropertyName) !== -1) {
+		if (this.getMode() === library.GenericTileMode.LineMode && GenericTile.LINEMODE_SIBLING_PROPERTIES.indexOf(sPropertyName) !== -1) {
 			this._bUpdateLineTileSiblings = true;
 		}
 		return this;
@@ -974,7 +932,7 @@ sap.ui.define([
 				this._oImage = IconPool.createControlByURI({
 					id: this.getId() + "-icon-image",
 					src: uri
-				}, Image);
+				}, library.Image);
 
 				this._oImage.addStyleClass("sapMGTHdrIconImage");
 			}
@@ -1024,7 +982,7 @@ sap.ui.define([
 				for (var i = 0; i < aTileContent.length; i++) {
 					var aTileCnt = aTileContent[i].getAggregation('content');
 					if (aTileCnt !== null) {
-						if ((frameType === FrameType.OneByHalf && aTileCnt.getMetadata().getName() === "sap.m.ImageContent")) {
+						if ((frameType === FrameType.OneByHalf && aTileCnt.getMetadata()._sClassName === "sap.m.ImageContent")) {
 							bIsImageContent = true;
 							this._oTitle.setProperty("maxLines", 2, true);
 							break;
@@ -1104,7 +1062,7 @@ sap.ui.define([
 		var aContent = this.getTileContent();
 		var sAdditionalTooltip = this.getAdditionalTooltip();
 
-		if (!this._isInActionScope() && this.getMode() === GenericTileMode.ContentMode) {
+		if (!this._isInActionScope() && this.getMode() === library.GenericTileMode.ContentMode) {
 			for (var i = 0; i < aContent.length; i++) {
 				if (typeof aContent[i]._getAriaAndTooltipText === "function") {
 					sText += (bIsFirst ? "" : "\n") + aContent[i]._getAriaAndTooltipText();
@@ -1133,11 +1091,11 @@ sap.ui.define([
 			? this.getTooltip_AsString()
 			: (this._getHeaderAriaAndTooltipText() + "\n" + this._getContentAriaAndTooltipText());
 		switch (this.getState()) {
-			case LoadState.Disabled:
+			case library.LoadState.Disabled:
 				return "";
-			case LoadState.Loading:
+			case library.LoadState.Loading:
 				return sAriaText + "\n" + this._sLoading;
-			case LoadState.Failed:
+			case library.LoadState.Failed:
 				return sAriaText + "\n" + this._oFailedText.getText();
 			default :
 				if (sAriaText.trim().length === 0) { // If the string is empty or just whitespace, IE renders an empty tooltip (e.g. "" + "\n" + "")
@@ -1203,15 +1161,14 @@ sap.ui.define([
 		var frameType = this.getFrameType();
 		var aTileCnt = tileContent.getAggregation('content');
 
-		if (sState === LoadState.Failed || bActions && sState !== LoadState.Disabled) {
+		if (sState === library.LoadState.Failed || bActions && sState !== library.LoadState.Disabled) {
 			tileContent.setRenderFooter(false);
 		} else if (frameType === FrameType.TwoByHalf && (aTileCnt !== null || this.getSubheader())) {
 			tileContent.setRenderFooter(false);
-		} else if (frameType === FrameType.OneByHalf && ((aTileCnt !== null && aTileCnt.getMetadata().getName() !== "sap.m.ImageContent") || this.getSubheader())) {
+		} else if (frameType === FrameType.OneByHalf && ((aTileCnt !== null && aTileCnt.getMetadata()._sClassName !== "sap.m.ImageContent") || this.getSubheader())) {
 			tileContent.setRenderFooter(false);
 		} else {
 			tileContent.setRenderFooter(true);
-			return true;
 		}
 	};
 
@@ -1222,9 +1179,9 @@ sap.ui.define([
 	 * @private
 	 */
 	GenericTile.prototype._isInActionScope = function ()  {
-		return this.getScope() === GenericTileScope.Actions
-			|| this.getScope() === GenericTileScope.ActionMore
-			|| this.getScope() === GenericTileScope.ActionRemove;
+		return this.getScope() === library.GenericTileScope.Actions
+			|| this.getScope() === library.GenericTileScope.ActionMore
+			|| this.getScope() === library.GenericTileScope.ActionRemove;
 	};
 
 	/**
@@ -1233,7 +1190,7 @@ sap.ui.define([
 	 * @return {boolean} True if the scope is set to the remove action
 	 */
 	GenericTile.prototype.isInActionRemoveScope = function () {
-		return this.getScope() === GenericTileScope.ActionRemove;
+		return this.getScope() === library.GenericTileScope.ActionRemove;
 	};
 
 	/**
@@ -1272,7 +1229,7 @@ sap.ui.define([
 	 */
 	GenericTile.prototype._isHeaderTextTruncated = function () {
 		var oDom, iMaxHeight, $Header, iWidth;
-		if (this.getMode() === GenericTileMode.LineMode) {
+		if (this.getMode() === library.GenericTileMode.LineMode) {
 			$Header = this.$("hdr-text");
 			if ($Header.length > 0) {
 				iWidth = Math.ceil($Header[0].getBoundingClientRect().width);
@@ -1295,7 +1252,7 @@ sap.ui.define([
 	 */
 	GenericTile.prototype._isSubheaderTextTruncated = function () {
 		var $Subheader;
-		if (this.getMode() === GenericTileMode.LineMode) {
+		if (this.getMode() === library.GenericTileMode.LineMode) {
 			$Subheader = this.$("subHdr-text");
 		} else {
 			$Subheader = this.$("subTitle");
@@ -1381,10 +1338,10 @@ sap.ui.define([
 			sScope = this.getScope(),
 			oDomRef = this.getDomRef();
 
-		if ((sScope === GenericTileScope.Actions || GenericTileScope.ActionRemove) && oEvent.target.id.indexOf("-action-remove") > -1) {//tap on icon remove in Actions scope
+		if ((sScope === library.GenericTileScope.Actions || library.GenericTileScope.ActionRemove) && oEvent.target.id.indexOf("-action-remove") > -1) {//tap on icon remove in Actions scope
 			sAction = GenericTile._Action.Remove;
 			oDomRef = this._oRemoveButton.getPopupAnchorDomRef();
-		} else if (sScope === GenericTileScope.Actions || sScope === GenericTileScope.ActionMore) {
+		} else if (sScope === library.GenericTileScope.Actions || sScope === library.GenericTileScope.ActionMore) {
 			oDomRef = this._oMoreIcon.getDomRef();
 		}
 		oParams = {

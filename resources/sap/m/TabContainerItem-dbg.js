@@ -23,7 +23,7 @@ sap.ui.define(['sap/ui/core/Element',
 		 * @extends sap.ui.core.Element
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -33,6 +33,7 @@ sap.ui.define(['sap/ui/core/Element',
 		 */
 		var TabContainerItem = Element.extend("sap.m.TabContainerItem", /** @lends sap.m.TabContainerItem.prototype */ { metadata : {
 
+			library : "sap.ui.core",
 			properties : {
 
 				/**

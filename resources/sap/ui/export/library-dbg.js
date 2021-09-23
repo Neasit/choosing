@@ -17,7 +17,7 @@ sap.ui.define([
 	 * @namespace
 	 * @name sap.ui.export
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @public
 	 */
 
@@ -33,7 +33,7 @@ sap.ui.define([
 		interfaces: [],
 		controls: [],
 		elements: [],
-		version: "1.92.0"
+		version: "1.87.0"
 	});
 
 
@@ -134,7 +134,7 @@ sap.ui.define([
 		/**
 		 * Comma separated file type.
 		 *
-		 * @private
+		 * @public
 		 */
 		CSV: "CSV",
 

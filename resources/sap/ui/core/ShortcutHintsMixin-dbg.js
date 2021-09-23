@@ -11,8 +11,7 @@ sap.ui.define([
 	"./Popup",
 	"./InvisibleText",
 	"sap/ui/dom/containsOrEquals",
-	"sap/ui/events/checkMouseEnterOrLeave",
-	"sap/ui/Device"
+	"sap/ui/events/checkMouseEnterOrLeave"
 ],
 	function(
 		EventProvider,
@@ -21,8 +20,7 @@ sap.ui.define([
 		Popup,
 		InvisibleText,
 		containsOrEquals,
-		checkMouseEnterOrLeave,
-		Device
+		checkMouseEnterOrLeave
 	) {
 	"use strict";
 
@@ -70,10 +68,6 @@ sap.ui.define([
 	 * (e.g. the shortcut of a command registered to it)
 	 */
 	ShortcutHintsMixin.addConfig = function(oControl, oConfig, oHintProviderControl) {
-		if (Device.system.phone) {
-			return;
-		}
-
 		if (/sap-ui-xx-noshortcuthints=true/.test(document.location.search)) {
 			return;
 		}

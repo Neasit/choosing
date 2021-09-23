@@ -54,7 +54,7 @@ function(library, Core, Control, coreLibrary, Device, HyphenationSupport, TextRe
 	 * @implements sap.ui.core.IShrinkable, sap.ui.core.IFormContent, sap.ui.core.ISemanticFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -190,7 +190,7 @@ function(library, Core, Control, coreLibrary, Device, HyphenationSupport, TextRe
 	 *
 	 * @protected
 	 * @param {HTMLElement} oDomRef DOM reference of the text node container.
-	 * @param {string} [sNodeValue] new Node value.
+	 * @param {String} [sNodeValue] new Node value.
 	 * @since 1.30.3
 	 */
 	Text.setNodeValue = function (oDomRef, sNodeValue) {

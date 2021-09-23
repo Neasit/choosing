@@ -62,7 +62,7 @@ sap.ui.define([
 	 *
 	 * The TimesRow works with JavaScript Date objects.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -696,7 +696,7 @@ sap.ui.define([
 				oEndDate = this._getIntervalStart(oEndDate);
 				oEndDate.setUTCMinutes(oEndDate.getUTCMinutes() + this.getIntervalMinutes() - 1);
 				oEndTimeStamp = oEndDate.getTime();
-			} else if (oStartDate.getUTCHours() == 0 && oStartDate.getUTCMinutes() == 0 && oStartDate.getUTCSeconds() == 0 && oStartDate.getUTCMilliseconds() == 0) {
+			}else if (oStartDate.getUTCHours() == 0 && oStartDate.getUTCMinutes() == 0 && oStartDate.getUTCSeconds() == 0 && oStartDate.getUTCMilliseconds() == 0) {
 				// special case, only start date and on midnight -> use as full day
 				oEndDate = new UniversalDate(oStartDate.getTime());
 				oEndDate.setUTCDate(oEndDate.getUTCDate() + 1);
@@ -894,7 +894,7 @@ sap.ui.define([
 
 		if (oUTCDate.getTime() >= oStartDate.getTime() && oUTCDate.getTime() < oEndDate.getTime()) {
 			return true;
-		} else  {
+		}else {
 			return false;
 		}
 
@@ -1103,7 +1103,7 @@ sap.ui.define([
 			// a mouseup must be happened outside of control -> just end move
 			_unbindMousemove.call(this, true);
 			this._bMoveChange = false;
-		} else if (this.getIntervalSelection() && this.$().is(":visible")) {
+		}else if (this.getIntervalSelection() && this.$().is(":visible")) {
 			// if closed in select event, do not add mousemove handler
 			_bindMousemove.call(this, true);
 		}

@@ -46,7 +46,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.model.Type
 	 * @public
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var SimpleType = Type.extend("sap.ui.model.SimpleType", /** @lends sap.ui.model.SimpleType.prototype */ {
 
@@ -109,7 +109,7 @@ sap.ui.define([
 	 *
 	 * @param {any} vValue
 	 *   The value to be validated
-	 * @returns {void|Promise}
+	 * @return {Promise}
 	 *   <code>undefined</code> or a <code>Promise</code> resolving with an undefined value
 	 * @throws {sap.ui.model.ValidateException}
 	 *   If at least one of the type constraints are not met; the message of the exception is
@@ -127,8 +127,8 @@ sap.ui.define([
 	 * built-in object such as Date which can be used by a control to the raw value, and
 	 * <code>parse</code> converts the raw value to the internal value.
 	 *
-	 * You may return an instance of {@link sap.ui.core.format.DateFormat DateFormat} or
-	 * {@link sap.ui.core.format.NumberFormat NumberFormat}.
+	 * You may return an instance of {@link sap.ui.core.format.DateFormat#constructor DateFormat} or
+	 * {@link sap.ui.core.format.NumberFormat#constructor NumberFormat}.
 	 *
 	 * The default implementation of the <code>format</code> and <code>parse</code> methods simply
 	 * returns the given parameter. Subclasses of
@@ -139,7 +139,7 @@ sap.ui.define([
 	 * Example:<br>
 	 * If the type is related to a JavaScript <code>Date</code> object, but the raw value isn't,
 	 * this method should return an instance of
-	 * {@link sap.ui.core.format.DateFormat DateFormat}, which is able to convert
+	 * {@link sap.ui.core.format.DateFormat#constructor DateFormat}, which is able to convert
 	 * between the raw value and a JavaScript <code>Date</code> object.
 	 *
 	 * @return {object}

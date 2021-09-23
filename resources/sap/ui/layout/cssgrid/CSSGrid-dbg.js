@@ -87,6 +87,7 @@ sap.ui.define([
 	 *
 	 * <h3>Current Limitations</h3>
 	 * <ul>
+	 * <li>No support for IE11.</li>
 	 * <li>No alignment and ordering</li>
 	 * <li>No Named grid areas and lines</li>
 	 * </ul>
@@ -95,7 +96,7 @@ sap.ui.define([
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
@@ -119,42 +120,58 @@ sap.ui.define([
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns MDN web docs: grid-template-columns}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridTemplateColumns: { type: "sap.ui.layout.cssgrid.CSSGridTrack", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows MDN web docs: grid-template-rows}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridTemplateRows: { type: "sap.ui.layout.cssgrid.CSSGridTrack", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row-gap MDN web docs: grid-row-gap}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridRowGap: { type: "sap.ui.core.CSSSize", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column-gap MDN web docs: grid-column-gap}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridColumnGap: { type: "sap.ui.core.CSSSize", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-gap MDN web docs: grid-gap}
 			 * It is a shorthand for gridRowGap and gridColumnGap. If some of them is set, the gridGap value will have less priority and will be overwritten.
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridGap: { type: "sap.ui.layout.cssgrid.CSSGridGapShortHand", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows MDN web docs: grid-auto-rows}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridAutoRows: { type: "sap.ui.layout.cssgrid.CSSGridTrack", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-columns MDN web docs: grid-auto-columns}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridAutoColumns: { type: "sap.ui.layout.cssgrid.CSSGridTrack", defaultValue: "" },
 
 			/**
 			 * Sets the value for the CSS display:grid property {@link https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-flow MDN web docs: grid-auto-flow}
+			 *
+			 * <b>Note:</b> Not supported in IE11.
 			 */
 			gridAutoFlow: { type: "sap.ui.layout.cssgrid.CSSGridAutoFlow", defaultValue: "Row" }
 		},
@@ -180,7 +197,6 @@ sap.ui.define([
 	/**
 	 * Implements IGridConfigurable interface
 	 *
-	 * @protected
 	 * @returns {HTMLElement[]} An array with the DOM elements
 	 */
 	CSSGrid.prototype.getGridDomRefs = function () {
@@ -190,7 +206,6 @@ sap.ui.define([
 	/**
 	 * Returns the layout configuration of the <code>CSSGrid</code>.
 	 *
- 	 * @protected
 	 * @returns {sap.ui.layout.cssgrid.GridBasicLayout} The grid layout
 	 */
 	CSSGrid.prototype.getGridLayoutConfiguration = function () {
@@ -277,17 +292,12 @@ sap.ui.define([
 	 * @private
 	 */
 	CSSGrid.prototype._onGridChange = function (oChanges) {
-		var bCallBefore;
-
 		if (oChanges.name !== "items" || !oChanges.child) {
 			return;
 		}
 
 		if (oChanges.mutation === "insert") {
-			// The sap.ui.core.HTML has a special behavior
-			// and the delegate should be called after the real onAfterRendering method
-			bCallBefore = !oChanges.child.isA("sap.ui.core.HTML");
-			oChanges.child.addDelegate(this._oItemDelegate, bCallBefore, oChanges.child);
+			oChanges.child.addEventDelegate(this._oItemDelegate, oChanges.child);
 		} else if (oChanges.mutation === "remove") {
 			oChanges.child.removeEventDelegate(this._oItemDelegate, oChanges.child);
 		}

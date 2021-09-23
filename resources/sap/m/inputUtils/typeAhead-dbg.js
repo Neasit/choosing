@@ -87,7 +87,7 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 				var oItem = aItemMeta[0],
 					aItemTexts = aItemMeta[1];
 
-				if (!oItem || oItem.isA("sap.ui.core.SeparatorItem") || oItem.isA("sap.m.GroupHeaderListItem") || (oItem.isA("sap.m.ColumnListItem") && !oItem.getVisible())) {
+				if (!oItem || oItem.isA("sap.ui.core.SeparatorItem") || oItem.isA("sap.m.GroupHeaderListItem")) {
 					return false;
 				}
 

@@ -49,11 +49,7 @@ function(
 	 * @class
 	 * RadioButton is a control similar to a {@link sap.m.CheckBox checkbox}, but it allows you to choose only one of the predefined set of options.
 	 * Multiple radio buttons have to belong to the same group (have the same value for <code>groupName</code>) in order to be mutually exclusive.
-	 *
-	 * It is recommended to use the wrapper control {@link sap.m.RadioButtonGroup RadioButtonGroup} instead of individual radio buttons.
-	 * This will provide better screen reader support for the user.
-	 * Use the <code>RadioButton</code> control on its own only if there is a wrapper control that handles the screen reader support. For example, such wrappers are sap.m.List, sap.m.Table and sap.f.GridList.
-	 *
+	 * A wrapper control {@link sap.m.RadioButtonGroup RadioButtonGroup} can be used instead of individual radio buttons.
 	 * <h3>Structure</h3>
 	 * <ul>
 	 * <li>Radio buttons can have a value state like Error or Warning.</li>
@@ -86,7 +82,7 @@ function(
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -111,9 +107,6 @@ function(
 			/**
 			 * Name of the radio button group the current radio button belongs to. You can define a new name for the group.
 			 * If no new name is specified, this radio button belongs to the sapMRbDefaultGroup per default. Default behavior of a radio button in a group is that when one of the radio buttons in a group is selected, all others are unselected.
-			 *
-			 * <b>Note</b> To ensure screen reader support it is recommended to use the {@link sap.m.RadioButtonGroup RadioButtonGroup} wrapper instead of using the <code>groupName</code> property.
-			 * Use this property only in cases where a wrapper control will handle the screen reader support. For example such wrappers are <code>sap.m.List</code>, <code>sap.m.Table</code> and <code>sap.f.GridList</code>.
 			 */
 			groupName : {type : "string", group : "Behavior", defaultValue : 'sapMRbDefaultGroup'},
 
@@ -149,7 +142,6 @@ function(
 
 			/**
 			 * Specifies whether the user can select the radio button.
-			 *
 			 * @since 1.25
 			 */
 			editable : {type : "boolean", group : "Behavior", defaultValue : true},
@@ -311,7 +303,7 @@ function(
 		this.setProperty("selected", bSelected);
 		this._updateGroupName(sGroupName);
 
-		if (bSelected && sGroupName) { // If this radio button is selected and groupName is set, explicitly deselect the other radio buttons of the same group
+		if (!!bSelected && sGroupName && sGroupName !== "") { // If this radio button is selected and groupName is set, explicitly deselect the other radio buttons of the same group
 			for (var i = 0; i < iLength; i++) {
 				var oControl = aControlsInGroup[i];
 
@@ -439,7 +431,7 @@ function(
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
 	 * @protected
-	 * @returns {object} The <code>sap.m.RadioButton</code> accessibility information
+	 * @returns {Object} The <code>sap.m.RadioButton</code> accessibility information
 	 */
 	RadioButton.prototype.getAccessibilityInfo = function() {
 		var oBundle = Core.getLibraryResourceBundle("sap.m");

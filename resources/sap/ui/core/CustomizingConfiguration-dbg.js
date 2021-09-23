@@ -75,7 +75,7 @@ sap.ui.define([
 		 * gets removed again.
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @constructor
 		 * @private
 		 * @since 1.15.1
@@ -245,7 +245,7 @@ sap.ui.define([
 			hasCustomProperties: function(sViewName, vObject) {
 				var mSettings = {};
 				findConfig(CONFIG_VIEW_MODIFICATIONS, vObject, function(oConfig) {
-					if (oConfig[sViewName]) {
+					if (!!oConfig[sViewName]) {
 						mSettings = oConfig[sViewName];
 					}
 				});

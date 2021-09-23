@@ -13,10 +13,9 @@ sap.ui.define([
 	'./PullToRefreshRenderer',
 	"sap/ui/events/KeyCodes",
 	"sap/base/security/encodeXML",
-	"sap/ui/core/InvisibleText",
-	"sap/m/BusyIndicator"
+	"sap/ui/core/InvisibleText"
 ],
-	function(jQuery, library, Control, Device, PullToRefreshRenderer, KeyCodes, encodeXML, InvisibleText, BusyIndicator) {
+	function(jQuery, library, Control, Device, PullToRefreshRenderer, KeyCodes, encodeXML, InvisibleText) {
 	"use strict";
 
 
@@ -42,7 +41,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -97,6 +96,7 @@ sap.ui.define([
 	PullToRefresh.prototype._loadBI = function(){
 		// lazy create a Busy indicator to avoid overhead when invisible at start
 		if (this.getVisible() && !this._oBusyIndicator) {
+			var BusyIndicator = sap.ui.requireSync("sap/m/BusyIndicator");
 			this._oBusyIndicator = new BusyIndicator({
 				size: "1.7rem",
 				design: "auto"

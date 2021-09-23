@@ -4,6 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
+/* global console */
 sap.ui.define(["sap/base/Log", "sap/base/util/defineLazyProperty", "sap/ui/thirdparty/jquery"],
 	function(Log, defineLazyProperty, jQuery) {
 	"use strict";
@@ -149,6 +150,7 @@ sap.ui.define(["sap/base/Log", "sap/base/util/defineLazyProperty", "sap/ui/third
 					"fesr",
 					"passport"
 				],
+				"jquery.sap.unicode": ["isStringNFC"],
 				"jquery.sap.xml": [
 					"parseXML",
 					"serializeXML",

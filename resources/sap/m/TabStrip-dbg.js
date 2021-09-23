@@ -25,7 +25,6 @@ sap.ui.define([
 	'./TabStripRenderer',
 	"sap/base/Log",
 	"sap/ui/thirdparty/jquery",
-	"sap/ui/events/KeyCodes",
 	// jQuery Plugin "control"
 	"sap/ui/dom/jquery/control",
 	// jQuery Plugin "scrollLeftRTL"
@@ -51,8 +50,7 @@ function(
 	SelectListRenderer,
 	TabStripRenderer,
 	Log,
-	jQuery,
-	KeyCodes
+	jQuery
 ) {
 		"use strict";
 
@@ -73,7 +71,7 @@ function(
 		 * space is exceeded, a horizontal scrollbar appears.
 		 *
 		 * @extends sap.ui.core.Control
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @private
@@ -424,13 +422,6 @@ function(
 			return bScrollNeeded;
 		};
 
-		TabStrip.prototype.onkeyup = function (oEvent){
-			if (oEvent && oEvent.keyCode === KeyCodes.ARROW_LEFT || oEvent.keyCode === KeyCodes.ARROW_RIGHT) {
-				var oTarget = jQuery(oEvent.target).control(0);
-				this._scrollIntoView(oTarget, 500);
-			}
-		};
-
 		TabStrip.prototype._handleOverflowButtons = function() {
 			var oTabsDomRef = this.getDomRef("tabs"),
 				oTabsContainerDomRef = this.getDomRef("tabsContainer"),
@@ -570,9 +561,10 @@ function(
 		 */
 		TabStrip.prototype._scroll = function(iDelta, iDuration) {
 			var iScrollLeft = this.getDomRef("tabsContainer").scrollLeft,
+				bIE_Edge = Device.browser.internet_explorer || Device.browser.edge,// TODO remove after the end of support for Internet Explorer
 				iScrollTarget;
 
-			if (this._bRtl) {
+			if (this._bRtl && !bIE_Edge) {// TODO remove after the end of support for Internet Explorer
 				iScrollTarget = iScrollLeft - iDelta;
 
 				if (Device.browser.firefox) {
@@ -609,31 +601,38 @@ function(
 		TabStrip.prototype._scrollIntoView = function (oItem, iDuration) {
 			var $tabs = this.$("tabs"),
 				$item = oItem.$(),
-				iLeftButtonWidth = this.$("leftOverflowButtons") ? this.$("leftOverflowButtons").width() : 0,
-				iRigtButtonWidth = this.$("rightOverflowButtons") ? this.$("rightOverflowButtons").width() : 0,
 				iTabsPaddingWidth = $tabs.innerWidth() - $tabs.width(),
 				iItemWidth = $item.outerWidth(true),
 				iItemPosLeft = $item.position().left - iTabsPaddingWidth / 2,
 				oTabsContainerDomRef = this.getDomRef("tabsContainer"),
 				iScrollLeft = oTabsContainerDomRef.scrollLeft,
 				iContainerWidth = this.$("tabsContainer").width(),
-				iNewScrollLeft = iScrollLeft;
+				iNewScrollLeft = iScrollLeft,
+				bIE_Edge = Device.browser.internet_explorer || Device.browser.edge;
 
 			// check if item is outside of viewport
-			if (iItemPosLeft < iLeftButtonWidth || iItemPosLeft + iRigtButtonWidth > iContainerWidth - iItemWidth) {
+			if (iItemPosLeft < 0 || iItemPosLeft > iContainerWidth - iItemWidth) {
+
 				if (this._bRtl && Device.browser.firefox) {
-					if (iItemPosLeft > iLeftButtonWidth) { // right side: make this the last item
-						iNewScrollLeft += iItemPosLeft + iItemWidth - iContainerWidth + iRigtButtonWidth;
+					if (iItemPosLeft < 0) { // right side: make this the last item
+						iNewScrollLeft += iItemPosLeft + iItemWidth - iContainerWidth;
 					} else { // left side: make this the first item
-						iNewScrollLeft += iItemPosLeft - iLeftButtonWidth;
+						iNewScrollLeft += iItemPosLeft;
+					}
+				} else if (this._bRtl && bIE_Edge) {
+					if (iItemPosLeft < 0) { // right side: make this the first item
+						iNewScrollLeft -= iItemPosLeft;
+					} else { // left side: make this the last item
+						iNewScrollLeft -= iItemPosLeft + iItemWidth - iContainerWidth;
 					}
 				} else {
-					if (iItemPosLeft < iLeftButtonWidth) { // left side: make this the first item
-						iNewScrollLeft += iItemPosLeft - iRigtButtonWidth;
+					if (iItemPosLeft < 0) { // left side: make this the first item
+						iNewScrollLeft += iItemPosLeft;
 					} else { // right side: make this the last item
-						iNewScrollLeft += iItemPosLeft + iItemWidth - iContainerWidth + iLeftButtonWidth;
+						iNewScrollLeft += iItemPosLeft + iItemWidth - iContainerWidth;
 					}
 				}
+
 				// store current scroll state to set it after re-rendering
 				this._iCurrentScrollLeft = iNewScrollLeft;
 				this._oScroller.scrollTo(iNewScrollLeft, 0, iDuration);

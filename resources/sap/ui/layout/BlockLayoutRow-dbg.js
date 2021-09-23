@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-/**
+ /**
   * @typedef {Object} sap.ui.layout.BlockRowColorSets
   * @typedef {Object} sap.ui.layout.BlockLayoutRow
   */
@@ -36,7 +36,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public

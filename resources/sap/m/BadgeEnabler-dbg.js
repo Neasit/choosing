@@ -27,7 +27,7 @@ sap.ui.define([
 
 		var IBADGE_STYLE = library.BadgeStyle;
 
-		var IBADGE_INVALID_VALUES = ["", "undefined", "null", false];
+		var IBADGE_INVALID_VALUES = ["", "undefined", "null"];
 
 		/**
 		 * @class A helper class for implementing the {@link sap.m.IBadge} interface.
@@ -55,7 +55,7 @@ sap.ui.define([
 		 *
 		 * @since 1.80
 		 * @protected
-		 * @alias sap.m.BadgeEnabler
+		 * @alias sap.m.IBadgeEnabler
 		 */
 		var BadgeEnabler = function () {
 
@@ -103,10 +103,6 @@ sap.ui.define([
 				oBadgeElement.removeClass("sapMBadgeAnimationAdd");
 				oBadgeElement.width();
 				oBadgeElement.addClass("sapMBadgeAnimationRemove");
-				oBadgeElement.on("animationend", function () {
-					oBadgeElement.css("display","none");
-					oBadgeElement.off();
-				});
 				oBadgeElement.removeAttr("aria-label");
 
 				this._isBadgeAttached = false;
@@ -177,8 +173,8 @@ sap.ui.define([
 				var fnBadgeValueFormatter =  typeof this.badgeValueFormatter === "function" && this.badgeValueFormatter,
 					oBadgeElement;
 
-				sValue = isValidValue((fnBadgeValueFormatter ? fnBadgeValueFormatter.call(this, sValue) : sValue))
-					|| "";
+				sValue = isValidValue((fnBadgeValueFormatter ? fnBadgeValueFormatter.call(this, sValue) : sValue)
+					|| this.getBadgeCustomData().getValue()) || "";
 
 				if (!this.getBadgeCustomData().getVisible()) { return false; }
 				oBadgeElement = _getBadgeElement.call(this);

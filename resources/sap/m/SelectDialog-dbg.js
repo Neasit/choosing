@@ -13,13 +13,13 @@ sap.ui.define([
 	'./SearchField',
 	'./library',
 	'sap/ui/core/Control',
-	'sap/ui/core/InvisibleText',
 	'sap/ui/Device',
 	'sap/m/Toolbar',
-	'sap/m/Text',
+	'sap/m/Label',
 	'sap/m/BusyIndicator',
 	'sap/m/Bar',
 	'sap/m/Title',
+	'sap/ui/core/theming/Parameters',
 	"sap/base/Log"
 ],
 function(
@@ -30,16 +30,18 @@ function(
 	SearchField,
 	library,
 	Control,
-	InvisibleText,
 	Device,
 	Toolbar,
-	Text,
+	Label,
 	BusyIndicator,
 	Bar,
 	Title,
+	Parameters,
 	Log
-) {
+	) {
 	"use strict";
+
+
 
 	// shortcut for sap.m.ListMode
 	var ListMode = library.ListMode;
@@ -112,7 +114,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -337,7 +339,7 @@ function(
 				visible: false,
 				active: false,
 				content: [
-					new Text({
+					new Label({
 						text: this._oRb.getText("TABLESELECTDIALOG_SELECTEDITEMS", [0])
 					})
 				]
@@ -363,7 +365,6 @@ function(
 		// store a reference to the searchField for filtering
 		this._oSearchField = new SearchField(this.getId() + "-searchField", {
 			width: "100%",
-			ariaLabelledBy: InvisibleText.getStaticId("sap.m", "SELECTDIALOG_SEARCH"),
 			liveChange: function (oEvent) {
 				var sValue = oEvent.getSource().getValue(),
 				iDelay = (sValue ? 300 : 0); // no delay if value is empty
@@ -424,9 +425,15 @@ function(
 			}
 		}).addStyleClass("sapMSelectDialog");
 
+		this._oDialog.addAriaLabelledBy(this._oList.getInfoToolbar());
+
 		// for downward compatibility reasons
 		this._dialog = this._oDialog;
 		this.setAggregation("_dialog", this._oDialog);
+
+		// internally set top and bottom margin of the dialog to 4rem respectively
+		// CSN# 333642/2014: in base theme the parameter sapUiFontSize is "medium", implement a fallback
+		this._oDialog._iVMargin = 8 * (parseInt(Parameters.get("sapUiFontSize")) || 16); // 128
 
 		// helper variables for search update behaviour
 		this._sSearchFieldValue = "";
@@ -1201,13 +1208,9 @@ function(
 			oInfoBar.setVisible(bVisible);
 
 			if (bVisible) {
-				this._oDialog.addAriaLabelledBy(oInfoBar);
-
 				// force immediate rerendering, so JAWS can read the text inside,
 				// when it become visible
 				oInfoBar.rerender();
-			} else {
-				this._oDialog.removeAriaLabelledBy(oInfoBar);
 			}
 		}
 

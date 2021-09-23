@@ -39,7 +39,7 @@ sap.ui.define('sap/ui/debug/PropertyList', [
 	 *
 	 * @extends sap.ui.base.EventProvider
 	 * @author Martin Schaus
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @param {sap.ui.core.Core}
 	 *            oCore the core instance to use for analysis
@@ -58,7 +58,7 @@ sap.ui.define('sap/ui/debug/PropertyList', [
 			this.oParentDomRef = oParentDomRef;
 		//	this.oCore = oWindow.sap.ui.getCore();
 			this.oCore = oCore;
-			this.bEmbedded = top.window === oWindow;
+			this.bEmbedded = top.window == oWindow; // check only with ==, not === as the test otherwise fails on IE8
 			this.mProperties = {};
 			this.onclick = PropertyList.prototype.onclick.bind(this);
 			oParentDomRef.addEventListener("click", this.onclick);

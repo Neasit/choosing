@@ -11,7 +11,6 @@ sap.ui.define([
 	'./Token',
 	'./library',
 	'sap/ui/core/EnabledPropagator',
-	'sap/ui/base/ManagedObject',
 	'sap/ui/base/ManagedObjectMetadata',
 	'sap/ui/base/ManagedObjectObserver',
 	'sap/ui/Device',
@@ -40,7 +39,6 @@ function(
 	Token,
 	library,
 	EnabledPropagator,
-	ManagedObject,
 	ManagedObjectMetadata,
 	ManagedObjectObserver,
 	Device,
@@ -120,7 +118,7 @@ function(
 	* @extends sap.m.Input
 	*
 	* @author SAP SE
-	* @version 1.92.0
+	* @version 1.87.0
 	*
 	* @constructor
 	* @public
@@ -144,7 +142,7 @@ function(
 				 * @deprecated Since version 1.58. Replaced with N-more/N-items labels, which work in all cases.
 				 * @since 1.28
 				 */
-				enableMultiLineMode: {type: "boolean", group: "Behavior", defaultValue: false, deprecated: true},
+				enableMultiLineMode: {type: "boolean", group: "Behavior", defaultValue: false},
 
 				/**
 				 * The max number of tokens that is allowed in MultiInput.
@@ -204,8 +202,7 @@ function(
 						 * This parameter is used when tokenChange type is "tokenChanged".
 						 */
 						removedTokens: {type: "sap.m.Token[]"}
-					},
-					deprecated: true
+					}
 				},
 
 				/**
@@ -281,8 +278,6 @@ function(
 
 			switch (sMutation) {
 				case "insert":
-					oToken.attachEvent("_change", this.invalidate, this);
-
 					this.fireTokenChange({
 						type: sap.m.Tokenizer.TokenChangeType.Added,
 						token: oToken,
@@ -292,7 +287,6 @@ function(
 					break;
 				case "remove":
 					var sType = oChange.object.getTokens().length ? sap.m.Tokenizer.TokenChangeType.Removed : sap.m.Tokenizer.TokenChangeType.RemovedAll;
-					oToken.detachEvent("_change", this.invalidate, this);
 
 					this.fireTokenChange({
 						type: sType,
@@ -394,9 +388,6 @@ function(
 	 * @private
 	 */
 	MultiInput.prototype._tokenDelete = function (oEvent) {
-		if (!this.getEditable() || !this.getEnabled()) {
-			return;
-		}
 		this._deleteTokens(oEvent.getParameter("tokens"), oEvent.getParameters());
 	};
 
@@ -550,8 +541,8 @@ function(
 			item = eventArgs.getParameter("selectedItem");
 			if (item) {
 				token = new Token({
-					text: ManagedObject.escapeSettingsValue(item.getText()),
-					key: ManagedObject.escapeSettingsValue(item.getKey())
+					text: item.getText(),
+					key: item.getKey()
 				});
 			}
 		}
@@ -831,7 +822,14 @@ function(
 		}
 
 		// for the purpose to copy from column in excel and paste in MultiInput/MultiComboBox
-		sOriginalText = oEvent.originalEvent.clipboardData.getData('text/plain');
+		if (window.clipboardData) {
+			/* TODO remove after the end of support for Internet Explorer */
+			//IE
+			sOriginalText = window.clipboardData.getData("Text");
+		} else {
+			// Chrome, Firefox, Safari
+			sOriginalText = oEvent.originalEvent.clipboardData.getData('text/plain');
+		}
 
 		aSeparatedText = sOriginalText.split(/\r\n|\r|\n/g);
 
@@ -1928,7 +1926,7 @@ function(
 
 		if (oItem && oItem.getText && oItem.getKey) {
 			oToken = new Token({
-				text :  ManagedObject.escapeSettingsValue(oItem.getText()),
+				text : oItem.getText(),
 				key : oItem.getKey()
 			});
 		}

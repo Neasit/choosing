@@ -10,6 +10,7 @@
 .sapMFeedListItem .sapUiSelectable > * {
 	-webkit-user-select: text;
 	-moz-user-select: text;
+	-ms-user-select: text;
 	user-select: text;
 
 	&::selection {
@@ -21,30 +22,6 @@
 		background: @sapUiSelected;
 		color: @sapUiContentContrastTextColor;
 	}
-}
-
-.sapMFeedListItemFigure .sapFAvatarSquare {
-	border-radius: @sapUiElementBorderCornerRadius;
-
-	.sapFAvatarImageHolder {
-		border-radius: @sapUiElementBorderCornerRadius;
-	}
-}
-
-.sapMFeedListItemFigure .sapFAvatarS {
-    height: 3rem;
-    font-size: 2rem;
-}
-
-.sapMFeedListItemFigure .sapFAvatarImageHolder {
-	background: none;
-	display: block;
-	position: absolute;
-	left: 0;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	background-size: cover;
 }
 
 .sapMFeedListItemImageInactive {
@@ -196,6 +173,10 @@ html[dir=rtl].sap-phone .sapMFeedListItemTextName {
 
 .sapMFeedListItemTitleDiv > .sapMLIBContent {
 	flex-basis: auto;
+
+	html[data-sap-ui-browser^="ie"] & {
+		width: 100%;
+	}
 }
 
 /* phone adoption */
@@ -296,7 +277,7 @@ html.sap-desktop .sapMFeedListItem .sapMLnk:focus {
 
 .sapMFeedListItemImageInactive,
 .sapMLIBActive .sapMFeedListItem span.sapMFeedListItemImageInactive {
-	color: @sapUiContentContrastTextColor;
+	color: @sapUiContentNonInteractiveIconColor;
 }
 
 .sapMFeedListItemFooter {

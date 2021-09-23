@@ -27,7 +27,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @private
@@ -83,7 +83,7 @@ sap.ui.define([
 					collapsed: {}
 				}
 			},
-			renderer: TimePickerSliderRenderer
+			renderer: TimePickerSliderRenderer.render
 		});
 
 		var SCROLL_ANIMATION_DURATION = sap.ui.getCore().getConfiguration().getAnimation() ? 200 : 0;
@@ -121,8 +121,6 @@ sap.ui.define([
 		};
 
 		TimePickerSlider.prototype.exit = function() {
-			this._detachEvents();
-
 			var $Slider = this._getSliderContainerDomRef();
 
 			if ($Slider) {
@@ -133,13 +131,6 @@ sap.ui.define([
 				clearInterval(this._intervalId);
 				this._intervalId = null;
 			}
-		};
-
-		/**
-		 * Called before the control is rendered.
-		 */
-		TimePickerSlider.prototype.onBeforeRendering = function () {
-			this._detachEvents();
 		};
 
 		/**
@@ -1032,10 +1023,8 @@ sap.ui.define([
 		 * @private
 		 */
 		TimePickerSlider.prototype._detachEvents = function () {
-			var oElement = this._getSliderContainerDomRef()[0];
-			if ( oElement == null ) {
-				return;
-			}
+			var oElement = this.getDomRef();
+
 			if (Device.system.combi) {
 				//Detach touch events
 				oElement.removeEventListener("touchstart", jQuery.proxy(onTouchStart, this), false);
@@ -1369,7 +1358,7 @@ sap.ui.define([
 
 		/**
 		 * Gets only the visible items.
-		 * @returns {sap.m.VisibleItem[]} the visible sap.m.TimePickerSlider items
+		 * @returns {sap.m.TimePickerSlider} the visible sap.m.TimePickerSlider items
 		 * @private
 		 */
 		TimePickerSlider.prototype._getVisibleItems = function() {

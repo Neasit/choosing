@@ -266,7 +266,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.base.EventProvider
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @public
 	 * @alias sap.ui.base.ManagedObject
 	 */
@@ -495,7 +495,6 @@ sap.ui.define([
 			this.iSuppressInvalidate = 0;
 			this.oPropagatedProperties = ManagedObject._oEmptyPropagatedProperties;
 			this.mSkipPropagation = {};
-			this._bIsOwnerActive = true;
 
 			// data binding
 			this.oModels = {};
@@ -935,7 +934,6 @@ sap.ui.define([
 	 *   When there's not enough type information to create an instance from the given data
 	 * @public
 	 * @static
-	 * @ts-skip
 	 */
 	ManagedObject.create = function(vData, oKeyInfo, oScope) {
 		if ( !vData || vData instanceof ManagedObject || typeof vData !== "object" || vData instanceof String) {
@@ -1209,7 +1207,6 @@ sap.ui.define([
 					break;
 				case -1: // SPECIAL_SETTING
 					// No assert
-					break;
 				default:
 					break;
 				}
@@ -2670,9 +2667,7 @@ sap.ui.define([
 		if (this._oContextualSettings !== oContextualSettings) {
 			this._oContextualSettings = oContextualSettings;
 			this._propagateContextualSettings();
-			if (this._bIsOwnerActive) {
-				this._onContextualSettingsChanged();
-			}
+			this._onContextualSettingsChanged();
 		}
 	};
 
@@ -3157,75 +3152,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Configuration for the binding of a managed property.
-	 *
-	 * Exactly one of <code>path</code>, <code>value</code> or <code>parts</code> must be specified.
-	 * The same configuration can be provided for the parts of a composite binding, but
-	 * nesting composite bindings in composite bindings is not yet supported.
-	 *
-	 * Aggregations with cardinality 0..1 that have a simple, alternative type (aka <code>altType</code>),
-	 * can be bound with the same kind of configuration, e.g. the <code>tooltip</code> aggregation of elements.
-	 *
-	 * @typedef {object} sap.ui.base.ManagedObject.PropertyBindingInfo
-	 *
-	 * @property {string} [path]
-	 *   Path in the model to bind to, either an absolute path or relative to the binding context for the
-	 *   corresponding model; when the path contains a '&gt;' sign, the string preceding it will override
-	 *   the <code>model</code> property and the remainder after the '&gt;' will be used as binding path
-	 * @property {string} [value]
-	 *   Since 1.61, defines a static binding with the given value.
-	 * @property {string} [model]
-	 *   Name of the model to bind against; when <code>undefined</code> or omitted, the default model is used
-	 * @property {boolean} [suspended]
-	 *   Whether the binding should be suspended initially
-	 * @property {function} [formatter]
-	 *   Function to convert model data into a property value
-	 * @property {boolean} [useRawValues]
-	 *   Whether the parameters to the formatter function should be passed as raw values.
-	 *   In this case the specified types for the binding parts are not used and the values
-	 *   are not formatted.
-	 *
-	 *   <b>Note</b>: use this flag only when using multiple bindings. If you use only one
-	 *   binding and want raw values then simply don't specify a type for that binding.
-	 *
-	 * @property {boolean} [useInternalValues]
-	 *   Whether the parameters to the formatter function should be passed as the related JavaScript primitive values.
-	 *   In this case the values of the model are parsed by the {@link sap.ui.model.SimpleType#getModelFormat model format}
-	 *   of the specified types from the binding parts.
-	 *
-	 *   <b>Note</b>: use this flag only when using multiple bindings.
-	 * @property {sap.ui.model.Type|string} [type]
-	 *   A type object or the name of a type class to create such a type object; the type
-	 *   will be used for converting model data to a property value (aka "formatting") and
-	 *   vice versa (in binding mode <code>TwoWay</code>, aka "parsing")
-	 * @property {string} [targetType]
-	 *   Target type to be used by the type when formatting model data, for example "boolean"
-	 *   or "string" or "any"; defaults to the property's type
-	 * @property {object} [formatOptions]
-	 *   Format options to be used for the type; only taken into account when the type is
-	 *   specified by its name - a given type object won't be modified
-	 * @property {object} [constraints]
-	 *   Additional constraints to be used when constructing a type object from a type name,
-	 *   ignored when a type object is given
-	 * @property {sap.ui.model.BindingMode} [mode=Default]
-	 *   Binding mode to be used for this property binding (e.g. one way)
-	 * @property {object} [parameters=null]
-	 *   Map of additional parameters for this binding; the names and value ranges of the supported
-	 *   parameters depend on the model implementation, they should be documented with the
-	 *   <code>bindProperty</code> method of the corresponding model class or with the model specific
-	 *   subclass of <code>sap.ui.model.PropertyBinding</code>
-	 * @property {object} [events=null]
-	 *   Map of event handler functions keyed by the name of the binding events that they should be attached to
-	 * @property {sap.ui.base.ManagedObject.PropertyBindingInfo[]} [parts]
-	 *   Array of binding info objects for the parts of a composite binding; the structure of
-	 *   each binding info is the same as described for the <code>oBindingInfo</code> as a whole.
-	 *
-	 *   <b>Note</b>: recursive composite bindings are currently not supported
-	 *
-	 * @public
-	 */
-
-	/**
 	 * Binds a property to the model.
 	 *
 	 * Whenever the corresponding model becomes available or changes (either via a call to {@link #setModel setModel}
@@ -3242,6 +3168,7 @@ sap.ui.define([
 	 * This is a generic method which can be used to bind any property to the model. A managed
 	 * object may flag any property in its metadata with <code>bindable: "bindable"</code> to additionally
 	 * provide named methods to bind and unbind the corresponding property.
+	 *
 	 *
 	 * <b>Composite Binding</b><br>
 	 * A composite property binding which combines data from multiple model paths can be declared using
@@ -3262,15 +3189,6 @@ sap.ui.define([
 	 * Note that a composite binding will be forced into mode <code>OneWay</code> when one of the
 	 * binding parts is not in mode <code>TwoWay</code>.
 	 *
-	 * <b>Static Binding</b><br>
-	 * A StaticBinding allows to define static values within a <code>sap.ui.model.CompositeBinding</code>.
-	 * It behaves like a property binding but always returns the value that is stored in the binding itself.
-	 * The binding does not have a <code>sap.ui.model.Context</code>, a <code>sap.ui.model.Model</code> or
-	 * a <code>oBindingInfo.path</code>.
-	 * A StaticBinding is created when a <code>oBindingInfo.value</code> is passed instead
-	 * of a <code>oBindingInfo.path</code> or <code>oBindingInfo.parts[i].path</code>.
-	 *
-	 * Also see {@link sap.ui.model.StaticBinding StaticBinding} in the documentation.
 	 *
 	 * <b>Formatter Functions</b><br>
 	 * When a formatter function is specified for the binding or for a binding part, it will be
@@ -3290,8 +3208,59 @@ sap.ui.define([
 	 * @param {string} sName
 	 *            Name of a public property to bind; public aggregations of cardinality 0..1 that have an alternative,
 	 *            simple type (e.g. "string" or "int") can also be bound with this method
-	 * @param {sap.ui.base.ManagedObject.PropertyBindingInfo} oBindingInfo
+	 * @param {object} oBindingInfo
 	 *            Binding information
+	 * @param {string} oBindingInfo.path
+	 *            Path in the model to bind to, either an absolute path or relative to the binding context for the
+	 *            corresponding model; when the path contains a '&gt;' sign, the string preceding it will override
+	 *            the <code>model</code> property and the remainder after the '&gt;' will be used as binding path
+	 * @param {string} [oBindingInfo.model]
+	 *            Name of the model to bind against; when <code>undefined</code> or omitted, the default model is used
+	 * @param {boolean} [oBindingInfo.suspended]
+	 * 			  Whether the binding should be suspended initially
+	 * @param {function} [oBindingInfo.formatter]
+	 *            Function to convert model data into a property value
+	 * @param {boolean} [oBindingInfo.useRawValues]
+	 *            Whether the parameters to the formatter function should be passed as raw values.
+	 *            In this case the specified types for the binding parts are not used and the values
+	 *            are not formatted.
+	 *
+	 *            <b>Note</b>: use this flag only when using multiple bindings. If you use only one
+	 *            binding and want raw values then simply don't specify a type for that binding.
+	 * @param {boolean} [oBindingInfo.useInternalValues]
+	 *            Whether the parameters to the formatter function should be passed as the related JavaScript primitive values.
+	 *            In this case the values of the model are parsed by the {@link sap.ui.model.SimpleType#getModelFormat model format}
+	 *            of the specified types from the binding parts.
+	 *
+	 *            <b>Note</b>: use this flag only when using multiple bindings.
+	 * @param {sap.ui.model.Type|string} [oBindingInfo.type]
+	 *            A type object or the name of a type class to create such a type object; the type
+	 *            will be used for converting model data to a property value (aka "formatting") and
+	 *            vice versa (in binding mode <code>TwoWay</code>, aka "parsing")
+	 * @param {string} [oBindingInfo.targetType]
+	 *            Target type to be used by the type when formatting model data, for example "boolean"
+	 *            or "string" or "any"; defaults to the property's type
+	 * @param {object} [oBindingInfo.formatOptions]
+	 *            Format options to be used for the type; only taken into account when the type is
+	 *            specified by its name - a given type object won't be modified
+	 * @param {object} [oBindingInfo.constraints]
+	 *            Additional constraints to be used when constructing a type object from a type name,
+	 *            ignored when a type object is given
+	 * @param {sap.ui.model.BindingMode} [oBindingInfo.mode=Default]
+	 *            Binding mode to be used for this property binding (e.g. one way)
+	 * @param {object} [oBindingInfo.parameters=null]
+	 *            Map of additional parameters for this binding; the names and value ranges of the supported
+	 *            parameters depend on the model implementation, they should be documented with the
+	 *            <code>bindProperty</code> method of the corresponding model class or with the model specific
+	 *            subclass of <code>sap.ui.model.PropertyBinding</code>
+	 * @param {object} [oBindingInfo.events=null]
+	 *            Map of event handler functions keyed by the name of the binding events that they should be attached to
+	 * @param {object[]} [oBindingInfo.parts]
+	 *            Array of binding info objects for the parts of a composite binding; the structure of
+	 *            each binding info is the same as described for the <code>oBindingInfo</code> as a whole.
+	 *
+	 *            <b>Note</b>: recursive composite bindings are currently not supported
+	 *
 	 * @returns {this}
 	 *            Returns <code>this</code> to allow method chaining
 	 * @public
@@ -3685,65 +3654,6 @@ sap.ui.define([
 	var MAYBE_SHAREABLE_OR_NOT = 1;
 
 	/**
-	 * Configuration for the binding of a managed aggregation of cardinality 0..n.
-	 *
-	 * <code>path</code> is the only mandatory property, all others are optional.
-	 *
-	 * @typedef {object} sap.ui.base.ManagedObject.AggregationBindingInfo
-	 *
-	 * @property {string} path
-	 *   Path in the model to bind to, either an absolute path or relative to the binding context for the
-	 *   corresponding model; when the path contains a '&gt;' sign, the string preceding it will override
-	 *   the <code>model</code> property and the remainder after the '&gt;' will be used as binding path
-	 * @property {string} [model]
-	 *   Name of the model to bind against; when <code>undefined</code> or omitted, the default model is used
-	 * @property {sap.ui.base.ManagedObject} [template]
-	 *   The template to clone for each item in the aggregation; either a template or a factory must be given
-	 * @property {boolean|undefined} [templateShareable=undefined]
-	 *   Whether the framework should assume that the application takes care of the lifecycle of the given
-	 *   template; when set to <code>true</code>, the template can be used in multiple bindings, either in
-	 *   parallel or over time, and the framework won't clone it when this <code>ManagedObject</code> is cloned;
-	 *   when set to <code>false</code>, the lifecycle of the template is bound to the lifecycle of the binding,
-	 *   when the aggregation is unbound or when this <code>ManagedObject</code> is destroyed, the template also
-	 *   will be destroyed, and when this  <code>ManagedObject</code> is cloned, the template will be cloned
-	 *   as well; the third option (<code>undefined</code>) only exists for compatibility reasons, its behavior
-	 *   is not fully reliable and it may leak the template
-	 * @property {function} [factory]
-	 *   A factory function that will be called to create an object for each item in the aggregation;
-	 *   this is an alternative to providing a template object and can be used when the objects should differ
-	 *   depending on the binding context; the factory function will be called with two parameters: an ID that
-	 *   should be used for the created object and the binding context for which the object has to be created;
-	 *   the function must return an object appropriate for the bound aggregation
-	 * @property {boolean} [suspended]
-	 *   Whether the binding should be suspended initially
-	 * @property {int} [startIndex]
-	 *   the first entry of the list to be created
-	 * @property {int} [length]
-	 *   The amount of entries to be created (may exceed the size limit of the model)
-	 * @property {sap.ui.model.Sorter|sap.ui.model.Sorter[]} [sorter]
-	 *   The initial sort order (optional)
-	 * @property {sap.ui.model.Filter|sap.ui.model.Filter[]} [filters]
-	 *   The predefined filters for this aggregation (optional)
-	 * @property {string|function} [key]
-	 *   Name of the key property or a function getting the context as only parameter to calculate a key
-	 *   for entries. This can be used to improve update behaviour in models, where a key is not already
-	 *   available.
-	 * @property {object} [parameters=null]
-	 *   Map of additional parameters for this binding; the names and value ranges of the supported
-	 *   parameters depend on the model implementation, they should be documented with the
-	 *   <code>bindList</code> method of the corresponding model class or with the model specific
-	 *   subclass of <code>sap.ui.model.ListBinding</code>
-	 * @property {function} [groupHeaderFactory]
-	 *   A factory function to generate custom group visualization (optional). It should return a
-	 *   control suitable to visualize a group header (e.g. a <code>sap.m.GroupHeaderListItem</code>
-	 *   for a <code>sap.m.List</code>).
-	 * @property {Object<string,function>} [events=null]
-	 *   Map of event handler functions keyed by the name of the binding events that they should be attached to
-	 *
-	 * @public
-	 */
-
-	/**
 	 * Bind an aggregation to the model.
 	 *
 	 * Whenever the corresponding model becomes available or changes (either via a call to {@link #setModel setModel}
@@ -3764,8 +3674,56 @@ sap.ui.define([
 	 *
 	 * @param {string} sName
 	 *            Name of a public aggregation to bind
-	 * @param {sap.ui.base.ManagedObject.AggregationBindingInfo} oBindingInfo
+	 * @param {object} oBindingInfo
 	 *            Binding info
+	 * @param {string} oBindingInfo.path
+	 *            Path in the model to bind to, either an absolute path or relative to the binding context for the
+	 *            corresponding model; when the path contains a '&gt;' sign, the string preceding it will override
+	 *            the <code>model</code> property and the remainder after the '&gt;' will be used as binding path
+	 * @param {string} [oBindingInfo.model]
+	 *            Name of the model to bind against; when <code>undefined</code> or omitted, the default model is used
+	 * @param {sap.ui.base.ManagedObject} [oBindingInfo.template]
+	 *            The template to clone for each item in the aggregation; either a template or a factory must be given
+	 * @param {boolean|undefined} [oBindingInfo.templateShareable=undefined]
+	 *            Whether the framework should assume that the application takes care of the lifecycle of the given
+	 *            template; when set to <code>true</code>, the template can be used in multiple bindings, either in
+	 *            parallel or over time, and the framework won't clone it when this <code>ManagedObject</code> is cloned;
+	 *            when set to <code>false</code>, the lifecycle of the template is bound to the lifecycle of the binding,
+	 *            when the aggregation is unbound or when this <code>ManagedObject</code> is destroyed, the template also
+	 *            will be destroyed, and when this  <code>ManagedObject</code> is cloned, the template will be cloned
+	 *            as well; the third option (<code>undefined</code>) only exists for compatibility reasons, its behavior
+	 *            is not fully reliable and it may leak the template
+	 * @param {function} [oBindingInfo.factory]
+	 *            A factory function that will be called to create an object for each item in the aggregation;
+	 *            this is an alternative to providing a template object and can be used when the objects should differ
+	 *            depending on the binding context; the factory function will be called with two parameters: an ID that
+	 *            should be used for the created object and the binding context for which the object has to be created;
+	 *            the function must return an object appropriate for the bound aggregation
+	 * @param {boolean} [oBindingInfo.suspended]
+	 *            Whether the binding should be suspended initially
+	 * @param {int} [oBindingInfo.startIndex]
+	 *            the first entry of the list to be created
+	 * @param {int} [oBindingInfo.length]
+	 *            The amount of entries to be created (may exceed the size limit of the model)
+	 * @param {sap.ui.model.Sorter|sap.ui.model.Sorter[]} [oBindingInfo.sorter]
+	 *            The initial sort order (optional)
+	 * @param {sap.ui.model.Filter[]} [oBindingInfo.filters]
+	 *            The predefined filters for this aggregation (optional)
+	 * @param {string|function} [oBindingInfo.key]
+	 *            Name of the key property or a function getting the context as only parameter to calculate a key
+	 *            for entries. This can be used to improve update behaviour in models, where a key is not already
+	 *            available.
+	 * @param {object} [oBindingInfo.parameters=null]
+	 *            Map of additional parameters for this binding; the names and value ranges of the supported
+	 *            parameters depend on the model implementation, they should be documented with the
+	 *            <code>bindList</code> method of the corresponding model class or with the model specific
+	 *            subclass of <code>sap.ui.model.ListBinding</code>
+	 * @param {function} [oBindingInfo.groupHeaderFactory]
+	 *            A factory function to generate custom group visualization (optional). It should return a
+	 *            control suitable to visualize a group header (e.g. a <code>sap.m.GroupHeaderListItem</code>
+	 *            for a <code>sap.m.List</code>).
+	 * @param {object} [oBindingInfo.events=null]
+	 *            Map of event handler functions keyed by the name of the binding events that they should be attached to
 	 *
 	 * @returns {this}
 	 *            Returns <code>this</code> to allow method chaining
@@ -4879,21 +4837,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns a map of all models assigned to this ManagedObject.
-	 *
-	 * The default model is available on key <code>undefined</code>.
-	 *
-	 * <b>Note:</b> Models propagated from the parent are not included.
-	 *
-	 * @return {Object<string, sap.ui.model.Model>} The models
-	 * @public
-	 * @since 1.88.0
-	 */
-	ManagedObject.prototype.getOwnModels = function() {
-		return this.oModels;
-	};
-
-	/**
 	 * Check if any model is set to the ManagedObject or to one of its parents (including UIArea and Core).
 	 *
 	 * <b>Note:</b> A ManagedObject inherits models from the Core only when it is a descendant of a UIArea.
@@ -4982,10 +4925,9 @@ sap.ui.define([
 		// if no local ID array has been passed, collect IDs of all aggregated objects to
 		// be able to properly adapt associations, which are within the cloned object hierarchy
 		if (!aLocalIds && bCloneChildren) {
-			aLocalIds = this.findAggregatedObjects(true, null, true).map(function(oObject) {
+			aLocalIds = this.findAggregatedObjects(true).map(function(oObject) {
 				return oObject.getId();
 			});
-			aLocalIds.push(this.getId());
 		}
 
 		var oMetadata = this.getMetadata(),
@@ -5225,22 +5167,17 @@ sap.ui.define([
 	 * If no check function is given, all aggregated objects will pass the check and be added
 	 * to the result array.
 	 *
-	 * When setting <code>bIncludeBindingTemplates</code> to <code>true</code>, binding templates will be included
-	 * in the search.
-	 *
 	 * <b>Take care:</b> this operation might be expensive.
 	 *
 	 * @param {boolean} [bRecursive=false]
 	 *   Whether the whole aggregation tree should be searched
 	 * @param {function(sap.ui.base.ManagedObject):boolean} [fnCondition]
 	 *   Objects for which this function returns a falsy value will not be added to the result array
-	 * @param {boolean} [bIncludeBindingTemplates=false]
-	 *   Whether binding templates should be included
 	 * @returns {sap.ui.base.ManagedObject[]}
 	 *   Array of aggregated objects that passed the check
 	 * @public
 	 */
-	ManagedObject.prototype.findAggregatedObjects = function(bRecursive, fnCondition, bIncludeBindingTemplates) {
+	ManagedObject.prototype.findAggregatedObjects = function(bRecursive, fnCondition) {
 
 		var aAggregatedObjects = [];
 
@@ -5251,19 +5188,6 @@ sap.ui.define([
 		function fnFindObjects(oObject) {
 			var a, i, n;
 
-			if (bIncludeBindingTemplates) {
-				for ( n in oObject.mBindingInfos) {
-					a = oObject.mBindingInfos[n].template;
-					if (a) {
-						if ( !fnCondition || fnCondition(a) ) {
-							aAggregatedObjects.push(a);
-						}
-						if ( bRecursive ) {
-							fnFindObjects(a);
-						}
-					}
-				}
-			}
 			for ( n in oObject.mAggregations ) {
 				a = oObject.mAggregations[n];
 				if ( Array.isArray(a) ) {
@@ -5290,29 +5214,6 @@ sap.ui.define([
 
 		return aAggregatedObjects;
 
-	};
-
-	/**
-	 * This lifecycle hook is called during deactivation of the owner component
-	 *
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core
-	 */
-	ManagedObject.prototype.onOwnerDeactivation = function() {
-		this._bIsOwnerActive = false;
-	};
-
-	/**
-	 * This lifecycle hook is called during activation of the owner component
-	 *
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core
-	 */
-	ManagedObject.prototype.onOwnerActivation = function() {
-		this._bIsOwnerActive = true;
-		this._onContextualSettingsChanged();
 	};
 
 	ManagedObject._defaultContextualSettings = {};

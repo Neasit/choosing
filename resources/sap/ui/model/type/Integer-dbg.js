@@ -6,16 +6,25 @@
 
 // Provides the base implementation for all model implementations
 sap.ui.define([
-	"sap/base/util/each",
-	"sap/base/util/isEmptyObject",
-	"sap/ui/core/format/NumberFormat",
-	"sap/ui/model/FormatException",
-	"sap/ui/model/ParseException",
-	"sap/ui/model/SimpleType",
-	"sap/ui/model/ValidateException"
-], function(each, isEmptyObject, NumberFormat, FormatException, ParseException, SimpleType,
-		ValidateException) {
+	'sap/ui/core/format/NumberFormat',
+	'sap/ui/model/SimpleType',
+	'sap/ui/model/FormatException',
+	'sap/ui/model/ParseException',
+	'sap/ui/model/ValidateException',
+	"sap/ui/thirdparty/jquery",
+	"sap/base/util/isEmptyObject"
+],
+	function(
+		NumberFormat,
+		SimpleType,
+		FormatException,
+		ParseException,
+		ValidateException,
+		jQuery,
+		isEmptyObject
+	) {
 	"use strict";
+
 
 	/**
 	 * Constructor for an Integer type.
@@ -26,10 +35,10 @@ sap.ui.define([
 	 * @extends sap.ui.model.SimpleType
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
-	 * @param {object} [oFormatOptions] Formatting options. For a list of all available options, see {@link sap.ui.core.format.NumberFormat NumberFormat}.
+	 * @param {object} [oFormatOptions] Formatting options. For a list of all available options, see {@link sap.ui.core.format.NumberFormat#constructor NumberFormat}.
 	 * @param {object} [oFormatOptions.source] Additional set of format options to be used if the property in the model is not of type string and needs formatting as well.
 	 * 										   If an empty object is given, the grouping is disabled and a dot is used as decimal separator.
 	 * @param {object} [oConstraints] Value constraints
@@ -109,7 +118,7 @@ sap.ui.define([
 			if (this.oInputFormat) {
 				iValue = this.oInputFormat.parse(vValue);
 			}
-			each(this.oConstraints, function(sName, oContent) {
+			jQuery.each(this.oConstraints, function(sName, oContent) {
 				switch (sName) {
 					case "minimum":
 						if (iValue < oContent) {

@@ -67,7 +67,7 @@ sap.ui.define([
 	 * <b>Note:</b> JavaScript Date objects are used to set and return the months, mark them as selected or as a special type.
 	 * But the date part of the Date object is not used. If a Date object is returned the date will be set to the 1st of the corresponding month.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -570,7 +570,7 @@ sap.ui.define([
 		if (this.getDomRef()) {
 			if (this._getShowItemHeader()) {
 				this.$().addClass("sapUiCalIntHead");
-			} else  {
+			}else {
 				this.$().removeClass("sapUiCalIntHead");
 			}
 		}
@@ -631,7 +631,7 @@ sap.ui.define([
 	/*
 	 * Sets a minimum date for the calendar.
 	 * @param {Date} oDate a JavaScript date
-	 * @returns {this} <code>this</code> for method chaining
+	 * @return {sap.ui.unified.Calendar} <code>this</code> for method chaining
 	 */
 	CalendarMonthInterval.prototype.setMinDate = function(oDate){
 
@@ -990,7 +990,7 @@ sap.ui.define([
 		var iMonths = this.getMonths();
 		if (iMonths > this._iDaysMonthsHead) {
 			return true;
-		} else  {
+		}else {
 			return false;
 		}
 
@@ -1015,7 +1015,7 @@ sap.ui.define([
 		}
 		if (oStartDate.isBefore(this._oMinDate)) {
 			oStartDate = new CalendarDate(this._oMinDate);
-		} else if (oStartDate.isAfter(oMaxDate)){
+		}else if (oStartDate.isAfter(oMaxDate)){
 			oStartDate = oMaxDate;
 		}
 
@@ -1035,7 +1035,7 @@ sap.ui.define([
 				//focused date not longer visible -> focus start date
 				this._setFocusedDate(oStartDate);
 				oMonthsRow.setDate(oLocaleDate);
-			} else  {
+			}else {
 				oMonthsRow.setDate(oDateTime);
 			}
 		}
@@ -1097,7 +1097,7 @@ sap.ui.define([
 
 		if (this._oFocusedDate.isBefore(this._oMinDate)) {
 			this._oFocusedDate = new CalendarDate(this._oMinDate);
-		} else if (this._oFocusedDate.isAfter(this._oMaxDate)){
+		}else if (this._oFocusedDate.isAfter(this._oMaxDate)){
 			this._oFocusedDate = new CalendarDate(this._oMaxDate);
 		}
 
@@ -1169,7 +1169,7 @@ sap.ui.define([
 
 		if (iYear < iYearMin || (iYear == iYearMin && iMonth <= iMonthMin )) {
 			oHeader.setEnabledPrevious(false);
-		} else  {
+		}else {
 			oHeader.setEnabledPrevious(true);
 		}
 
@@ -1178,7 +1178,7 @@ sap.ui.define([
 		iMonth = oDate.getMonth();
 		if (iYear > iYearMax || (iYear == iYearMax && iMonth >= iMonthMax)) {
 			oHeader.setEnabledNext(false);
-		} else  {
+		}else {
 			oHeader.setEnabledNext(true);
 		}
 
@@ -1239,10 +1239,10 @@ sap.ui.define([
 		if (oDate.isBefore(this._oMinDate)) {
 			oFocusedDate = this._oMinDate;
 			bChanged = true;
-		} else if (oDate.isAfter(this._oMaxDate)){
+		}else if (oDate.isAfter(this._oMaxDate)){
 			oFocusedDate = this._oMaxDate;
 			bChanged = true;
-		} else  {
+		}else {
 			oFocusedDate = oDate;
 		}
 

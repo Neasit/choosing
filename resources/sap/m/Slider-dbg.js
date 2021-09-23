@@ -95,7 +95,7 @@ function(
 		 * @implements sap.ui.core.IFormContent
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -530,7 +530,7 @@ function(
 			var sPerValue = Math.max(this._getPercentOfValue(+sNewValue), 0) + "%",
 				oHandleDomRef = this.getDomRef("handle");
 
-			if (this.getName()) {
+			if (!!this.getName()) {
 				this.getDomRef("input").setAttribute("value", sScaleLabel);
 			}
 

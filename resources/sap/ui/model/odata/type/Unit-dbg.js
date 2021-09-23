@@ -30,13 +30,8 @@ sap.ui.define([
 	 *   Whether the measure is parsed to a string; set to <code>false</code> if the measure's
 	 *   underlying type is represented as a <code>number</code>, for example
 	 *   {@link sap.ui.model.odata.type.Int32}
-	 * @param {boolean} [oFormatOptions.preserveDecimals=true]
-	 *   By default decimals are preserved, unless <code>oFormatOptions.style</code> is given as
-	 *   "short" or "long"; since 1.89.0
-	 * @param {boolean} [oFormatOptions.unitOptional]
-	 *   Whether the measure is parsed if no unit is entered; defaults to <code>true</code> if
-	 *   neither <code>showMeasure</code> nor <code>showNumber</code> is set to a falsy value,
-	 *   otherwise defaults to <code>false</code>
+	 * @param {boolean} [oFormatOptions.unitOptional=true]
+	 *   Whether the quantity is parsed if no unit is entered.
 	 * @param {any} [oFormatOptions.emptyString=0]
 	 *   Defines how an empty string is parsed into the measure. With the default value
 	 *   <code>0</code> the measure becomes <code>0</code> when an empty string is parsed.
@@ -48,17 +43,18 @@ sap.ui.define([
 	 * @alias sap.ui.model.odata.type.Unit
 	 * @author SAP SE
 	 * @class This class represents the <code>Unit</code> composite type with the parts measure,
-	 * unit, and unit customizing. The type may only be used for measure and unit parts from a
-	 * {@link sap.ui.model.odata.v4.ODataModel} or a {@link sap.ui.model.odata.v2.ODataModel}.
-	 * The measure part is formatted according to the customizing for the unit. Use the result of
-	 * the promise returned by {@link sap.ui.model.odata.v4.ODataMetaModel#requestUnitsOfMeasure}
-	 * for OData V4 or by {@link sap.ui.model.odata.ODataMetaModel#requestUnitsOfMeasure} for OData
-	 * V2 as unit customizing part. If no unit customizing is available, UI5's default formatting
-	 * applies.
+	 * unit, and unit customizing. The measure part is formatted according to the customizing for
+	 * the unit. Use the result of the promise returned by
+	 * {@link sap.ui.model.odata.v4.ODataMetaModel#requestUnitsOfMeasure} as unit customizing part.
+	 * If no unit customizing is available, UI5's default formatting applies. The type may only be
+	 * used for measure and unit parts from a {@link sap.ui.model.odata.v4.ODataModel}.
 	 * @extends sap.ui.model.type.Unit
 	 * @public
 	 * @since 1.63.0
-	 * @version 1.92.0
+	 * @version 1.87.0
+	 *
+	 * @borrows sap.ui.model.odata.type.UnitMixin#getInterface as #getInterface
+	 * @borrows sap.ui.model.odata.type.UnitMixin#validateValue as #validateValue
 	 */
 	var Unit = BaseUnit.extend("sap.ui.model.odata.type.Unit", {
 		constructor : function (oFormatOptions, oConstraints, aDynamicFormatOptionNames) {
@@ -66,7 +62,7 @@ sap.ui.define([
 		}
 	});
 
-	applyUnitMixin(Unit.prototype, BaseUnit, "customUnits", "Unit");
+	applyUnitMixin(Unit.prototype, BaseUnit, "customUnits");
 
 	/**
 	 * Formats the given values of the parts of the <code>Unit</code> composite type to the given
@@ -95,8 +91,10 @@ sap.ui.define([
 	 * @since 1.63.0
 	 */
 
-	// @override
-	// @see sap.ui.model.odata.type.UnitMixin#getCustomUnitForKey
+	/**
+	 * @override
+	 * @see sap.ui.model.odata.type.UnitMixin#getCustomUnitForKey
+	 */
 	Unit.prototype.getCustomUnitForKey = function (mCustomizing, sKey) {
 		return {
 			decimals : mCustomizing[sKey].UnitSpecificScale,
@@ -128,8 +126,8 @@ sap.ui.define([
 	 *   with "string" as its
 	 *   {@link sap.ui.base.DataType#getPrimitiveType primitive type}.
 	 *   See {@link sap.ui.model.odata.type} for more information.
-	 * @param {any[]} [aCurrentValues]
-	 *   Not used
+	 * @param {any[]} aCurrentValues
+	 *   The current values of all binding parts
 	 * @returns {any[]}
 	 *   An array containing measure and unit in this order. Both, measure and unit, are string
 	 *   values unless the format option <code>parseAsString</code> is <code>false</code>; in this
@@ -142,22 +140,6 @@ sap.ui.define([
 	 * @name sap.ui.model.odata.type.Unit#parseValue
 	 * @public
 	 * @see sap.ui.model.type.Unit#parseValue
-	 * @since 1.63.0
-	 */
-
-	/**
-	 * Validates whether the given value in model representation as returned by {@link #parseValue}
-	 * is valid and meets the conditions of this type's unit customizing.
-	 *
-	 * @param {any[]} aValues
-	 *   An array containing measure and unit in this order, see return value of {@link #parseValue}
-	 * @throws {sap.ui.model.ValidateException}
-	 *   If {@link #formatValue} has not yet been called with a customizing part or if the entered
-	 *   measure has too many decimals for its unit
-	 *
-	 * @function
-	 * @name sap.ui.model.odata.type.Unit#validateValue
-	 * @public
 	 * @since 1.63.0
 	 */
 

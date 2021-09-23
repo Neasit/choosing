@@ -64,7 +64,7 @@ sap.ui.define([
 			create: function (input) {
 				var aResult = [];
 
-				if (Array.isArray(input)) {
+				if (jQueryDOM.isArray(input)) {
 					aResult = input;
 				} else if (input) {
 					aResult = [input];

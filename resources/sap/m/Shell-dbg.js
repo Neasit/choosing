@@ -35,7 +35,7 @@ sap.ui.define([
 		 * The Shell control can be used as root element of applications. It can contain an App or a <code>SplitApp</code> control.
 		 * The Shell provides some overarching functionality for the overall application and takes care of visual adaptation, such as a frame around the App, on desktop browser platforms.
 		 * @extends sap.ui.core.Control
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -226,7 +226,7 @@ sap.ui.define([
 			if (!sText) {
 				sText = "";
 			}
-			this.$("hdrRightTxt").text(sText).css("display", (sText ? "inline" : "none"));
+			this.$("hdrRightTxt").text(sText).css("display", (!!sText ? "inline" : "none"));
 			return this;
 		};
 

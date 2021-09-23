@@ -46,7 +46,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -353,8 +353,8 @@ sap.ui.define([
 	 * Returns CSS alignment according to column hAlign setting or given parameter
 	 * for Begin/End values checks the locale settings
 	 *
-	 * @param {string} [sAlign] TextAlign enumeration
-	 * @return {string} left|center|right
+	 * @param {String} [sAlign] TextAlign enumeration
+	 * @return {String} left|center|right
 	 * @protected
 	 */
 	Column.prototype.getCssAlign = function(sAlign) {
@@ -449,7 +449,7 @@ sap.ui.define([
 	 * Display or hide the column from given table
 	 * This does not set the visibility property of the column
 	 *
-	 * @param {Element} oTableDomRef Table DOM reference
+	 * @param {Object} oTableDomRef Table DOM reference
 	 * @param {boolean} [bDisplay] whether visible or not
 	 * @protected
 	 */
@@ -490,7 +490,7 @@ sap.ui.define([
 
 		var oParent = this.getParent(),
 			oTableDomRef = oParent && oParent.getTableDomRef && oParent.getTableDomRef(),
-			bSupressInvalidate = oTableDomRef && this._index >= 0 && !oParent.getAutoPopinMode() && !this._bForcedColumn;
+			bSupressInvalidate = oTableDomRef && this._index >= 0 && !oParent.getAutoPopinMode();
 
 		if (bSupressInvalidate) {
 			this.setProperty("visible", bVisible, bSupressInvalidate);
@@ -669,7 +669,7 @@ sap.ui.define([
 	// hence overwriting the getFocusDomRef to restore the focus on the active column header
 	Column.prototype.getFocusDomRef = function() {
 		var oParent = this.getParent();
-		if (oParent && (oParent.bActiveHeaders || oParent.bFocusableHeaders)) {
+		if (oParent && oParent.bActiveHeaders) {
 			var oColumnDomRef = this.getDomRef();
 			if (oColumnDomRef) {
 				return oColumnDomRef.firstChild;

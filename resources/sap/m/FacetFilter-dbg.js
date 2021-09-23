@@ -166,11 +166,11 @@ sap.ui.define([
 	 * <h3>Additional Information</h3>
 	 *
 	 * For more information, go to <b>Developer Guide</b> section in the Demo Kit and navigate to
-	 * <b>More About Controls</b> &gt; <b>sap.m</b> &gt; <b>Facet Filter</b>
+	 * <b>More&nbsp;About&nbsp;Controls</b>&nbsp;>&nbsp;<b>sap.m</b>&nbsp;>&nbsp;<b>Facet&nbsp;Filter</b>
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IShrinkable
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -521,7 +521,6 @@ sap.ui.define([
 		// Remember the facet button overflow state
 		this._bPreviousScrollForward = false;
 		this._bPreviousScrollBack = false;
-		this._popoverClosing = false;
 
 		this._getAddFacetButton();
 
@@ -648,11 +647,6 @@ sap.ui.define([
 		}
 		// After each rendering the delegate needs to be initialized as well.
 		this.oItemNavigation.setRootDomRef(oFocusRef);
-		if (this._invalidateFlag == true) {
-			this.oItemNavigation.setFocusedIndex(-1);
-			this.focus();
-			this._invalidateFlag = false;
-		}
 
 		//set the array of dom nodes representing the items.
 		this.oItemNavigation.setItemDomRefs(aDomRefs);
@@ -1076,14 +1070,9 @@ sap.ui.define([
 					}
 					clearDeleteFacetIconTouchStartFlag(that._displayedList);
 				},
-				beforeClose: function() {
-					that._popoverClosing = true;
-				},
 				afterClose: function(oEvent) {
 
 					that._addDelegateFlag = true;
-
-					this._popoverClosing = false;
 
 					that._handlePopoverAfterClose();
 				},
@@ -1442,8 +1431,6 @@ sap.ui.define([
 				var oFirstItem = (this._displayedList.getMode() === ListMode.MultiSelect) ? oToPage.getContent(0)[1].getItems()[0] : oToPage.getContent(0)[0].getItems()[0];
 				if (oFirstItem) {
 					oFirstItem.focus();
-				} else if (oToPage.getContent()[1]) {
-					oToPage.getContent()[1].focus();
 				}
 			}
 			if (oToPage === oFacetPage) {
@@ -1999,12 +1986,6 @@ sap.ui.define([
 		return oSummaryBar;
 	};
 
-	// Make sure we update selection texts when reset button is pressed
-	FacetFilter.prototype._handleReset = function () {
-		this.fireReset();
-		this.invalidate();
-	};
-
 	/**
 	 * @returns {sap.m.Button} The created reset button
 	 * @private
@@ -2018,15 +1999,7 @@ sap.ui.define([
 			press: function(oEvent) {
 				this._addDelegateFlag = true;
 				this._invalidateFlag = true;
-
-				if (this._popoverClosing) {
-					// We wait for the closing popover animation to finish before firing "reset" event,
-					// so "listClose" event is fired before "reset" event in all cases.
-					setTimeout(this._handleReset.bind(this), Popover.prototype._getAnimationDuration());
-				} else {
-					this._handleReset();
-				}
-
+				this.fireReset();
 				//clear search value when 'reset' button clicked
 				var aLists = this.getLists();
 				for (var i = 0; i < aLists.length; i++) {
@@ -2037,6 +2010,9 @@ sap.ui.define([
 						oFirstItemInList.focus();
 					}
 				}
+				// Make sure we update selection texts
+				this.invalidate();
+
 			}.bind(this)
 		});
 		return oButton;
@@ -2334,7 +2310,7 @@ sap.ui.define([
 
 		   var oDomRef = this.getDomRef("head");
 		   var iScrollLeft = oDomRef.scrollLeft;
-		if (this._bRtl) {
+		if (!Device.browser.internet_explorer && this._bRtl) {
 			iDelta = -iDelta;
 		} // RTL lives in the negative space
 

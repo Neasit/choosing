@@ -53,13 +53,11 @@ sap.ui.define(["sap/m/library", "sap/base/security/encodeCSS", "sap/ui/thirdpart
 				sScopeClass = encodeCSS("sapMGTScopeActions");
 			}
 		} else if (sScope === GenericTileScope.ActionMore || sScope === GenericTileScope.ActionRemove) {
-
 			bIsSingleAction = true;
 			// given class only needs to be added if the tile's state is not disabled
 			if (sState !== LoadState.Disabled) {
 				sScopeClass = encodeCSS("sapMGTScopeSingleAction");
 			}
-
 		} else {
 			sScopeClass = encodeCSS("sapMGTScopeDisplay");
 		}
@@ -87,9 +85,6 @@ sap.ui.define(["sap/m/library", "sap/base/security/encodeCSS", "sap/ui/thirdpart
 		}
 		oRm.class("sapMGT");
 		oRm.class(sScopeClass);
-		if (sScope ===  GenericTileScope.ActionMore) {
-				oRm.style("padding-right", "2.25rem");
-		}
 		oRm.class("sapMGTLineMode");
 		this._writeDirection(oRm);
 		if (sTooltipText) {
@@ -108,6 +103,7 @@ sap.ui.define(["sap/m/library", "sap/base/security/encodeCSS", "sap/ui/thirdpart
 		if (sState === LoadState.Failed) {
 			oRm.class("sapMGTFailed");
 		}
+		// oRm.writeClasses();
 		oRm.openEnd();
 		// focus div was only getting rendered when screen size was small
 		// which in turn was not rendering active state when screen size was large and thus default browser active state would suffice

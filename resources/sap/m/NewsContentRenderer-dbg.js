@@ -12,9 +12,7 @@ sap.ui.define([],
 	 * NewsContent renderer.
 	 * @namespace
 	 */
-	var NewsContentRenderer = {
-		apiVersion: 2
-	};
+	var NewsContentRenderer = {};
 
 	/**
 	 * Renders the HTML for the given control, using the provided {@link sap.ui.core.RenderManager}.
@@ -29,29 +27,34 @@ sap.ui.define([],
 			sTooltip = "";
 		}
 
-		oRm.openStart("div", oControl);
-		oRm.attr("role", "presentation");
-		oRm.attr("aria-label", sTooltip);
+		oRm.write("<div");
+		oRm.writeControlData(oControl);
+		oRm.writeAttribute("role", "presentation");
+		oRm.writeAttributeEscaped("aria-label", sTooltip);
 
-		oRm.class("sapMNwC");
+		oRm.addClass("sapMNwC");
 		if (oControl.hasListeners("press")) {
-			oRm.class("sapMPointer");
-			oRm.attr("tabindex", "0");
+			oRm.addClass("sapMPointer");
+			oRm.writeAttribute("tabindex", "0");
 		}
-		oRm.openEnd();
+		oRm.writeClasses();
+		oRm.write(">");
 
-		oRm.openStart("div");
-		oRm.class("sapMNwCCTxt");
-		oRm.openEnd();
+		oRm.write("<div");
+		oRm.addClass("sapMNwCCTxt");
+		oRm.writeClasses();
+		oRm.write(">");
 		oRm.renderControl(oControl._oContentText);
-		oRm.close("div");
+		oRm.write("</div>");
 
-		oRm.openStart("div", oControl.getId() + "-subheader");
-		oRm.class("sapMNwCSbh");
-		oRm.openEnd();
-		oRm.text(sSubheader);
-		oRm.close("div");
-		oRm.close("div");
+		oRm.write("<div");
+		oRm.writeAttribute("id", oControl.getId() + "-subheader");
+		oRm.addClass("sapMNwCSbh");
+		oRm.writeClasses();
+		oRm.write(">");
+		oRm.writeEscaped(sSubheader);
+		oRm.write("</div>");
+		oRm.write("</div>");
 	};
 
 	return NewsContentRenderer;

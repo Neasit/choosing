@@ -19,7 +19,7 @@
 	 *  - ui5loader-autoconfig.js
 	 */
 
-	/*global document, jQuery, sap, window */
+	/*global console, document, ES6Promise, jQuery, sap, window */
 	"use strict";
 
 	var ui5loader = window.sap && window.sap.ui && window.sap.ui.loader,
@@ -313,6 +313,14 @@
 				amd: true,
 				exports: 'OData' // 'datajs'
 			},
+			'sap/ui/thirdparty/es6-promise': {
+				amd: true,
+				exports: 'ES6Promise'
+			},
+			'sap/ui/thirdparty/flexie': {
+				amd: false,
+				exports: 'Flexie'
+			},
 			'sap/ui/thirdparty/handlebars': {
 				amd: true,
 				exports: 'Handlebars'
@@ -432,6 +440,14 @@
 				amd: true,
 				exports: 'sinon' // really sinon! sinon-server is a subset of server and uses the same global for export
 			},
+			'sap/ui/thirdparty/unorm': {
+				amd: false,
+				exports: 'UNorm'
+			},
+			'sap/ui/thirdparty/unormdata': {
+				exports: 'UNorm', // really 'UNorm'! module extends UNorm
+				deps: ['sap/ui/thirdparty/unorm']
+			},
 			'sap/ui/thirdparty/URI': {
 				amd: true,
 				exports: 'URI'
@@ -487,6 +503,11 @@
 	});
 
 	var defineModuleSync = ui5loader._.defineModuleSync;
+	defineModuleSync('sap/ui/thirdparty/baseuri.js', null);
+	if ( typeof ES6Promise !== 'undefined' ) {
+		defineModuleSync('sap/ui/thirdparty/es6-promise.js', ES6Promise);
+	}
+	defineModuleSync('sap/ui/thirdparty/es6-shim-nopromise.js', null);
 
 	defineModuleSync('ui5loader.js', null);
 	defineModuleSync('ui5loader-autoconfig.js', null);

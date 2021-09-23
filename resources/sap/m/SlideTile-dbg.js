@@ -28,7 +28,6 @@ sap.ui.define([
 	) {
 	"use strict";
 
-	var GenericTileScope = library.GenericTileScope;
 	var TileSizeBehavior = library.TileSizeBehavior;
 
 	/**
@@ -41,7 +40,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.34
 	 *
 	 * @public
@@ -142,7 +141,7 @@ sap.ui.define([
 	SlideTile.prototype.onBeforeRendering = function () {
 		// initialize SlideTile scope with SlideTile CSS class name
 		GenericTile.prototype._initScopeContent.call(this, "sapMST");
-		var bActionsView = this.getScope() === GenericTileScope.Actions;
+		var bActionsView = this.getScope() === library.GenericTileScope.Actions;
 		// According to the scope of SlideTile, displays corresponding view of GenericTiles
 		for (var i = 0; i < this.getTiles().length; i++) {
 			this.getTiles()[i].showActionsView(bActionsView);
@@ -174,11 +173,11 @@ sap.ui.define([
 		} else {
 			this._scrollToNextTile();
 		}
-		if (cTiles > 1 && sScope === GenericTileScope.Display) {
+		if (cTiles > 1 && sScope === library.GenericTileScope.Display) {
 			this._startAnimation();
 		}
 		// in actions scope, the more icon color is changed when the displayed tile has news content (dark background)
-		if (sScope === GenericTileScope.Actions && this._iCurrentTile >= 0 &&
+		if (sScope === library.GenericTileScope.Actions && this._iCurrentTile >= 0 &&
 			this._hasNewsContent(this._iCurrentTile)) {
 			this.addStyleClass("sapMSTDarkBackground");
 		}
@@ -206,7 +205,7 @@ sap.ui.define([
 	SlideTile.prototype.ontap = function (oEvent) {
 		var sScope = this.getScope();
 		this.$().trigger("focus");
-		if (sScope === GenericTileScope.Actions) {
+		if (sScope === library.GenericTileScope.Actions) {
 			var oParams = this._getEventParams(oEvent);
 			this.firePress(oParams);
 			oEvent.preventDefault();
@@ -219,7 +218,7 @@ sap.ui.define([
 	 * @param {sap.ui.base.Event} oEvent which was fired
 	 */
 	SlideTile.prototype.ontouchstart = function (oEvent) {
-		if (this.getScope() === GenericTileScope.Display) {
+		if (this.getScope() === library.GenericTileScope.Display) {
 			// hover of SlideTile should not be triggered when user only touch the Play/Pause button on mobile devices
 			if (jQuery(oEvent.target).hasClass("sapMSTIconClickTapArea")) {
 				this.addStyleClass("sapMSTIconPressed");
@@ -257,7 +256,7 @@ sap.ui.define([
 	 * @param {sap.ui.base.Event} oEvent which was fired
 	 */
 	SlideTile.prototype.onkeydown = function (oEvent) {
-		if (this.getScope() === GenericTileScope.Display) {
+		if (this.getScope() === library.GenericTileScope.Display) {
 			if (PseudoEvents.events.sapenter.fnCheck(oEvent)) {
 				var oGenericTile = this.getTiles()[this._iCurrentTile];
 				oGenericTile.onkeydown(oEvent);
@@ -272,7 +271,7 @@ sap.ui.define([
 	 */
 	SlideTile.prototype.onkeyup = function (oEvent) {
 		var oParams;
-		if (this.getScope() === GenericTileScope.Display) {
+		if (this.getScope() === library.GenericTileScope.Display) {
 			if (PseudoEvents.events.sapenter.fnCheck(oEvent)) {
 				var oGenericTile = this.getTiles()[this._iCurrentTile];
 				oGenericTile.onkeyup(oEvent);
@@ -287,7 +286,7 @@ sap.ui.define([
 			if (oEvent.which === KeyCodes.F && this._bAnimationPause) {
 				this._scrollToNextTile(true, false);
 			}
-		} else if (this.getScope() === GenericTileScope.Actions) {
+		} else if (this.getScope() === library.GenericTileScope.Actions) {
 			if (PseudoEvents.events.sapselect.fnCheck(oEvent)) {
 				this.firePress(this._getEventParams(oEvent));
 				oEvent.preventDefault();
@@ -314,7 +313,7 @@ sap.ui.define([
 	 * @param {sap.ui.base.Event} oEvent which was fired
 	 */
 	SlideTile.prototype.onmouseup = function (oEvent) {
-		if (this.getScope() === GenericTileScope.Display) {
+		if (this.getScope() === library.GenericTileScope.Display) {
 			if (this.hasStyleClass("sapMSTIconPressed")) {
 				this._toggleAnimation();
 				this.removeStyleClass("sapMSTIconPressed");
@@ -338,7 +337,7 @@ sap.ui.define([
 	// Overwrites setScope of SlideTile control to be able to call method _setTilePressState
 	SlideTile.prototype.setScope = function (value) {
 		if (this.getScope() !== value) {
-			if (value === GenericTileScope.Actions) {
+			if (value === library.GenericTileScope.Actions) {
 				this.setProperty("scope", value, true);
 				// Invalidate after the sliding animation is done
 				this._bNeedInvalidate = true;
@@ -574,9 +573,9 @@ sap.ui.define([
 		oCurrentTile = aTiles[this._iCurrentTile];
 		sText = oCurrentTile._getAriaText().replace(/\s/g, " ");// Gets Tile's ARIA text and collapses whitespaces
 
-		if (sScope === GenericTileScope.Actions) {
+		if (sScope === library.GenericTileScope.Actions) {
 			sText = this._oRb.getText("GENERICTILE_ACTIONS_ARIA_TEXT") + "\n" + sText;
-		} else if (aTiles.length > 1 && sScope === GenericTileScope.Display) {
+		} else if (aTiles.length > 1 && sScope === library.GenericTileScope.Display) {
 			sText += "\n" + this._oRb.getText("SLIDETILE_MULTIPLE_CONTENT") + "\n" +
 				this._oRb.getText("SLIDETILE_TOGGLE_SLIDING");
 			if (this._bAnimationPause) {
@@ -681,7 +680,7 @@ sap.ui.define([
 	 */
 	SlideTile.prototype._setTilePressState = function () {
 		var oTiles = this.getTiles(),
-			bTilePressEnabled = this.getScope() === GenericTileScope.Display;//if scope is 'Display', enable press events of GenericTiles
+			bTilePressEnabled = this.getScope() === library.GenericTileScope.Display;//if scope is 'Display', enable press events of GenericTiles
 
 		for (var i = 0; i < oTiles.length; i++) {
 			oTiles[i].setPressEnabled(bTilePressEnabled);

@@ -22,7 +22,7 @@ sap.ui.define([], function() {
 	 * Registry to manage allowed URLs and validate against them.
 	 *
 	 * @namespace
-	 * @since 1.85
+	 * @since 1.58
 	 * @alias module:sap/base/security/URLListValidator
 	 * @public
 	 */

@@ -6,17 +6,27 @@
 
 // Provides class sap.ui.model.odata.ODataAnnotations
 sap.ui.define([
-	"./AnalyticalBinding",
+	'sap/ui/model/TreeBinding',
+	'./AnalyticalBinding',
+	'sap/ui/model/TreeAutoExpandMode',
+	'sap/ui/model/ChangeReason',
+	'sap/ui/model/odata/ODataTreeBindingAdapter',
+	'sap/ui/model/TreeBindingAdapter',
 	"sap/base/assert",
 	"sap/base/Log",
-	"sap/base/util/each",
-	"sap/ui/model/ChangeReason",
-	"sap/ui/model/TreeAutoExpandMode",
-	"sap/ui/model/TreeBinding",
-	"sap/ui/model/TreeBindingAdapter",
-	"sap/ui/model/odata/ODataTreeBindingAdapter"
-], function(AnalyticalBinding, assert, Log, each, ChangeReason, TreeAutoExpandMode, TreeBinding,
-		TreeBindingAdapter, ODataTreeBindingAdapter) {
+	"sap/ui/thirdparty/jquery"
+],
+	function(
+		TreeBinding,
+		AnalyticalBinding,
+		TreeAutoExpandMode,
+		ChangeReason,
+		ODataTreeBindingAdapter,
+		TreeBindingAdapter,
+		assert,
+		Log,
+		jQuery
+	) {
 	"use strict";
 
 	/**
@@ -162,9 +172,6 @@ sap.ui.define([
 	 */
 	AnalyticalTreeBindingAdapter.prototype._getContextsOrNodes = function (bReturnNodes,
 			iStartIndex, iLength, iThreshold) {
-		if (!this.isResolved()) {
-			return [];
-		}
 		if (!iLength) {
 			iLength = this.oModel.iSizeLimit;
 		}
@@ -222,7 +229,7 @@ sap.ui.define([
 			var that = this;
 
 			//if we have a missing section inside a subtree, we need to reload this subtree
-			each(mMissingSections, function (sGroupID, oNode) {
+			jQuery.each(mMissingSections, function (sGroupID, oNode) {
 				// reset the root of the subtree
 				oNode.magnitude = 0;
 				oNode.numberOfTotals = 0;
@@ -659,7 +666,7 @@ sap.ui.define([
 			// Collapse all subsequent child nodes, this is determined by a common groupID prefix, e.g.: "/A100-50/" is the parent of "/A100-50/Finance/"
 			// All expanded nodes which start with 'sGroupIDforCollapsingNode', are basically children of it and also need to be collapsed
 			var that = this;
-			each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
+			jQuery.each(this._mTreeState.expanded, function (sGroupID, oNodeState) {
 				if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode)) {
 					that._updateTreeState({groupID: sGroupID, expanded: false});
 				}
@@ -667,7 +674,7 @@ sap.ui.define([
 
 			var aDeselectedNodeIds = [];
 			// also remove selections from child nodes of the collapsed node
-			each(this._mTreeState.selected, function (sGroupID, oNodeState) {
+			jQuery.each(this._mTreeState.selected, function (sGroupID, oNodeState) {
 				if (typeof sGroupIDforCollapsingNode == "string" && sGroupIDforCollapsingNode.length > 0 && sGroupID.startsWith(sGroupIDforCollapsingNode)) {
 					oNodeState.selectAllMode = false;
 					that.setNodeSelection(oNodeState, false);
@@ -774,7 +781,7 @@ sap.ui.define([
 	 */
 	AnalyticalTreeBindingAdapter.prototype.hasTotaledMeasures = function() {
 		var bHasMeasures = false;
-		each(this.getMeasureDetails() || [], function(iIndex, oMeasure) {
+		jQuery.each(this.getMeasureDetails() || [], function(iIndex, oMeasure) {
 			if (oMeasure.analyticalInfo.total) {
 				bHasMeasures = true;
 				return false;

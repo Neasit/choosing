@@ -106,7 +106,7 @@ function(
 		 * </ul>
 		 *
 		 * <b>Note:</b> The control uses a JavaScript number to keep its value, which
-		 * has a certain precision limit.
+		 * has a certain precision limitation.
 		 *
 		 * In general, exponential notation is used:
 		 * <ul>
@@ -120,7 +120,7 @@ function(
 		 * Also, the JavaScript number persists its precision up to 16 digits. If the user enters
 		 * a number with a greater precision, the value will be rounded.
 		 *
-		 * This restriction comes from JavaScript itself and it cannot be worked around in a
+		 * This limitation comes from JavaScript itself and it cannot be worked around in a
 		 * feasible way.
 		 *
 		 * <b>Note:</b> Formatting of decimal numbers is browser dependent, regardless of
@@ -130,7 +130,7 @@ function(
 		 * @implements sap.ui.core.IFormContent
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -613,7 +613,6 @@ function(
 					src: IconPool.getIconURI("add"),
 					id: this.getId() + "-incrementBtn",
 					noTabStop: true,
-					decorative: false,
 					press: this._handleButtonPress.bind(this, 1),
 					tooltip: StepInput.STEP_INPUT_INCREASE_BTN_TOOLTIP
 				});
@@ -646,7 +645,6 @@ function(
 					src: IconPool.getIconURI("less"),
 					id: this.getId() + "-decrementBtn",
 					noTabStop: true,
-					decorative: false,
 					press: this._handleButtonPress.bind(this, -1),
 					tooltip: StepInput.STEP_INPUT_DECREASE_BTN_TOOLTIP
 				});
@@ -839,13 +837,13 @@ function(
 				oEventProvider = oEventProvider.getEventingParent();
 			} while (oEventProvider && !bHasValidationErrorListeners);
 
-			if (this._isMoreThanMax(value)) {
+			if (this._isNumericLike(max) && value > max) {
 				if (bHasValidationErrorListeners && sBindingConstraintMax) {
 					return;
 				}
 				sMessage = oCoreMessageBundle.getText("EnterNumberMax", [max]);
 				aViolatedConstraints.push("maximum");
-			} else if (this._isLessThanMin(value)) {
+			} else if (this._isNumericLike(min) && value < min) {
 				if (bHasValidationErrorListeners && sBindingConstraintMin) {
 					return;
 				}
@@ -1213,12 +1211,10 @@ function(
 		 */
 		StepInput.prototype._change = function (oEvent) {
 			var fOldValue;
-			var oNewValue = this._getInput().getValue();
-			var bIsNotInValidRange = this._isLessThanMin(oNewValue) || this._isMoreThanMax(oNewValue);
 
-			if (!this._isButtonFocused() ) {
+			if (!this._isButtonFocused()) {
 
-				if (!this._btndown || bIsNotInValidRange) {
+				if (!this._btndown) {
 					fOldValue = Number(this._getFormattedValue());
 					if (this._fOldValue === undefined) {
 						this._fOldValue = fOldValue;
@@ -1232,14 +1228,6 @@ function(
 					this._fTempValue = Number(this._getInput().getValue());
 				}
 			}
-		};
-
-		StepInput.prototype._isMoreThanMax = function(iValue) {
-			return this._isNumericLike(this._getMax()) && this._getMax() < iValue;
-		};
-
-		StepInput.prototype._isLessThanMin = function(iValue) {
-			return this._isNumericLike(this._getMin()) && this._getMin() > iValue;
 		};
 
 		/**
@@ -1386,9 +1374,7 @@ function(
 				sValue = sEventValue;
 			}
 
-			if (this._getInput()._getInputValue() !== sValue) {
-				this._getInput().updateDomValue(sValue);
-			}
+			this._getInput().updateDomValue(sValue);
 			return sValue;
 		};
 
@@ -1578,17 +1564,22 @@ function(
 					}.bind(this),
 					onmouseup: function (oEvent) {
 						// check if the left mouse button is up
-						// handled in touchend for mobile
-						if (Device.system.desktop && oEvent.button === 0) {
+						if (oEvent.button === 0) {
 							this._bDelayedEventFire = undefined;
 							this._btndown = false;
-							this._stopSpin();
+							this._resetSpinValues();
+							if (this._bSpinStarted) {
+								this._changeValue();
+							}
 						}
 					}.bind(this),
 					onmouseout: function (oEvent) {
 						if (this._btndown) {
 							this._bDelayedEventFire = undefined;
-							this._stopSpin();
+							this._resetSpinValues();
+							if (this._bSpinStarted) {
+								this._changeValue();
+							}
 						}
 					}.bind(this),
 					oncontextmenu: function (oEvent) {
@@ -1603,12 +1594,6 @@ function(
 						}
 					},
 					ontouchend: function(oEvent) {
-						if (Device.system.phone || Device.system.tablet) {
-							this._bDelayedEventFire = undefined;
-							this._btndown = false;
-							this._stopSpin();
-						}
-
 						if (oEvent.originalEvent && oEvent.originalEvent.cancelable) {
 							oEvent.preventDefault();
 						}
@@ -1622,17 +1607,6 @@ function(
 
 				oBtn.addDelegate(oEvents, true);
 
-		};
-
-		/**
-		 * Stops an initiated spin and applies changes to the value.
-		 * @private
-		 */
-		StepInput.prototype._stopSpin = function() {
-			this._resetSpinValues();
-			if (this._bSpinStarted) {
-				this._changeValue();
-			}
 		};
 
 		StepInput.prototype._getMin = function() {

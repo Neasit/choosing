@@ -40,7 +40,7 @@ sap.ui.define([
 	 * @extends sap.m.Tile
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -52,7 +52,6 @@ sap.ui.define([
 	var StandardTile = Tile.extend("sap.m.StandardTile", /** @lends sap.m.StandardTile.prototype */ { metadata : {
 
 		library : "sap.m",
-		deprecated: true,
 		properties : {
 
 			/**
@@ -124,12 +123,16 @@ sap.ui.define([
 	};
 
 	StandardTile.prototype.ontap = function() {
+		// on IE when you click the focus is not applied so we have to set it explicitly
+		if (Device.browser.msie) {
+			this.focus();
+		}
 		Tile.prototype.ontap.apply(this, arguments);
 	};
 
 	/**
 	 * Gets the icon of the <code>StandardTile</code> control.
-	 * @returns {sap.ui.core.URI} The icon of the control
+	 * @returns {Object} The icon of the control
 	 * @public
 	 */
 	StandardTile.prototype.getIcon = function() {

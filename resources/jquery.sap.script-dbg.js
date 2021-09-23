@@ -3,6 +3,17 @@
  * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
+
+/**
+ * This module is overall:
+ * SPDX-FileCopyrightText: 2009-2021 SAP SE or an SAP affiliate company and OpenUI5 contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * but contains code taken from jQuery 3.5.1 (see the respective comment):
+ * SPDX-FileCopyrightText: JS Foundation and other contributors
+ * SPDX-License-Identifier: MIT
+ */
+
 // Provides miscellaneous utility functions that might be useful for any script
 sap.ui.define([
 	'jquery.sap.global',
@@ -219,12 +230,12 @@ sap.ui.define([
 			return merge.apply(this, args);
 		} else {
 			/*
-			 * The code in this function is taken from jQuery 3.6.0 "jQuery.extend" and got modified.
+			 * The code in this function is taken from jQuery 3.5.1 "jQuery.extend" and got modified.
 			 *
-			 * jQuery JavaScript Library v3.6.0
+			 * jQuery JavaScript Library v3.5.1
 			 * https://jquery.com/
 			 *
-			 * Copyright OpenJS Foundation and other contributors
+			 * Copyright JS Foundation and other contributors
 			 * Released under the MIT license
 			 * https://jquery.org/license
 			 */
@@ -247,7 +258,7 @@ sap.ui.define([
 					copy = options[name];
 
 					// Prevent never-ending loop
-					if (name === "__proto__" || target === copy) {
+					if (target === copy) {
 						continue;
 					}
 
@@ -267,7 +278,7 @@ sap.ui.define([
 	 * Use {@link jQuery.sap.getUriParameters} to create an instance of jQuery.sap.util.UriParameters.
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 0.9.0
 	 * @name jQuery.sap.util.UriParameters
 	 * @public
@@ -389,8 +400,8 @@ sap.ui.define([
 	};
 
 	/**
-	 * Substitute for <code>for(n in o)</code> loops.
-	 * This function is just a wrapper around the native for-in loop.
+	 * Substitute for <code>for(n in o)</code> loops which used to fix the 'Don'tEnum' bug of IE8.
+	 * As IE8 is not supported anymore this function is just a wrapper around the native for-in loop.
 	 *
 	 * Iterates over all enumerable properties of the given object and calls the
 	 * given callback function for each of them. The assumed signature of the
@@ -402,7 +413,7 @@ sap.ui.define([
 	 *
 	 * @param {object} oObject object to enumerate the properties of
 	 * @param {function} fnCallback function to call for each property name
-	 * @deprecated since 1.48.0. Use native for-in loop instead.
+	 * @deprecated since 1.48.0 IE8 is not supported anymore, thus no special handling is required. Use native for-in loop instead.
 	 * @since 1.7.1
 	 */
 	jQuery.sap.forIn = each;

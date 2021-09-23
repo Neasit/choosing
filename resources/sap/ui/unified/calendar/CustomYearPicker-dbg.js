@@ -44,24 +44,22 @@ sap.ui.define([
 	};
 
 	CustomYearPicker.prototype.onBeforeRendering = function () {
-		var aSelectedDates = this.getSelectedDates(),
-			oFirstSelectedDate = aSelectedDates.length ? aSelectedDates[0].getStartDate() : undefined,
+		var oFirstCYPSelDate = this.getSelectedDates()[0],
+			oFocusedCalDate = new CalendarDate(this._getFocusedDate()),
 			oYearPicker = this._getYearPicker(),
-			oCYPSelCalDate,
-			oFocusedCalDate;
+			oCYPSelCalDate;
 
-		if (oFirstSelectedDate) {
-			oCYPSelCalDate = CalendarDate.fromLocalJSDate(oFirstSelectedDate);
+		oFocusedCalDate.setMonth(0, 1);
+
+		if (oFirstCYPSelDate.getStartDate()) {
+			oCYPSelCalDate = CalendarDate.fromLocalJSDate(oFirstCYPSelDate.getStartDate());
 			oCYPSelCalDate.setMonth(0, 1);
-			oFocusedCalDate = new CalendarDate(this._getFocusedDate());
-			oFocusedCalDate.setMonth(0, 1);
 
 			if (oFocusedCalDate.isSame(oCYPSelCalDate)) {
-				oYearPicker.setDate(oFirstSelectedDate);
+				oYearPicker.setDate(oFirstCYPSelDate.getStartDate());
 			}
 		} else {
 			oYearPicker.setProperty("_middleDate", this._getFocusedDate());
-			oYearPicker.setDate(this._getFocusedDate().toLocalJSDate());
 		}
 
 		Calendar.prototype.onBeforeRendering.call(this, arguments);

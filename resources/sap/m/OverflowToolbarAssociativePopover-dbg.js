@@ -5,8 +5,8 @@
  */
 
 // Provides control sap.m._overflowToolbarHelpers.OverflowToolbarAssociativePopover.
-sap.ui.define(['./Popover', './OverflowToolbarAssociativePopoverControls', './OverflowToolbarAssociativePopoverRenderer', './OverflowToolbarLayoutData', 'sap/m/library'],
-	function(Popover, OverflowToolbarAssociativePopoverControls, OverflowToolbarAssociativePopoverRenderer, OverflowToolbarLayoutData, library) {
+sap.ui.define(['./Popover', './PopoverRenderer', './OverflowToolbarAssociativePopoverControls', './OverflowToolbarLayoutData', 'sap/m/library'],
+	function(Popover, PopoverRenderer, OverflowToolbarAssociativePopoverControls, OverflowToolbarLayoutData, library) {
 	"use strict";
 
 
@@ -30,7 +30,7 @@ sap.ui.define(['./Popover', './OverflowToolbarAssociativePopoverControls', './Ov
 	 * @extends sap.m.Popover
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @private
@@ -47,7 +47,7 @@ sap.ui.define(['./Popover', './OverflowToolbarAssociativePopoverControls', './Ov
 				associatedContent: {type: "sap.ui.core.Control", multiple: true}
 			}
 		},
-		renderer: OverflowToolbarAssociativePopoverRenderer
+		renderer: PopoverRenderer.render
 	});
 
 	OverflowToolbarAssociativePopover.prototype.init = function() {
@@ -188,7 +188,6 @@ sap.ui.define(['./Popover', './OverflowToolbarAssociativePopoverControls', './Ov
 		}
 
 		oPosParams._fMarginBottom = oPosParams._fDocumentHeight - oPosParams._$parent.offset().top + this._arrowOffset + oPosParams._fOffsetY;
-		return oPosParams;
 	};
 
 	/**

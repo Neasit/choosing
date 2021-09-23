@@ -11,33 +11,25 @@
 
 .sapFAvatarIcon,
 .sapFAvatarInitialsHolder {
-	color: @sapUiBaseText;
+	color: @sapUiContentForegroundColor;
 }
 
-.sapFAvatarColorTransparent,
-.sapFAvatarColorTileIcon,
 .sapFAvatarColorPlaceholder {
-	background-color: @sapUiBaseBG;
+	&.sapFAvatarIcon,
+	&>.sapFAvatarInitialsHolder {
+		color: @sapUiContentIconColor;
+	}
 }
 
 .sapFAvatarFocusable:focus {
 	outline-width: 0.125rem;
 }
 
-// Create classes which would just set background color of Avatar
-.generateColor (@accentIndex) {
-	@css-selector: ~"sapFAvatarColorAccent@{accentIndex}"; // Create the css selector string
-
-	// Build the real CSS selector.
-	.@{css-selector} {
-		background-color: @sapUiBaseBG;
-	}
-}
-
 .sapFAvatarBadgeIcon {
-	background-color: @sapUiBaseBG;
-	border: 0.0625rem solid @sapUiFieldBorderColor;
-	> .sapUiIcon {
-		color: @sapUiBaseText;
-	}
+
+  background-color: @sapUiBaseBG;
+  border: 0.0625rem solid @sapUiFieldBorderColor;
+  > .sapUiIcon {
+    color: @sapUiBaseText;
+  }
 }

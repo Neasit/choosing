@@ -11,9 +11,8 @@ sap.ui.define([
 	"./_Requestor",
 	"sap/base/Log",
 	"sap/base/util/isEmptyObject",
-	"sap/ui/base/SyncPromise",
-	"sap/ui/model/odata/ODataUtils"
-], function (_GroupLock, _Helper, _Requestor, Log, isEmptyObject, SyncPromise, ODataUtils) {
+	"sap/ui/base/SyncPromise"
+], function (_GroupLock, _Helper, _Requestor, Log, isEmptyObject, SyncPromise) {
 	"use strict";
 
 	var sClassName = "sap.ui.model.odata.v4.lib._Cache",
@@ -86,7 +85,7 @@ sap.ui.define([
 	 *   A resource path relative to the service URL
 	 * @param {object} [mQueryOptions]
 	 *   A map of key-value pairs representing the query string
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string;
 	 *   note that this flag can safely be ignored for all "new" features (after 1.47) which
 	 *   should just sort always
@@ -94,7 +93,7 @@ sap.ui.define([
 	 *   A function that returns the cache's original resource path to be used to build the target
 	 *   path for bound messages; if it is not given or returns nothing, <code>sResourcePath</code>
 	 *   is used instead. See {@link #getOriginalResourcePath}.
-	 * @param {boolean} [bSharedRequest]
+	 * @param {boolean} [bSharedRequest=false]
 	 *   If this parameter is set, the cache is read-only and modifying calls lead to an error.
 	 *
 	 * @alias sap.ui.model.odata.v4.lib._Cache
@@ -214,7 +213,7 @@ sap.ui.define([
 							[], [sEntityPath]);
 					}),
 				iIndex === undefined // single element or kept-alive not in list
-					&& that.requestCount(oGroupLock),
+					&& that.requestCount(oGroupLock.getUnlockedCopy()),
 				oGroupLock.unlock() // unlock when all requests have been queued
 			]);
 		}).finally(function () {
@@ -403,8 +402,9 @@ sap.ui.define([
 
 		this.checkSharedRequest();
 		// clone data to avoid modifications outside the cache
+		oEntityData = _Helper.merge({}, oEntityData);
 		// remove any property starting with "@$ui5."
-		oEntityData = _Helper.publicClone(oEntityData, true) || {};
+		oEntityData = _Requestor.cleanPayload(oEntityData);
 		oPostBody = _Helper.merge({}, oEntityData);
 		// keep post body separate to allow local property changes in the cache
 		_Helper.setPrivateAnnotation(oEntityData, "postBody", oPostBody);
@@ -528,7 +528,6 @@ sap.ui.define([
 								aSegments.slice(iEntityPathLength, iPathLength).join("/"))
 							|| invalidSegment(sSegment);
 					}
-					// inside a transient entity, implicit values are determined as follows
 					if (oProperty.$kind === "NavigationProperty") {
 						return null;
 					}
@@ -572,7 +571,7 @@ sap.ui.define([
 					iEntityPathLength = i;
 				}
 				oParentValue = vValue;
-				bTransient = bTransient || vValue["@$ui5.context.isTransient"];
+				bTransient = bTransient || _Helper.getPrivateAnnotation(vValue, "transient");
 				aMatches = rSegmentWithPredicate.exec(sSegment);
 				if (aMatches) {
 					if (aMatches[1]) { // e.g. "TEAM_2_EMPLOYEES('42')
@@ -858,26 +857,11 @@ sap.ui.define([
 	 */
 
 	/**
-	 * Returns the query options to be used for downloading list data corresponding to the given
-	 * query options.
-	 *
-	 * @param {object} mQueryOptions - The query options
-	 * @returns {object} The download query options derived from the given query options
-	 *
-	 * @private
-	 */
-	_Cache.prototype.getDownloadQueryOptions = function (mQueryOptions) {
-		return mQueryOptions;
-	};
-
-	/**
 	 * Returns a URL by which the complete content of the list with the given path can be downloaded
 	 * in JSON format.
 	 *
-	 * @param {string} sPath
-	 *   The list's path relative to the cache; may be empty, but not <code>undefined</code>
-	 * @param {object} [mCustomQueryOptions]
-	 *   The custom query options, needed iff. a non-empty path is given
+	 * @param {string} sPath The list's path relative to the cache
+	 * @param {object} mCustomQueryOptions The custom query options
 	 * @returns {string} The download URL
 	 *
 	 * @public
@@ -894,8 +878,7 @@ sap.ui.define([
 		return this.oRequestor.getServiceUrl()
 			+ _Helper.buildPath(this.sResourcePath, sPath)
 			+ this.oRequestor.buildQueryString(
-				_Helper.buildPath(this.sMetaPath, _Helper.getMetaPath(sPath)),
-				this.getDownloadQueryOptions(mQueryOptions));
+				_Helper.buildPath(this.sMetaPath, _Helper.getMetaPath(sPath)), mQueryOptions);
 	};
 
 	/**
@@ -904,25 +887,12 @@ sap.ui.define([
 	 * @returns {object} The late query options
 	 *
 	 * @public
-	 * @see #setLateQueryOptions
 	 */
 	_Cache.prototype.getLateQueryOptions = function () {
 		return this.mLateQueryOptions;
 	};
 
-	/**
-	 * Returns this cache's query options.
-	 *
-	 * @returns {object} The query options
-	 *
-	 * @public
-	 * @see #setQueryOptions
-	 */
-	_Cache.prototype.getQueryOptions = function () {
-		return this.mQueryOptions;
-	};
-
-	/**
+	/*
 	 * Returns the requested data if available synchronously.
 	 *
 	 * @param {string} [_sPath]
@@ -1046,7 +1016,7 @@ sap.ui.define([
 	 *   The function is called just before the back-end request is sent.
 	 *   If no back-end request is needed, the function is not called.
 	 * @returns {sap.ui.base.SyncPromise}
-	 *   A promise which resolves without a defined result when it is updated in the cache.
+	 *   A promise which resolves with the new entity when it is updated in the cache.
 	 * @throws {Error} If the cache is shared
 	 *
 	 * @public
@@ -1068,7 +1038,7 @@ sap.ui.define([
 			if (bKeepAlive && that.mLateQueryOptions) {
 				// bKeepAlive === true -> own cache of the list binding -> sPath === ''
 				// -> no need to apply _Helper.getQueryOptionsForPath
-				_Helper.aggregateExpandSelect(mQueryOptions, that.mLateQueryOptions);
+				_Helper.aggregateQueryOptions(mQueryOptions, that.mLateQueryOptions);
 			}
 			// drop collection related system query options
 			delete mQueryOptions.$apply;
@@ -1088,6 +1058,8 @@ sap.ui.define([
 				var oElement = aResult[0];
 
 				that.replaceElement(aElements, iIndex, sPredicate, oElement, aResult[1], sPath);
+
+				return oElement;
 			});
 		});
 	};
@@ -1165,7 +1137,7 @@ sap.ui.define([
 				if (that.mLateQueryOptions) {
 					// bKeepAlive === true -> own cache of the list binding -> sPath === ''
 					// -> no need to apply _Helper.getQueryOptionsForPath
-					_Helper.aggregateExpandSelect(mQueryOptions, that.mLateQueryOptions);
+					_Helper.aggregateQueryOptions(mQueryOptions, that.mLateQueryOptions);
 				}
 				// clone query options for possible second request to check if entity is in
 				// the collection
@@ -1394,20 +1366,12 @@ sap.ui.define([
 			sReadUrl = this.sResourcePath
 				+ this.oRequestor.buildQueryString(this.sMetaPath, mQueryOptions);
 
-			return this.oRequestor.request("GET", sReadUrl, oGroupLock.getUnlockedCopy())
-				.catch(function (oError) {
-					if (oError.cause && oError.cause.status === 404) {
-						// retry because the deletion in the same $batch was rejected with 404
-						return that.oRequestor.request("GET", sReadUrl,
-							oGroupLock.getUnlockedCopy());
-					}
-					throw oError;
-				}).then(function (oResult) {
-					var iCount = parseInt(oResult["@odata.count"]) + that.aElements.$created;
+			return this.oRequestor.request("GET", sReadUrl, oGroupLock).then(function (oResult) {
+				var iCount = parseInt(oResult["@odata.count"]) + that.aElements.$created;
 
-					setCount(that.mChangeListeners, "", that.aElements, iCount);
-					that.iLimit = iCount;
-				});
+				setCount(that.mChangeListeners, "", that.aElements, iCount);
+				that.iLimit = iCount;
+			});
 		}
 	};
 
@@ -1426,7 +1390,7 @@ sap.ui.define([
 		var that = this;
 
 		Object.keys(this.mPatchRequests).forEach(function (sRequestPath) {
-			var aPromises, i;
+			var i, aPromises;
 
 			if (isSubPath(sRequestPath, sPath)) {
 				aPromises = that.mPatchRequests[sRequestPath];
@@ -1438,7 +1402,7 @@ sap.ui.define([
 		});
 
 		Object.keys(this.mPostRequests).forEach(function (sRequestPath) {
-			var aEntities, sTransientGroup, i;
+			var aEntities, i, sTransientGroup;
 
 			if (isSubPath(sRequestPath, sPath)) {
 				aEntities = that.mPostRequests[sRequestPath];
@@ -1475,15 +1439,13 @@ sap.ui.define([
 	};
 
 	/**
-	 * Sets query options after the cache has sent a request to allow adding late properties.
+	 * Sets query options after the cache has sent a read request to allow adding late properties.
 	 * Accepts only $expand and $select.
 	 *
 	 * @param {object} mQueryOptions
 	 *   The new late query options or <code>null</code> to reset
 	 *
 	 * @public
-	 * @see #getLateQueryOptions
-	 * @see #hasSentRequest
 	 */
 	_Cache.prototype.setLateQueryOptions = function (mQueryOptions) {
 		if (mQueryOptions) {
@@ -1527,22 +1489,18 @@ sap.ui.define([
 	};
 
 	/**
-	 * Updates this cache's query options if it has not yet sent a request.
+	 * Updates query options of the cache which has not yet sent a read request with the given
+	 * options.
 	 *
 	 * @param {object} [mQueryOptions]
 	 *   The new query options
-	 * @param {boolean} [bForce]
-	 *   Forces an update even if a request has been already sent
-	 * @throws {Error}
-	 *   If the cache has already sent a request or if the cache is shared
+	 * @throws {Error} If the cache has already sent a read request or if the cache is shared
 	 *
 	 * @public
-	 * @see #getQueryOptions
-	 * @see #hasSentRequest
 	 */
-	_Cache.prototype.setQueryOptions = function (mQueryOptions, bForce) {
+	_Cache.prototype.setQueryOptions = function (mQueryOptions) {
 		this.checkSharedRequest();
-		if (this.bSentRequest && !bForce) {
+		if (this.bSentRequest) {
 			throw new Error("Cannot set query options: Cache has already sent a request");
 		}
 
@@ -1608,7 +1566,7 @@ sap.ui.define([
 	 *   Path of the entity, relative to the cache (as used by change listeners)
 	 * @param {string} [sUnitOrCurrencyPath]
 	 *   Path of the unit or currency for the property, relative to the entity
-	 * @param {boolean} [bPatchWithoutSideEffects]
+	 * @param {boolean} [bPatchWithoutSideEffects=false]
 	 *   Whether the PATCH response is ignored, except for a new ETag
 	 * @param {function} [fnPatchSent]
 	 *   The function is called just before a back-end request is sent for the first time.
@@ -1873,11 +1831,7 @@ sap.ui.define([
 		 * @param {string} sContextUrl The context URL for message longtexts
 		 */
 		function visitArray(aInstances, sMetaPath, sCollectionPath, sContextUrl) {
-			var mByPredicate = {},
-				iIndex,
-				vInstance,
-				sPredicate,
-				i;
+			var mByPredicate = {}, i, iIndex, vInstance, sPredicate;
 
 			for (i = 0; i < aInstances.length; i += 1) {
 				vInstance = aInstances[i];
@@ -2001,11 +1955,11 @@ sap.ui.define([
 	 *   A resource path relative to the service URL
 	 * @param {object} [mQueryOptions]
 	 *   A map of key-value pairs representing the query string
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string
 	 * @param {string} [sDeepResourcePath=sResourcePath]
 	 *   The deep resource path to be used to build the target path for bound messages
-	 * @param {boolean} [bSharedRequest]
+	 * @param {boolean} [bSharedRequest=false]
 	 *   If this parameter is set, the cache is read-only and modifying calls lead to an error.
 	 *
 	 * @alias sap.ui.model.odata.v4.lib._CollectionCache
@@ -2167,11 +2121,7 @@ sap.ui.define([
 	 * @private
 	 */
 	_CollectionCache.prototype.getFilterExcludingCreated = function () {
-		var oElement,
-			sKeyFilter,
-			aKeyFilters = [],
-			mTypeForMetaPath,
-			i;
+		var oElement, i, sKeyFilter, aKeyFilters = [], mTypeForMetaPath;
 
 		for (i = 0; i < this.aElements.$created; i += 1) {
 			oElement = this.aElements[i];
@@ -2215,6 +2165,56 @@ sap.ui.define([
 		}
 
 		return sQueryString;
+	};
+
+	/**
+	 * Calculates the index range to be read for the given start, length and prefetch length.
+	 * Checks if <code>aElements</code> entries are available for half the prefetch length left and
+	 * right to it. If not, the full prefetch length is added to this side.
+	 *
+	 * @param {number} iStart
+	 *   The start index for the data request
+	 * @param {number} iLength
+	 *   The number of requested entries
+	 * @param {number} iPrefetchLength
+	 *   The number of entries to prefetch before and after the given range; <code>Infinity</code>
+	 *   is supported
+	 * @returns {object}
+	 *   Returns an object with a member <code>start</code> for the start index for the next
+	 *   read and <code>length</code> for the number of entries to be read.
+	 *
+	 * @private
+	 */
+	_CollectionCache.prototype.getReadRange = function (iStart, iLength, iPrefetchLength) {
+		var aElements = this.aElements;
+
+		// Checks whether aElements contains at least one <code>undefined</code> entry within the
+		// given start (inclusive) and end (exclusive).
+		function isDataMissing(iStart, iEnd) {
+			var i;
+			for (i = iStart; i < iEnd; i += 1) {
+				if (aElements[i] === undefined) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		if (isDataMissing(iStart + iLength, iStart + iLength + iPrefetchLength / 2)) {
+			iLength += iPrefetchLength;
+		}
+		if (isDataMissing(Math.max(iStart - iPrefetchLength / 2, 0), iStart)) {
+			iLength += iPrefetchLength;
+			iStart -= iPrefetchLength;
+			if (iStart < 0) {
+				iLength += iStart; // Note: Infinity + -Infinity === NaN
+				if (isNaN(iLength)) {
+					iLength = Infinity;
+				}
+				iStart = 0;
+			}
+		}
+		return {length : iLength, start : iStart};
 	};
 
 	/**
@@ -2281,11 +2281,11 @@ sap.ui.define([
 			sCount,
 			iCreated = this.aElements.$created,
 			oElement,
+			i,
 			oKeptElement,
 			iOld$count = this.aElements.$count,
 			sPredicate,
-			iResultLength = oResult.value.length,
-			i;
+			iResultLength = oResult.value.length;
 
 		this.sContext = oResult["@odata.context"];
 		this.visitResponse(oResult, mTypeForMetaPath, undefined, undefined, undefined, iStart);
@@ -2295,8 +2295,7 @@ sap.ui.define([
 			if (sPredicate) {
 				oKeptElement = this.aElements.$byPredicate[sPredicate];
 				if (oKeptElement) {
-					if (oElement["@odata.etag"]
-							&& oElement["@odata.etag"] === oKeptElement["@odata.etag"]) {
+					if (oElement["@odata.etag"] === oKeptElement["@odata.etag"]) {
 						oElement = oKeptElement;
 					} else if (this.hasPendingChangesForPath(sPredicate)) {
 						throw new Error("Modified on client and on server: "
@@ -2377,8 +2376,12 @@ sap.ui.define([
 	 */
 	_CollectionCache.prototype.read = function (iIndex, iLength, iPrefetchLength, oGroupLock,
 			fnDataRequested) {
-		var aElementsRange,
+		var i, n,
+			aElementsRange,
+			iEnd,
+			iGapStart = -1,
 			oPromise = this.oPendingRequestsPromise || this.aElements.$tail,
+			oRange,
 			that = this;
 
 		if (iIndex < 0) {
@@ -2394,23 +2397,34 @@ sap.ui.define([
 			});
 		}
 
-		ODataUtils._getReadIntervals(this.aElements, iIndex, iLength,
-				this.bServerDrivenPaging ? 0 : iPrefetchLength,
-				this.aElements.$created + this.iLimit)
-			.forEach(function (oInterval) {
-				that.requestElements(oInterval.start, oInterval.end, oGroupLock.getUnlockedCopy(),
-					fnDataRequested);
-				fnDataRequested = undefined;
-			});
+		oRange = this.getReadRange(iIndex, iLength, this.bServerDrivenPaging ? 0 : iPrefetchLength);
+		iEnd = Math.min(oRange.start + oRange.length, this.aElements.$created + this.iLimit);
+		n = Math.min(iEnd, Math.max(oRange.start, this.aElements.length) + 1);
+
+		for (i = oRange.start; i < n; i += 1) {
+			if (this.aElements[i] !== undefined) {
+				if (iGapStart >= 0) {
+					this.requestElements(iGapStart, i, oGroupLock.getUnlockedCopy(),
+						fnDataRequested);
+					fnDataRequested = undefined;
+					iGapStart = -1;
+				}
+			} else if (iGapStart < 0) {
+				iGapStart = i;
+			}
+		}
+		if (iGapStart >= 0) {
+			this.requestElements(iGapStart, iEnd, oGroupLock.getUnlockedCopy(), fnDataRequested);
+		}
 
 		oGroupLock.unlock();
 
-		aElementsRange = this.aElements.slice(iIndex, iIndex + iLength);
-		if (this.aElements.$tail && iIndex + iLength > this.aElements.length) {
+		aElementsRange = this.aElements.slice(iIndex, iEnd);
+		if (this.aElements.$tail) { // Note: if available, it must be ours!
 			aElementsRange.push(this.aElements.$tail);
 		}
 		return SyncPromise.all(aElementsRange).then(function () {
-			var aElements = that.aElements.slice(iIndex, iIndex + iLength);
+			var aElements = that.aElements.slice(iIndex, iEnd);
 
 			aElements.$count = that.aElements.$count;
 
@@ -2448,9 +2462,8 @@ sap.ui.define([
 		 */
 		function calculateKeptElementsQuery() {
 			var aKeyFilters,
-				mQueryOptions = _Helper.merge({}, that.mQueryOptions);
+				mQueryOptions = Object.assign({}, that.mQueryOptions);
 
-			_Helper.aggregateExpandSelect(mQueryOptions, that.mLateQueryOptions);
 			delete mQueryOptions.$count;
 			delete mQueryOptions.$orderby;
 			delete mQueryOptions.$search;
@@ -2467,7 +2480,7 @@ sap.ui.define([
 			}
 
 			return that.sResourcePath
-				+ that.oRequestor.buildQueryString(that.sMetaPath, mQueryOptions, false, true);
+				+ that.oRequestor.buildQueryString(that.sMetaPath, mQueryOptions);
 		}
 
 		if (aPredicates.length === 0) {
@@ -2736,7 +2749,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns a promise to be resolved with the requested property value.
+	 * Returns a promise to be resolved with an OData object for the requested property value.
 	 *
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the group to associate the request with
@@ -2774,10 +2787,11 @@ sap.ui.define([
 				fnDataRequested, undefined, this.sMetaPath));
 		}
 		return this.oPromise.then(function (oResult) {
+			// for a null value, null is returned due to "204 No Content". But it is expected in the
+			// value property of an object
+			oResult = oResult || {value : null};
 			that.registerChange("", oListener);
-			// Note: For a null value, null is returned due to "204 No Content". For $count,
-			// "a simple primitive integer value with media type text/plain" is returned.
-			return oResult && typeof oResult === "object" ? oResult.value : oResult;
+			return oResult.value;
 		});
 	};
 
@@ -2807,9 +2821,9 @@ sap.ui.define([
 	 *   A resource path relative to the service URL
 	 * @param {object} [mQueryOptions]
 	 *   A map of key-value pairs representing the query string
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string
-	 * @param {boolean} [bSharedRequest]
+	 * @param {boolean} [bSharedRequest=false]
 	 *   If this parameter is set, the cache is read-only and modifying calls lead to an error.
 	 * @param {function} [fnGetOriginalResourcePath]
 	 *   A function that returns the cache's original resource path to be used to build the target
@@ -2924,16 +2938,6 @@ sap.ui.define([
 	 *   HTTP method via a property "X-HTTP-Method" (which is removed)
 	 * @param {object} [oEntity]
 	 *   The entity which contains the ETag to be sent as "If-Match" header with the POST request.
-	 * @param {boolean} [bIgnoreETag]
-	 *   Whether the entity's ETag should be actively ignored (If-Match:*); used only in case an
-	 *   entity is given
-	 * @param {function} [fnOnStrictHandlingFailed]
-	 *   If this callback is given, then the preference "handling=strict" is applied.
-	 *   If the request fails with an error having <code>oError.strictHandlingFailed</code> set,
-	 *   this error is passed to the callback which returns a promise. If this promise resolves with
-	 *   <code>true</code> the action is repeated w/o the preference, otherwise this function's
-	 *   result promise is rejected with an <code>Error</code> instance <code>oError</code> where
-	 *   <code>oError.canceled === true</code>.
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise to be resolved with the result of the request.
 	 * @throws {Error}
@@ -2942,45 +2946,10 @@ sap.ui.define([
 	 *
 	 * @public
 	 */
-	_SingleCache.prototype.post = function (oGroupLock, oData, oEntity, bIgnoreETag,
-			fnOnStrictHandlingFailed) {
+	_SingleCache.prototype.post = function (oGroupLock, oData, oEntity) {
 		var sGroupId,
-			mHeaders = oEntity && {"If-Match" : bIgnoreETag ? "*" : oEntity} || {},
 			sHttpMethod = "POST",
 			that = this;
-
-		function post(oGroupLock0) {
-			that.bPosting = true;
-
-			// BEWARE! Avoid finally here! BCP: 2070200175
-			return SyncPromise.all([
-				that.oRequestor.request(sHttpMethod,
-					that.sResourcePath + that.sQueryString, oGroupLock0, mHeaders, oData),
-				that.fetchTypes()
-			]).then(function (aResult) {
-				that.visitResponse(aResult[0], aResult[1]);
-				that.bPosting = false;
-
-				return aResult[0];
-			}, function (oError) {
-				that.bPosting = false;
-				if (fnOnStrictHandlingFailed && oError.strictHandlingFailed) {
-					return fnOnStrictHandlingFailed(oError).then(function (bConfirm) {
-						var oCanceledError;
-
-						if (bConfirm) {
-							delete mHeaders["Prefer"];
-							return post(oGroupLock0.getUnlockedCopy());
-						}
-
-						oCanceledError = Error("Action canceled due to strict handling");
-						oCanceledError.canceled = true;
-						throw oCanceledError;
-					});
-				}
-				throw oError;
-			});
-		}
 
 		this.checkSharedRequest();
 		if (!this.bPost) {
@@ -3007,11 +2976,22 @@ sap.ui.define([
 			}
 		}
 
+		this.bPosting = true;
 		this.bSentRequest = true;
-		if (fnOnStrictHandlingFailed) {
-			mHeaders["Prefer"] = "handling=strict";
-		}
-		this.oPromise = post(oGroupLock);
+		this.oPromise = SyncPromise.all([
+			this.oRequestor.request(sHttpMethod, this.sResourcePath + this.sQueryString, oGroupLock,
+				oEntity && {"If-Match" : oEntity}, oData),
+			this.fetchTypes()
+		]).then(function (aResult) {
+			that.visitResponse(aResult[0], aResult[1]);
+			that.bPosting = false;
+
+			return aResult[0];
+		}, function (oError) {
+			// BEWARE! Avoid finally here! BCP: 2070200175
+			that.bPosting = false;
+			throw oError;
+		});
 
 		return this.oPromise;
 	};
@@ -3074,9 +3054,6 @@ sap.ui.define([
 			var oNewValue = aResult[0],
 				oOldValue = aResult[2];
 
-			// ensure that the new value has a predicate although key properties were not requested
-			_Helper.setPrivateAnnotation(oNewValue, "predicate",
-				_Helper.getPrivateAnnotation(oOldValue, "predicate"));
 			// visit response to report the messages
 			that.visitResponse(oNewValue, aResult[1]);
 			_Helper.updateAll(that.mChangeListeners, "", oOldValue, oNewValue, function (sPath) {
@@ -3110,11 +3087,11 @@ sap.ui.define([
 	 *   Examples:
 	 *   {foo : "bar", "bar" : "baz"} results in the query string "foo=bar&bar=baz"
 	 *   {foo : ["bar", "baz"]} results in the query string "foo=bar&foo=baz"
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string
 	 * @param {string} [sDeepResourcePath=sResourcePath]
 	 *   The deep resource path to be used to build the target path for bound messages
-	 * @param {boolean} [bSharedRequest]
+	 * @param {boolean} [bSharedRequest=false]
 	 *   If this parameter is set, multiple requests for a cache using the same resource path will
 	 *   always return the same, shared cache. This cache is read-only, modifying calls lead to an
 	 *   error.
@@ -3206,9 +3183,9 @@ sap.ui.define([
 	 *   Examples:
 	 *   {foo : "bar", "bar" : "baz"} results in the query string "foo=bar&bar=baz"
 	 *   {foo : ["bar", "baz"]} results in the query string "foo=bar&foo=baz"
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string
-	 * @param {boolean} [bSharedRequest]
+	 * @param {boolean} [bSharedRequest=false]
 	 *   If this parameter is set, multiple requests for a cache using the same resource path might
 	 *   always return the same, shared cache. This cache is read-only, modifying calls lead to an
 	 *   error.
@@ -3246,7 +3223,7 @@ sap.ui.define([
 	 */
 	_Cache.from$skip = function (sSegment, aCollection) {
 		return rNumber.test(sSegment)
-			? (aCollection.$created || 0) + Number(sSegment)
+			? aCollection.$created + Number(sSegment)
 			: sSegment;
 	};
 

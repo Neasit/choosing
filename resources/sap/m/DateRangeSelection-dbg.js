@@ -129,8 +129,8 @@ sap.ui.define([
 	 * compact mode and provides a touch-friendly size in cozy mode.
 	 *
 	 * @extends sap.m.DatePicker
-	 * @version 1.92.0
-	 * @version 1.92.0
+	 * @version 1.87.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -392,8 +392,7 @@ sap.ui.define([
 
 		// if displayFormat changes the value must be formatted again
 
-		DatePicker.prototype.setDisplayFormat.apply(this, arguments);
-
+		this.setProperty("displayFormat", sDisplayFormat, true); // no rerendering
 		var sOutputValue = this._formatValue(this.getDateValue(), this.getSecondDateValue());
 
 		// as value also used displayFormat update value too
@@ -855,7 +854,7 @@ sap.ui.define([
 						this._curpos = sValue.length;
 						this._$input.cursorPos(this._curpos);
 					}
-				} else if (!this._bValid){
+				}else if (!this._bValid){
 					// wrong input before open calendar
 					sValue = this._formatValue( oDate1, oDate2 );
 					if (sValue != this._$input.val()) {
@@ -909,7 +908,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {object} Current accessibility state of the control
+	 * @returns {Object} Current accessibility state of the control
 	 * @protected
 	 */
 	DateRangeSelection.prototype.getAccessibilityInfo = function() {
@@ -987,7 +986,7 @@ sap.ui.define([
 		if ((oDate && ( iFirstTimestamp < this._oMinDate.getTime() || iFirstTimestamp > this._oMaxDate.getTime())) ||
 				(oSecondDate && ( iSecondTimestamp < this._oMinDate.getTime() || iSecondTimestamp > this._oMaxDate.getTime()))) {
 			return [undefined, undefined];
-		} else  {
+		}else {
 			return [oDate, oSecondDate];
 		}
 

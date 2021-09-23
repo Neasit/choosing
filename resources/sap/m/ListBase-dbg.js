@@ -88,7 +88,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -232,7 +232,15 @@ function(
 			 *
 			 * <b>Note:</b> Enabling sticky column headers in List controls will not have any effect.
 			 *
-			 * There are some known restrictions. A few are given below:
+			 * There is limited browser support.
+			 * Browsers that do not support this feature are listed below:
+			 * <ul>
+			 * <li>IE</li>
+			 * <li>Edge lower than version 41 (EdgeHTML 16)</li>
+			 * <li>Firefox lower than version 59</li>
+			 * </ul>
+			 *
+			 * There are also some known restrictions. A few are given below:
 			 * <ul>
 			 * <li>If the control is placed in layout containers that have the <code>overflow: hidden</code> or <code>overflow: auto</code> style definition, this can
 			 * prevent the sticky elements of the control from becoming fixed at the top of the viewport.</li>
@@ -636,9 +644,7 @@ function(
 	function createVirtualItem(oList) {
 		var oBinding = oList.getBinding("items");
 		var oBindingInfo = oList.getBindingInfo("items");
-		var iLen = oList.getGrowing() ? oList.getGrowingThreshold() : oBindingInfo.length;
-		var iIdx = oList.getGrowing() || !oBindingInfo.startIndex ? 0 : oBindingInfo.startIndex;
-		var oVirtualContext = oBinding.getContexts(iIdx, iLen)[0];
+		var oVirtualContext = oBinding.getContexts(0, oList.getGrowing() ? oList.getGrowingThreshold() : oBindingInfo.length)[0];
 
 		destroyVirtualItem(oList);
 		oList._oVirtualItem = GrowingEnablement.createItem(oVirtualContext, oBindingInfo, "virtual");
@@ -840,7 +846,7 @@ function(
 	 *         The list item whose selection to be changed. This parameter is mandatory.
 	 * @param {boolean} [bSelect=true]
 	 *         Sets selected status of the list item
-	 * @type this
+	 * @type sap.m.ListBase
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -877,7 +883,7 @@ function(
 	 *         The id of the list item whose selection to be changed.
 	 * @param {boolean} [bSelect=true]
 	 *         Sets selected status of the list item
-	 * @type this
+	 * @type sap.m.ListBase
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -894,7 +900,7 @@ function(
 	 * @param {boolean} [bAll=false]
 	 *         Set true to include even invisible selected items(e.g. the selections from the previous filters).
 	 *         Note: In single selection modes, only the last selected item's binding context is returned in array.
-	 * @type sap.ui.model.Context[]
+	 * @type object[]
 	 * @public
 	 * @since 1.18.6
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -928,7 +934,7 @@ function(
 	 *
 	 * @param {boolean} bAll
 	 *         Since version 1.16.3. This control keeps old selections after filter or sorting. Set this parameter "true" to remove all selections.
-	 * @type this
+	 * @type sap.m.ListBase
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -963,7 +969,7 @@ function(
 	 *
 	 * <b>Note:</b> In case <code>growing</code> is enabled, only the visible items in the list will be selected.
 	 *
-	 * @type this
+	 * @type sap.m.ListBase
 	 * @public
 	 * @since 1.16
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
@@ -1730,7 +1736,7 @@ function(
 	 *
 	 * @param {any} oCallback
 	 *         This callback function is called with two parameters(swipedListItem and swipedContent) after swipe-out animation is finished.
-	 * @type this
+	 * @type sap.m.ListBase
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1978,6 +1984,14 @@ function(
 
 		var oItemDomRef = oItem.getDomRef(),
 			mPosition = this.getAccessbilityPosition(oItem);
+
+		// force IE to repaint so the focus border a visible
+		if (Device.browser.msie && this._oItemNavigation && this._oItemNavigation.getFocusedDomRef() === oItemDomRef) {
+			oItemDomRef.classList.remove("sapMLIBFocusable");
+			setTimeout(function() {
+				oItemDomRef.classList.add("sapMLIBFocusable");
+			}, 0);
+		}
 
 		if (!oItem.getContentAnnouncement) {
 			// let the screen reader announce the whole content
@@ -2499,6 +2513,14 @@ function(
 		return this;
 	};
 
+	// check if browser supports css sticky
+	ListBase.getStickyBrowserSupport = function() {
+		var oBrowser = Device.browser;
+		return (oBrowser.safari || oBrowser.chrome
+			|| (oBrowser.firefox && oBrowser.version >= 59)
+			|| (oBrowser.edge && oBrowser.version >= 16));
+	};
+
 	// Returns the sticky value to be added to the sticky table container.
 	// sapMSticky7 is the result of sticky headerToolbar, infoToolbar and column headers.
 	// sapMSticky6 is the result of sticky infoToolbar and column headers.
@@ -2509,7 +2531,7 @@ function(
 	// sapMSticky1 is the result of sticky headerToolbar.
 	ListBase.prototype.getStickyStyleValue = function() {
 		var aSticky = this.getSticky();
-		if (!aSticky || !aSticky.length) {
+		if (!aSticky || !aSticky.length || !ListBase.getStickyBrowserSupport()) {
 			return (this._iStickyValue = 0);
 		}
 
@@ -2637,32 +2659,6 @@ function(
 				return resolve();
 			}.bind(this), 0);
 		}.bind(this));
-	};
-
-	/**
-	 * Requests a specified number of items from the back end to load more data in the list.
-	 * If the number of items are not specified, the <code>growingThreshold</code> value is used to request more data.
-	 *
-	 * <b>Note:</b> To use this method, the <code>growing</code> feature must be enabled.
-	 *
-	 * See {@link #getGrowing growing} and {@link #getGrowingThreshold growingThreshold} for more information.
-	 * @param {int} [iItems] A positive number of items to be requested
-	 * @since 1.92
-	 * @public
-	 */
-	ListBase.prototype.requestItems = function(iItems) {
-		if (iItems <= 0 || !this.getGrowing() || !this._oGrowingDelegate) {
-			throw new Error("The prerequisites to use 'requestItems' are not met. Please read the documentation for more details.");
-		}
-
-		if (iItems != null) {
-			var iOldGrowingThreshold = this.getGrowingThreshold();
-			this.setGrowingThreshold(iItems);
-			this._oGrowingDelegate.requestNewPage();
-			this.setGrowingThreshold(iOldGrowingThreshold);
-		} else {
-			this._oGrowingDelegate.requestNewPage();
-		}
 	};
 
 	function getItemAtIndex(oList, iIndex) {

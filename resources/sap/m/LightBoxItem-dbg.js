@@ -43,7 +43,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -107,7 +107,7 @@ sap.ui.define([
 		}), true);
 
 		this.setAggregation("_title", new Title({
-			level: TitleLevel.H2,
+			level: TitleLevel.H5,
 			wrapping: false
 		}), true);
 

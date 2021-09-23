@@ -7,12 +7,13 @@
 // Provides the base implementation for all model implementations
 sap.ui.define([
 	"sap/base/Log",
-	"sap/base/util/each",
+	"sap/ui/model/SimpleType",
 	"sap/ui/model/FormatException",
 	"sap/ui/model/ParseException",
-	"sap/ui/model/SimpleType",
-	"sap/ui/model/ValidateException"
-], function(Log, each, FormatException, ParseException, SimpleType, ValidateException) {
+	"sap/ui/model/ValidateException",
+	"sap/ui/thirdparty/jquery"
+],
+	function(Log, SimpleType, FormatException, ParseException, ValidateException, jQuery) {
 	"use strict";
 
 	/**
@@ -24,7 +25,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.SimpleType
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @alias sap.ui.model.type.String
 	 * @param {object} [oFormatOptions]
@@ -164,7 +165,7 @@ sap.ui.define([
 			if (sValue === null) {
 				sValue = "";
 			}
-			each(this.oConstraints, function (sName, vConstraint) {
+			jQuery.each(this.oConstraints, function (sName, vConstraint) {
 				switch (sName) {
 					case "maxLength":
 						if (sValue.length > vConstraint) {

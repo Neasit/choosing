@@ -57,7 +57,7 @@ sap.ui.define([
 	 * @mixes sap.ui.model.odata.v4.ODataBinding
 	 * @public
 	 * @since 1.37.0
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @borrows sap.ui.model.odata.v4.ODataBinding#getGroupId as #getGroupId
 	 * @borrows sap.ui.model.odata.v4.ODataBinding#getRootBinding as #getRootBinding
 	 * @borrows sap.ui.model.odata.v4.ODataBinding#hasPendingChanges as #hasPendingChanges
@@ -173,21 +173,20 @@ sap.ui.define([
 	 */
 
 	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#adjustPredicate
+	 */
+	ODataPropertyBinding.prototype.adjustPredicate = function () {};
+
+	/**
 	 * See {@link sap.ui.base.EventProvider#attachEvent}
-	 *
-	 * @param {string} sEventId The identifier of the event to listen for
-	 * @param {object} [_oData]
-	 * @param {function} [_fnFunction]
-	 * @param {object} [_oListener]
-	 * @returns {this} <code>this</code> to allow method chaining
 	 *
 	 * @public
 	 * @see sap.ui.base.EventProvider#attachEvent
 	 * @since 1.37.0
 	 */
 	// @override sap.ui.base.EventProvider#attachEvent
-	ODataPropertyBinding.prototype.attachEvent = function (sEventId, _oData, _fnFunction,
-			_oListener) {
+	ODataPropertyBinding.prototype.attachEvent = function (sEventId) {
 		if (!(sEventId in mSupportedEvents)) {
 			throw new Error("Unsupported event '" + sEventId
 				+ "': v4.ODataPropertyBinding#attachEvent");
@@ -226,9 +225,8 @@ sap.ui.define([
 	 *   The new value obtained from the cache, see {@link #onChange}
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise resolving without a defined result when the check is finished, or rejecting in
-	 *   case of an error (e.g. thrown by the change event handler of a control). If the cache is no
-	 *   longer the active cache when the response arrives, that response is silently ignored and
-	 *   the value remains unchanged.
+	 *   case of an error (e.g. thrown by the change event handler of a control), or if the cache is
+	 *   no longer the active cache when the response arrives
 	 *
 	 * @private
 	 * @see sap.ui.model.PropertyBinding#checkDataState
@@ -241,7 +239,7 @@ sap.ui.define([
 			bIsMeta = iHashHash >= 0,
 			oMetaModel = this.oModel.getMetaModel(),
 			mParametersForDataReceived = {data : {}},
-			sResolvedPath = this.getResolvedPath(),
+			sResolvedPath = this.oModel.resolve(this.sPath, this.oContext),
 			oCallToken = {
 				// a resolved binding fires a change event if checkUpdateInternal is called at least
 				// once with bForceUpdate=true; an unresolved binding only fires if it had a value
@@ -394,8 +392,13 @@ sap.ui.define([
 	};
 
 	/**
-	 * @override
-	 * @see sap.ui.model.odata.v4.ODataBinding#doFetchQueryOptions
+	 * Hook method for {@link sap.ui.model.odata.v4.ODataBinding#fetchQueryOptionsForOwnCache} to
+	 * determine the query options for this binding.
+	 *
+	 * @returns {sap.ui.base.SyncPromise}
+	 *   A promise resolving with an empty map as a property binding has no query options
+	 *
+	 * @private
 	 */
 	ODataPropertyBinding.prototype.doFetchQueryOptions = function () {
 		return this.isRoot() ? SyncPromise.resolve(this.mQueryOptions) : SyncPromise.resolve({});
@@ -442,7 +445,7 @@ sap.ui.define([
 	 * @since 1.45.0
 	 */
 	ODataPropertyBinding.prototype.getValueListType = function () {
-		var sResolvedPath = this.getResolvedPath();
+		var sResolvedPath = this.getModel().resolve(this.sPath, this.oContext);
 
 		if (!sResolvedPath) {
 			throw new Error(this + " is unresolved");
@@ -502,7 +505,7 @@ sap.ui.define([
 			this.sResumeChangeReason = ChangeReason.Refresh;
 			return SyncPromise.resolve();
 		}
-		this.fetchCache(this.oContext, false, /*bKeepQueryOptions*/true);
+		this.fetchCache(this.oContext);
 		return bCheckUpdate
 			? this.checkUpdateInternal(undefined, ChangeReason.Refresh, sGroupId)
 			: SyncPromise.resolve();
@@ -529,7 +532,7 @@ sap.ui.define([
 	/**
 	 * Requests information to retrieve a value list for this property.
 	 *
-	 * @param {boolean} [bAutoExpandSelect]
+	 * @param {boolean} [bAutoExpandSelect=false]
 	 *   The value of the parameter <code>autoExpandSelect</code> for value list models created by
 	 *   this method. If the value list model is this binding's model, this flag has no effect.
 	 *   Supported since 1.68.0
@@ -542,7 +545,7 @@ sap.ui.define([
 	 * @since 1.45.0
 	 */
 	ODataPropertyBinding.prototype.requestValueListInfo = function (bAutoExpandSelect) {
-		var sResolvedPath = this.getResolvedPath();
+		var sResolvedPath = this.getModel().resolve(this.sPath, this.oContext);
 
 		if (!sResolvedPath) {
 			throw new Error(this + " is unresolved");
@@ -564,7 +567,7 @@ sap.ui.define([
 	 * @since 1.47.0
 	 */
 	ODataPropertyBinding.prototype.requestValueListType = function () {
-		var sResolvedPath = this.getResolvedPath();
+		var sResolvedPath = this.getModel().resolve(this.sPath, this.oContext);
 
 		if (!sResolvedPath) {
 			throw new Error(this + " is unresolved");
@@ -635,8 +638,6 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.model.Context} [oContext]
 	 *   The context which is required as base for a relative path
-	 * @throws {Error}
-	 *   If the binding's root binding is suspended
 	 *
 	 * @private
 	 */
@@ -644,7 +645,6 @@ sap.ui.define([
 	ODataPropertyBinding.prototype.setContext = function (oContext) {
 		if (this.oContext !== oContext) {
 			if (this.bRelative) {
-				this.checkSuspended(true);
 				this.deregisterChange();
 			}
 			this.oContext = oContext;
@@ -716,8 +716,9 @@ sap.ui.define([
 			that = this;
 
 		function reportError(oError) {
-			that.oModel.reportError("Failed to update path " + that.getResolvedPath(), sClassName,
-				oError);
+			that.oModel.reportError(
+				"Failed to update path " + that.oModel.resolve(that.sPath, that.oContext),
+				sClassName, oError);
 
 			return oError;
 		}

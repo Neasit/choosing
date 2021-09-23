@@ -61,7 +61,7 @@ sap.ui.define([
 	 * The MontsRow works with JavaScript Date objects, but only the month and the year are used to display and interact.
 	 * As representation for a month, the 1st of the month will always be returned in the API.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -1031,7 +1031,7 @@ sap.ui.define([
 			// a mouseup must be happened outside of control -> just end move
 			_unbindMousemove.call(this, true);
 			this._bMoveChange = false;
-		} else if (bSelected && this.getIntervalSelection() && this.$().is(":visible")) {
+		}else if (bSelected && this.getIntervalSelection() && this.$().is(":visible")) {
 			// if closed in select event, do not add mousemove handler
 			_bindMousemove.call(this, true);
 		}

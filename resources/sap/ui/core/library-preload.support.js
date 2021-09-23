@@ -5,9 +5,8 @@ sap.ui.predefine('sap/ui/core/library.support', [
     './rules/Model.support',
     './rules/View.support',
     './rules/App.support',
-    './rules/Rendering.support',
-    './rules/Theming.support'
-], function (MiscSupport, ConfigSupport, ModelSupport, ViewSupport, AppSupport, RenderingSupport, ThemingSupport) {
+    './rules/Rendering.support'
+], function (MiscSupport, ConfigSupport, ModelSupport, ViewSupport, AppSupport, RenderingSupport) {
     'use strict';
     return {
         name: 'sap.ui.core',
@@ -18,8 +17,7 @@ sap.ui.predefine('sap/ui/core/library.support', [
             ModelSupport,
             ViewSupport,
             AppSupport,
-            RenderingSupport,
-            ThemingSupport
+            RenderingSupport
         ]
     };
 }, true);
@@ -38,7 +36,7 @@ sap.ui.predefine('sap/ui/core/rules/App.support', [
         'sap.ui.requireSync',
         'jQuery.sap.sjax'
     ];
-    if (jQuery && jQuery.sap && Object.getOwnPropertyDescriptor(jQuery.sap, 'sjax').value) {
+    if (jQuery && jQuery.sap && !!Object.getOwnPropertyDescriptor(jQuery.sap, 'sjax').value) {
         aObsoleteFunctionNames.push('jQuery.sap.syncHead', 'jQuery.sap.syncGet', 'jQuery.sap.syncPost', 'jQuery.sap.syncGetText', 'jQuery.sap.syncGetJSON');
     }
     var oControllerSyncCodeCheckRule = {
@@ -207,30 +205,6 @@ sap.ui.predefine('sap/ui/core/rules/App.support', [
             });
         }
     };
-    var oJSViewRule = {
-        id: 'deprecatedJSViewUsage',
-        audiences: [Audiences.Internal],
-        categories: [Categories.Modularization],
-        enabled: true,
-        minversion: '1.90',
-        title: 'Usage of deprecated JSView',
-        description: 'Usage of deprecated JSView',
-        resolution: 'Avoid using sap.ui.core.mvc.JSView. Instead use Typed Views by defining the view class with \'sap.ui.core.mvc.View.extend\' and creating the view instances with \'sap.ui.core.mvc.View.create\'.',
-        resolutionurls: [{
-                text: 'Documentation: Typed Views',
-                href: 'https://openui5.hana.ondemand.com/#/topic/e6bb33d076dc4f23be50c082c271b9f0'
-            }],
-        check: function (oIssueManager, oCoreFacade, oScope) {
-            var oLoggedObjects = oScope.getLoggedObjects('sap.ui.core.mvc.JSView');
-            oLoggedObjects.forEach(function (oLoggedObject) {
-                oIssueManager.addIssue({
-                    severity: Severity.High,
-                    details: oLoggedObject.message,
-                    context: { id: 'WEBPAGE' }
-                });
-            });
-        }
-    };
     var oGlobalSyncXhrRule = {
         id: 'globalSyncXHR',
         audiences: [Audiences.Internal],
@@ -343,34 +317,6 @@ sap.ui.predefine('sap/ui/core/rules/App.support', [
             });
         }
     };
-    var oMissingSuperInitRule = {
-        id: 'missingInitInUIComponent',
-        audiences: [
-            Audiences.Application,
-            Audiences.Control,
-            Audiences.Internal
-        ],
-        categories: [Categories.Functionality],
-        enabled: true,
-        minversion: '1.89',
-        title: 'Missing super init() call in sap.ui.core.UIComponent',
-        description: 'A sub-class of sap.ui.core.UIComponent which overrides the init() function must apply the super init() function as well.',
-        resolution: 'A bound call to sap.ui.core.UIComponent.prototype.init must be introduced in the sub-class.',
-        resolutionurls: [{
-                text: 'API Documentation: sap.ui.core.UIComponent#init',
-                href: 'https://openui5.hana.ondemand.com/api/sap.ui.core.UIComponent#methods/init'
-            }],
-        check: function (oIssueManager, oCoreFacade, oScope) {
-            var oLoggedObjects = oScope.getLoggedObjects('missingInitInUIComponent');
-            oLoggedObjects.forEach(function (oLoggedObject) {
-                oIssueManager.addIssue({
-                    severity: Severity.High,
-                    details: oLoggedObject.message,
-                    context: { id: 'WEBPAGE' }
-                });
-            });
-        }
-    };
     return [
         oControllerSyncCodeCheckRule,
         oGlobalAPIRule,
@@ -379,9 +325,7 @@ sap.ui.predefine('sap/ui/core/rules/App.support', [
         oGlobalSyncXhrRule,
         oDeprecatedAPIRule,
         oControllerExtensionRule,
-        oJQueryThreeDeprecationRule,
-        oMissingSuperInitRule,
-        oJSViewRule
+        oJQueryThreeDeprecationRule
     ];
 }, true);
 sap.ui.predefine('sap/ui/core/rules/Config.support', [
@@ -873,6 +817,98 @@ sap.ui.predefine('sap/ui/core/rules/Misc.support', [
             }
         }
     };
+    var oCssCheckCustomStyles = {
+        id: 'cssCheckCustomStyles',
+        audiences: [Audiences.Application],
+        categories: [Categories.Consistency],
+        enabled: true,
+        minversion: '1.38',
+        title: 'CSS modifications - List of custom styles',
+        description: 'Checks and report for custom CSS files/styles that overwrite standard UI5 control\'s CSS values ',
+        resolution: 'Avoid CSS manipulations with custom CSS values as this could lead to rendering issues ',
+        resolutionurls: [
+            {
+                text: 'CSS Styling Issues',
+                href: 'https://openui5.hana.ondemand.com/#/topic/9d87f925dfbb4e99b9e2963693aa00ef'
+            },
+            {
+                text: 'General Guidelines',
+                href: 'https://openui5.hana.ondemand.com/#/topic/5e08ff90b7434990bcb459513d8c52c4'
+            }
+        ],
+        check: function (issueManager, oCoreFacade, oScope) {
+            var cssFilesMessage = 'Following stylesheet file(s) contain \'custom\' CSS that could affects (overwrites) UI5 controls\' own styles: \n', externalStyleSheets = CoreHelper.getExternalStyleSheets(), foundIssues = 0;
+            externalStyleSheets.forEach(function (styleSheet) {
+                var affectsUI5Controls = false;
+                Array.from(styleSheet.rules).forEach(function (rule) {
+                    var selector = rule.selectorText, matchedNodes = document.querySelectorAll(selector);
+                    matchedNodes.forEach(function (node) {
+                        var hasUI5Parent = CoreHelper.nodeHasUI5ParentControl(node, oScope);
+                        if (hasUI5Parent) {
+                            affectsUI5Controls = true;
+                        }
+                    });
+                });
+                if (affectsUI5Controls) {
+                    cssFilesMessage += '- ' + CoreHelper.getStyleSheetName(styleSheet) + '\n';
+                    foundIssues++;
+                }
+            });
+            if (foundIssues > 0) {
+                issueManager.addIssue({
+                    severity: Severity.Medium,
+                    details: cssFilesMessage,
+                    context: { id: 'WEBPAGE' }
+                });
+            }
+        }
+    };
+    var oCssCheckCustomStylesThatAffectControls = {
+        id: 'cssCheckCustomStylesThatAffectControls',
+        audiences: [Audiences.Application],
+        categories: [Categories.Consistency],
+        enabled: true,
+        minversion: '1.38',
+        title: 'CSS modifications - List of affected controls',
+        description: 'Checks and report all overwritten standard control\'s CSS values ',
+        resolution: 'Avoid CSS manipulations with custom CSS values as this could lead to rendering issues ',
+        resolutionurls: [
+            {
+                text: 'CSS Styling Issues',
+                href: 'https://openui5.hana.ondemand.com/#/topic/9d87f925dfbb4e99b9e2963693aa00ef'
+            },
+            {
+                text: 'General Guidelines',
+                href: 'https://openui5.hana.ondemand.com/#/topic/5e08ff90b7434990bcb459513d8c52c4'
+            }
+        ],
+        check: function (issueManager, oCoreFacade, oScope) {
+            var controlCustomCssHashMap = {}, externalStyleSheets = CoreHelper.getExternalStyleSheets();
+            externalStyleSheets.forEach(function (styleSheet) {
+                Array.from(styleSheet.rules).forEach(function (rule) {
+                    var selector = rule.selectorText, matchedNodes = document.querySelectorAll(selector);
+                    matchedNodes.forEach(function (node) {
+                        var hasUI5Parent = CoreHelper.nodeHasUI5ParentControl(node, oScope);
+                        if (hasUI5Parent) {
+                            var ui5Control = jQuery(node).control()[0];
+                            if (!controlCustomCssHashMap.hasOwnProperty(ui5Control.getId())) {
+                                controlCustomCssHashMap[ui5Control.getId()] = '';
+                            }
+                            var cssSource = CoreHelper.getStyleSource(styleSheet);
+                            controlCustomCssHashMap[ui5Control.getId()] += '\'' + selector + '\'' + ' from ' + cssSource + ',\n';
+                        }
+                    });
+                });
+            });
+            Object.keys(controlCustomCssHashMap).forEach(function (id) {
+                issueManager.addIssue({
+                    severity: Severity.Low,
+                    details: 'The following selector(s) ' + controlCustomCssHashMap[id] + ' affects standard style setting for control',
+                    context: { id: id }
+                });
+            });
+        }
+    };
     var oEventBusLogs = {
         id: 'eventBusSilentPublish',
         audiences: [Audiences.Internal],
@@ -906,7 +942,9 @@ sap.ui.predefine('sap/ui/core/rules/Misc.support', [
     };
     return [
         oEventBusLogs,
-        oErrorLogs
+        oErrorLogs,
+        oCssCheckCustomStyles,
+        oCssCheckCustomStylesThatAffectControls
     ];
 }, true);
 sap.ui.predefine('sap/ui/core/rules/Model.support', [
@@ -1061,159 +1099,16 @@ sap.ui.predefine('sap/ui/core/rules/Rendering.support', [
     };
     return [oRendererInterfaceVersion];
 }, true);
-sap.ui.predefine('sap/ui/core/rules/Theming.support', [
-    'sap/ui/support/library',
-    './CoreHelper.support',
-    'sap/ui/thirdparty/jquery',
-    'sap/ui/dom/jquery/control'
-], function (SupportLib, CoreHelper, jQuery) {
-    'use strict';
-    var Log = sap.ui.require('sap/base/Log');
-    if (!Log) {
-        Log = jQuery.sap.log;
-    }
-    var Categories = SupportLib.Categories;
-    var Severity = SupportLib.Severity;
-    var Audiences = SupportLib.Audiences;
-    var oCssCheckCustomStyles = {
-        id: 'cssCheckCustomStyles',
-        audiences: [Audiences.Application],
-        categories: [Categories.Consistency],
-        enabled: true,
-        minversion: '1.38',
-        title: 'CSS modifications - List of custom styles',
-        description: 'Checks and report for custom CSS files/styles that overwrite standard UI5 control\'s CSS values ',
-        resolution: 'Avoid CSS manipulations with custom CSS values as this could lead to rendering issues ',
-        resolutionurls: [
-            {
-                text: 'CSS Styling Issues',
-                href: 'https://openui5.hana.ondemand.com/#/topic/9d87f925dfbb4e99b9e2963693aa00ef'
-            },
-            {
-                text: 'General Guidelines',
-                href: 'https://openui5.hana.ondemand.com/#/topic/5e08ff90b7434990bcb459513d8c52c4'
-            }
-        ],
-        check: function (issueManager, oCoreFacade, oScope) {
-            var cssFilesMessage = 'Following stylesheet file(s) contain \'custom\' CSS that could affects (overwrites) UI5 controls\' own styles: \n', externalStyleSheets = CoreHelper.getExternalStyleSheets(), foundIssues = 0;
-            externalStyleSheets.forEach(function (styleSheet) {
-                var affectsUI5Controls = false;
-                Array.from(styleSheet.rules).forEach(function (rule) {
-                    var selector = rule.selectorText, matchedNodes = document.querySelectorAll(selector);
-                    matchedNodes.forEach(function (node) {
-                        var hasUI5Parent = CoreHelper.nodeHasUI5ParentControl(node, oScope);
-                        if (hasUI5Parent) {
-                            affectsUI5Controls = true;
-                        }
-                    });
-                });
-                if (affectsUI5Controls) {
-                    cssFilesMessage += '- ' + CoreHelper.getStyleSheetName(styleSheet) + '\n';
-                    foundIssues++;
-                }
-            });
-            if (foundIssues > 0) {
-                issueManager.addIssue({
-                    severity: Severity.Medium,
-                    details: cssFilesMessage,
-                    context: { id: 'WEBPAGE' }
-                });
-            }
-        }
-    };
-    var oCssCheckCustomStylesThatAffectControls = {
-        id: 'cssCheckCustomStylesThatAffectControls',
-        audiences: [Audiences.Application],
-        categories: [Categories.Consistency],
-        enabled: true,
-        minversion: '1.38',
-        title: 'CSS modifications - List of affected controls',
-        description: 'Checks and report all overwritten standard control\'s CSS values ',
-        resolution: 'Avoid CSS manipulations with custom CSS values as this could lead to rendering issues ',
-        resolutionurls: [
-            {
-                text: 'CSS Styling Issues',
-                href: 'https://openui5.hana.ondemand.com/#/topic/9d87f925dfbb4e99b9e2963693aa00ef'
-            },
-            {
-                text: 'General Guidelines',
-                href: 'https://openui5.hana.ondemand.com/#/topic/5e08ff90b7434990bcb459513d8c52c4'
-            }
-        ],
-        check: function (issueManager, oCoreFacade, oScope) {
-            var controlCustomCssHashMap = {}, externalStyleSheets = CoreHelper.getExternalStyleSheets();
-            externalStyleSheets.forEach(function (styleSheet) {
-                Array.from(styleSheet.rules).forEach(function (rule) {
-                    var selector = rule.selectorText, matchedNodes = document.querySelectorAll(selector);
-                    matchedNodes.forEach(function (node) {
-                        var hasUI5Parent = CoreHelper.nodeHasUI5ParentControl(node, oScope);
-                        if (hasUI5Parent) {
-                            var ui5Control = jQuery(node).control()[0];
-                            if (!controlCustomCssHashMap.hasOwnProperty(ui5Control.getId())) {
-                                controlCustomCssHashMap[ui5Control.getId()] = '';
-                            }
-                            var cssSource = CoreHelper.getStyleSource(styleSheet);
-                            controlCustomCssHashMap[ui5Control.getId()] += '\'' + selector + '\'' + ' from ' + cssSource + ',\n';
-                        }
-                    });
-                });
-            });
-            Object.keys(controlCustomCssHashMap).forEach(function (id) {
-                issueManager.addIssue({
-                    severity: Severity.Low,
-                    details: 'The following selector(s) ' + controlCustomCssHashMap[id] + ' affects standard style setting for control',
-                    context: { id: id }
-                });
-            });
-        }
-    };
-    var oCheckForLegacyParametersGet = {
-        id: 'checkForLegacyParametersGet',
-        audiences: [Audiences.Control],
-        categories: [Categories.Performance],
-        enabled: true,
-        minversion: '1.87',
-        title: 'Legacy sap.ui.core.theming.Parameters#get API',
-        description: 'Checks usage of the legecy variant of the Parameters.get API',
-        resolution: 'Use asynchronous variant of the Parameters.get API',
-        resolutionurls: [{
-                text: 'Parameters.get API Reference',
-                href: 'https://openui5.hana.ondemand.com/api/sap.ui.core.theming.Parameters#methods/sap.ui.core.theming.Parameters.get'
-            }],
-        check: function (issueManager, oCoreFacade, oScope) {
-            var oLoggedObjects = oScope.getLoggedObjects('LegacyParametersGet');
-            oLoggedObjects.forEach(function (oLoggedObject) {
-                issueManager.addIssue({
-                    severity: Severity.Medium,
-                    details: oLoggedObject.message,
-                    context: { id: 'WEBPAGE' }
-                });
-            });
-        }
-    };
-    return [
-        oCheckForLegacyParametersGet,
-        oCssCheckCustomStyles,
-        oCssCheckCustomStylesThatAffectControls
-    ];
-}, true);
 sap.ui.predefine('sap/ui/core/rules/View.support', [
     'sap/ui/support/library',
     'sap/ui/core/Element',
     'sap/ui/thirdparty/jquery',
-    'sap/base/util/isEmptyObject',
-    'sap/ui/base/DataType'
-], function (SupportLib, Element, jQuery, isEmptyObject, DataType) {
+    'sap/base/util/isEmptyObject'
+], function (SupportLib, Element, jQuery, isEmptyObject) {
     'use strict';
     var Categories = SupportLib.Categories;
     var Severity = SupportLib.Severity;
     var Audiences = SupportLib.Audiences;
-    var isDefaultValue = function (oPropertyMetadata, vValue) {
-        if (oPropertyMetadata.defaultValue !== null) {
-            return oPropertyMetadata.defaultValue === vValue;
-        }
-        return vValue === DataType.getType(oPropertyMetadata.type).getDefaultValue();
-    };
     var oXMLViewWrongNamespace = {
         id: 'xmlViewWrongNamespace',
         audiences: [Audiences.Application],
@@ -1350,7 +1245,8 @@ sap.ui.predefine('sap/ui/core/rules/View.support', [
                     var sLocalName = oXMLView._xContent.attributes.item(i).localName;
                     var sFullName = oXMLView._xContent.attributes.item(i).value;
                     if (sName.match('xmlns:') && sLocalName !== 'xmlns:support' && sLocalName !== 'mvc' && sFullName.indexOf('schemas.sap.com') < 0) {
-                        var sContent = jQuery(oXMLView._xContent)[0].outerHTML;
+                        var oContent = jQuery(oXMLView._xContent)[0];
+                        var sContent = new XMLSerializer().serializeToString(oContent);
                         if (!sContent.match('<' + sLocalName + ':') && !sContent.match(' ' + sLocalName + ':')) {
                             var sViewName = oXMLView.getViewName().split('.').pop();
                             oIssueManager.addIssue({
@@ -1381,39 +1277,13 @@ sap.ui.predefine('sap/ui/core/rules/View.support', [
             oScope.getElementsByClassName(Element).forEach(function (oElement) {
                 var oMetadata = oElement.getMetadata(), mProperties = oMetadata.getAllProperties();
                 for (var sProperty in mProperties) {
-                    if (mProperties[sProperty].deprecated && !isDefaultValue(mProperties[sProperty], oElement.getProperty(sProperty))) {
+                    if (mProperties[sProperty].deprecated && mProperties[sProperty].defaultValue != oElement.getProperty(sProperty) && mProperties[sProperty].defaultValue !== null) {
                         oIssueManager.addIssue({
                             severity: Severity.Medium,
-                            details: 'Deprecated property \'' + sProperty + '\' is used for element \'' + oElement.getId() + '\'. Default value: \'' + mProperties[sProperty].defaultValue + '\' and current value: \'' + oElement.getProperty(sProperty) + '\'',
+                            details: 'Deprecated property \'' + sProperty + '\' is used for element \'' + oElement.getId() + '\'.',
                             context: { id: oElement.getId() }
                         });
                     }
-                }
-            });
-        }
-    };
-    var oDeprecatedElementRule = {
-        id: 'deprecatedElement',
-        audiences: [Audiences.Application],
-        categories: [Categories.Functionality],
-        enabled: true,
-        minversion: '1.38',
-        title: 'Usage of deprecated element',
-        description: 'Using deprecated controls should be avoided, because they are not maintained anymore',
-        resolution: 'Refer to the API of the element which element should be used instead.',
-        resolutionurls: [{
-                text: 'API Reference',
-                href: 'https://sapui5.hana.ondemand.com/#/api/deprecated'
-            }],
-        check: function (oIssueManager, oCoreFacade, oScope) {
-            oScope.getElementsByClassName(Element).forEach(function (oElement) {
-                var oMetadata = oElement.getMetadata();
-                if (oMetadata.isDeprecated()) {
-                    oIssueManager.addIssue({
-                        severity: Severity.Medium,
-                        details: 'Deprecated element \'' + oElement.getId() + '\' is used.',
-                        context: { id: oElement.getId() }
-                    });
                 }
             });
         }
@@ -1508,7 +1378,6 @@ sap.ui.predefine('sap/ui/core/rules/View.support', [
         oXMLViewLowerCaseControl,
         oXMLViewUnusedNamespaces,
         oDeprecatedPropertyRule,
-        oDeprecatedElementRule,
         oDeprecatedAggregationRule,
         oDeprecatedAssociationRule,
         oDeprecatedEventRule

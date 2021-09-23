@@ -6,13 +6,17 @@
 
 // Provides control sap.ui.core.mvc.TemplateView.
 sap.ui.define([
-	"./View",
+	'sap/ui/core/library',
+	'./View',
 	"./TemplateViewRenderer",
-	"./ViewType",
 	"sap/base/Log"
 ],
-function(View, TemplateViewRenderer, ViewType, Log) {
+function(library, View, TemplateViewRenderer, Log) {
 "use strict";
+
+
+	// shortcut for enum(s)
+	var ViewType = library.mvc.ViewType;
 
 	/**
 	 * Constructor for a new mvc/TemplateView.
@@ -29,7 +33,7 @@ function(View, TemplateViewRenderer, ViewType, Log) {
 	 * @extends sap.ui.core.mvc.View
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @deprecated Since version 1.56.0, use {@link sap.ui.core.mvc.XMLView} in combination with
@@ -107,10 +111,6 @@ function(View, TemplateViewRenderer, ViewType, Log) {
 		/**
 		 * Abstract method implementation.
 		 *
-		 * @param {object} mSettings settings for the view
-		 * @param {object.string} mSettings.viewData view data
-		 * @param {object.string} mSettings.viewName view name
-		 * @param {object.boolean} [mSettings.async] set the view to load a view resource asynchronously
 		 * @see sap.ui.core.mvc.View#initViewSettings
 		 *
 		 * @private

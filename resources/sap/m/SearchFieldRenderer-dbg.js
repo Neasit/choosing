@@ -75,7 +75,17 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText", "sap/ui/core/librar
 
 			rm.openEnd();
 
-			rm.voidStart('input', sId + "-I")
+			// self-made placeholder
+			if (!oSF._hasPlaceholder && sPlaceholder) {
+				rm.openStart("label", sId + "-P")
+					.class("sapMSFPlaceholder")
+					.attr("for", sId + "-I")
+					.openEnd()
+					.text(sPlaceholder)
+					.close("label");
+			}
+
+			rm.voidStart('input', oSF.getId() + "-I")
 				.class("sapMSFI")
 				.attr("type", "search")
 				.attr("autocomplete", "off");
@@ -93,10 +103,14 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText", "sap/ui/core/librar
 				rm.attr("title", sTooltip);
 			}
 
+			if (Device.os.android && Device.os.version >= 4 && Device.os.version < 4.1 ) {
+				rm.class("sapMSFIA4"); // specific CSS layout for Android 4.0x
+			}
+
 			if (oSF.getEnableSuggestions() && Device.system.phone) {
 				// Always open a dialog on a phone if suggestions are on.
-				// avoid soft keyboard flickering
-				rm.attr("inputmode", "none");
+				// To avoid soft keyboard flickering, set the readonly attribute.
+				rm.attr("readonly", "readonly");
 			}
 
 			if (!oSF.getEnabled()) {
@@ -132,7 +146,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText", "sap/ui/core/librar
 
 			if (oSF.getEnabled()) {
 				// 2. Reset button
-				rm.openStart("div", sId + "-reset")
+				rm.openStart("div", oSF.getId() + "-reset")
 					.class("sapMSFR") // reset
 					.class("sapMSFB") // button
 					.attr("aria-hidden", true);
@@ -153,7 +167,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText", "sap/ui/core/librar
 
 				// 3. Search/Refresh button
 				if (bShowSearchBtn) {
-					rm.openStart("div", sId + "-search")
+					rm.openStart("div", oSF.getId() + "-search")
 						.class("sapMSFS") // search
 						.class("sapMSFB") // button
 						.attr("aria-hidden", true);
@@ -178,7 +192,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText", "sap/ui/core/librar
 
 			if (oSF.getEnableSuggestions()) {
 
-				rm.openStart("span", sId + "-SuggDescr")
+				rm.openStart("span", oSF.getId() + "-SuggDescr")
 					.class("sapUiPseudoInvisibleText")
 					.attr("role", "status")
 					.attr("aria-live", "polite")

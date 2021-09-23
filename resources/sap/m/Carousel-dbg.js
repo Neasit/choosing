@@ -14,6 +14,8 @@ sap.ui.define([
 	"sap/ui/core/ResizeHandler",
 	"sap/ui/core/library",
 	"sap/m/MessagePage",
+	"sap/ui/core/theming/Parameters",
+	"sap/ui/dom/units/Rem",
 	"./CarouselRenderer",
 	"./CarouselLayout",
 	"sap/ui/events/KeyCodes",
@@ -30,6 +32,8 @@ sap.ui.define([
 	ResizeHandler,
 	coreLibrary,
 	MessagePage,
+	Parameters,
+	Rem,
 	CarouselRenderer,
 	CarouselLayout,
 	KeyCodes,
@@ -99,7 +103,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -276,10 +280,7 @@ sap.ui.define([
 		this._fnAdjustAfterResize = function() {
 			var $carouselInner = this.$().find(Carousel._INNER_SELECTOR);
 			this._oMobifyCarousel.resize($carouselInner);
-
-			if (this.getPages().length > 1) {
-				this._setWidthOfPages(this._getNumberOfItemsToShow());
-			}
+			this._setWidthOfPages(this._getNumberOfItemsToShow());
 		}.bind(this);
 
 		this._aOrderOfFocusedElements = [];
@@ -395,6 +396,7 @@ sap.ui.define([
 		// remove event delegates before rendering
 		this.$().off('beforeSlide', this._onBeforePageChangedRef);
 		this.$().off('afterSlide', this._onAfterPageChangedRef);
+		this.$().find(".sapMCrslItemTableCell").off("focus"); // Fixes wrong focusing in IE// TODO remove after the end of support for Internet Explorer
 
 		return this;
 	};
@@ -495,6 +497,17 @@ sap.ui.define([
 
 		this._sResizeListenerId = ResizeHandler.register(this._$InnerDiv, this._fnAdjustAfterResize);
 
+		// Fixes wrong focusing in IE// TODO remove after the end of support for Internet Explorer
+		// BCP: 1670008915
+		this.$().find(".sapMCrslItemTableCell").on("focus", function(e) {
+
+			e.preventDefault();
+
+			jQuery(e.target).parents('.sapMCrsl').trigger("focus");
+
+			return false;
+		});
+
 		// Fixes displaying correct page after carousel become visible in an IconTabBar
 		// BCP: 1680019792
 		var oParent = this.getParent();
@@ -585,8 +598,7 @@ sap.ui.define([
 	 */
 	Carousel.prototype._calculatePagesWidth = function (iNumberOfItemsToShow) {
 		var iWidth = this.$().width(),
-			oSlide = this.getDomRef().querySelector(".sapMCrslFluid .sapMCrslItem"),
-			iMargin = parseFloat(window.getComputedStyle(oSlide).marginRight),
+			iMargin = Rem.toPx(Parameters.get("_sap_m_Carousel_PagesMarginRight")),
 			iItemWidth = (iWidth - (iMargin * (iNumberOfItemsToShow - 1))) / iNumberOfItemsToShow,
 			iItemWidthPercent = (iItemWidth / iWidth) * 100;
 
@@ -799,7 +811,7 @@ sap.ui.define([
 	/**
 	 * Call this method to display the previous page (corresponds to a swipe left). Returns 'this' for method chaining.
 	 *
-	 * @type this
+	 * @type sap.m.Carousel
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -816,7 +828,7 @@ sap.ui.define([
 	/**
 	 * Call this method to display the next page (corresponds to a swipe right). Returns 'this' for method chaining.
 	 *
-	 * @type this
+	 * @type sap.m.Carousel
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1262,7 +1274,12 @@ sap.ui.define([
 	 * @private
 	 */
 	Carousel.prototype._handleF7Key = function (oEvent) {
-		var oActivePageLastFocusedElement = this._getActivePageLastFocusedElement();
+		var oActivePageLastFocusedElement;
+
+		// Needed for IE// TODO remove after the end of support for Internet Explorer
+		oEvent.preventDefault();
+
+		oActivePageLastFocusedElement = this._getActivePageLastFocusedElement();
 
 		// If focus is on an interactive element inside a page, move focus to the Carousel.
 		// As long as the focus remains on the Carousel, a consecutive press on [F7]

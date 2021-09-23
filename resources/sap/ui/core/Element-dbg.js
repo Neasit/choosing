@@ -126,7 +126,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @public
 	 * @alias sap.ui.core.Element
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
@@ -307,8 +307,6 @@ sap.ui.define([
 
 	/**
 	 * Dispatches the given event, usually a browser event or a UI5 pseudo event.
-	 *
-	 * @param {jQuery.Event} oEvent The event
 	 * @private
 	 */
 	Element.prototype._handleEvent = function (oEvent) {
@@ -406,7 +404,6 @@ sap.ui.define([
 	 * @static
 	 * @deprecated As of 1.44, use the more flexible {@link sap.ui.base.ManagedObject.create}.
 	 * @function
-	 * @ts-skip
 	 */
 	Element.create = ManagedObject.create;
 
@@ -477,7 +474,7 @@ sap.ui.define([
 	 *
 	 * @param {string}  sPropertyName name of the property to set
 	 * @param {any}     [oValue] value to set the property to
-	 * @return {any|this} Returns <code>this</code> to allow method chaining in case of setter and the property value in case of getter
+	 * @return {any|sap.ui.core.Element} Returns <code>this</code> to allow method chaining in case of setter and the property value in case of getter
 	 * @public
 	 * @deprecated Since 1.28.0 The contract of this method is not fully defined and its write capabilities overlap with applySettings
 	 */
@@ -853,14 +850,14 @@ sap.ui.define([
 		if (oFocusDomRef) {
 			// save the scroll position of all ancestor DOM elements
 			// before the focus is set, because preventScroll is not supported by the following browsers
-			if (Device.browser.safari) {
+			if (Device.browser.safari || Device.browser.msie || Device.browser.edge) {
 				if (oFocusInfo.preventScroll === true) {
 					aScrollHierarchy = getAncestorScrollPositions(oFocusDomRef);
 				}
 				oFocusDomRef.focus();
 				if (aScrollHierarchy.length > 0) {
 					// restore the scroll position if it's changed after setting focus
-					// Safari needs a little delay to get the scroll position updated
+					// Safari, IE11 and Edge need a little delay to get the scroll position updated
 					setTimeout(restoreScrollPositions.bind(null, aScrollHierarchy), 0);
 				}
 			} else {
@@ -886,7 +883,7 @@ sap.ui.define([
 	 *
 	 * To be overwritten by the specific control method.
 	 *
-	 * @param {object} oFocusInfo Focus info object as returned by {@link #getFocusInfo}
+	 * @param {object} oFocusInfo Focus info object as returned by {@link getFocusInfo}
 	 * @param {boolean} [oFocusInfo.preventScroll=false] @since 1.60 if it's set to true, the focused
 	 *   element won't be shifted into the viewport if it's not completely visible before the focus is set
 	 * @returns {this} Returns <code>this</code> to allow method chaining
@@ -899,10 +896,7 @@ sap.ui.define([
 
 
 	/**
-	 * Refreshs the tooltip base delegate with the given <code>oTooltip</code>
-	 *
 	 * @see sap.ui.core.Element#setTooltip
-	 * @param {sap.ui.core.TooltipBase} oTooltip The new tooltip
 	 * @private
 	 */
 	Element.prototype._refreshTooltipBaseDelegate = function (oTooltip) {
@@ -1117,12 +1111,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns the data object with the given <code>key</code>
-	 *
-	 * @private
-	 * @param {sap.ui.core.Element} element The element
-	 * @param {string} key The key of the desired custom data
-	 * @returns {sap.ui.core.CustomData} The custom data
+	 * Returns the data object with the given key
 	 */
 	function findCustomData(element, key) {
 		var aData = element.getAggregation("customData");
@@ -1138,34 +1127,34 @@ sap.ui.define([
 
 	/**
 	 * Contains the data modification logic
-	 *
-	 * @private
-	 * @param {sap.ui.core.Element} element The element
-	 * @param {string} key The key of the desired custom data
-	 * @param {string|any} value The value of the desired custom data
-	 * @param {boolean} writeToDom Whether this custom data entry should be written to the DOM during rendering
 	 */
 	function setCustomData(element, key, value, writeToDom) {
-		var oDataObject = findCustomData(element, key);
 
+		// DELETE
 		if (value === null) { // delete this property
-			if (!oDataObject) {
+			var dataObject = findCustomData(element, key);
+			if (!dataObject) {
 				return;
 			}
+
 			var dataCount = element.getAggregation("customData").length;
 			if (dataCount == 1) {
 				element.destroyAggregation("customData", true); // destroy if there is no other data
 			} else {
-				element.removeAggregation("customData", oDataObject, true);
-				oDataObject.destroy();
+				element.removeAggregation("customData", dataObject, true);
+				dataObject.destroy();
 			}
-		} else if (oDataObject) { // change the existing data object
-			oDataObject.setValue(value);
-			oDataObject.setWriteToDom(writeToDom);
-		} else { // add a new data object
-			element.addAggregation("customData",
-				new CustomData({ key: key, value: value, writeToDom: writeToDom }),
-				true);
+
+			// ADD or CHANGE
+		} else {
+			var dataObject = findCustomData(element, key);
+			if (dataObject) {
+				dataObject.setValue(value);
+				dataObject.setWriteToDom(writeToDom);
+			} else {
+				var dataObject = new CustomData({key:key,value:value, writeToDom:writeToDom});
+				element.addAggregation("customData", dataObject, true);
+			}
 		}
 	}
 
@@ -1335,9 +1324,9 @@ sap.ui.define([
 				oClone.aDelegates.push(this.aDelegates[i]);
 			}
 		}
-		for ( var k = 0; k < this.aBeforeDelegates.length; k++) {
-			if (this.aBeforeDelegates[k].bClone) {
-				oClone.aBeforeDelegates.push(this.aBeforeDelegates[k]);
+		for ( var i = 0; i < this.aBeforeDelegates.length; i++) {
+			if (this.aBeforeDelegates[i].bClone) {
+				oClone.aBeforeDelegates.push(this.aBeforeDelegates[i]);
 			}
 		}
 
@@ -1532,8 +1521,7 @@ sap.ui.define([
 
 	/**
 	 * Returns the contextual width of an element, if set, or <code>undefined</code> otherwise
-	 *
-	 * @returns {*} The contextual width
+	 * @returns {*}
 	 * @private
 	 * @ui5-restricted
 	 */
@@ -1548,9 +1536,8 @@ sap.ui.define([
 	/**
 	 * Returns the current media range of the Device or the closest media container
 	 *
-	 * @param {string} [sName=Device.media.RANGESETS.SAP_STANDARD] The name of the range set
-	 * @returns {object} Information about the current active interval of the range set.
-	 *  The returned object has the same structure as the argument of the event handlers ({@link sap.ui.Device.media.attachHandler})
+	 * @param {string} sName
+	 * @returns {object}
 	 * @private
 	 * @ui5-restricted
 	 */
@@ -1592,7 +1579,7 @@ sap.ui.define([
 		// Notify all listeners, for which a media breakpoint change occurred, based on their RangeSet
 		aListeners.forEach(function (oL) {
 			var oMedia = this._getCurrentMediaContainerRange(oL.name);
-			if (oMedia && oMedia.from !== oL.media.from) {
+			if (oMedia.from !== oL.media.from) {
 				oL.media = oMedia;
 				oL.callback.call(oL.listener || window, oMedia);
 			}
@@ -1600,16 +1587,11 @@ sap.ui.define([
 	};
 
 	/**
-	 * Registers the given event handler to change events of the screen width/closest media container width,
-	 *  based on the range set with the given <code>sName</code>.
+	 * Registers the given event handler to change events of the screen width/closest media container width, based on the range set with the specified name.
 	 *
-	 * @param {function} fnFunction The handler function to call when the event occurs.
-	 *  This function will be called in the context of the <code>oListener</code> instance (if present) or
-	 *  on the element instance.
-	 * @param {object} oListener The object that wants to be notified when the event occurs
-	 *  (<code>this</code> context within the handler function).
-	 *  If it is not specified, the handler function is called in the context of the element.
-	 * @param {string} sName The name of the desired range set
+	 * @param {function} fnFunction
+	 * @param {object} oListener
+	 * @param {string} sName
 	 * @private
 	 * @ui5-restricted
 	 */
@@ -1633,14 +1615,9 @@ sap.ui.define([
 
 	/**
 	 * Removes a previously attached event handler from the change events of the screen width/closest media container width.
-	 *
-	 * @param {function} fnFunction The handler function to call when the event occurs.
-	 *  This function will be called in the context of the <code>oListener</code> instance (if present) or
-	 *  on the element instance.
-	 * @param {object} oListener The object that wants to be notified when the event occurs
-	 *  (<code>this</code> context within the handler function).
-	 *  If it is not specified, the handler function is called in the context of the element.
-	 * @param {string} sName The name of the desired range set
+	 * @param {function} fnFunction
+	 * @param {object} oListener
+	 * @param {string} sName
 	 * @private
 	 * @ui5-restricted
 	 */

@@ -15,7 +15,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/layout/library"],
 	/**
 	 * @author SAP SE
 	 * @version
-	 * 1.92.0
+	 * 1.87.0
 	 * @namespace
 	 */
 	var GridRenderer = {
@@ -122,7 +122,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/layout/library"],
 
 
 		for ( var i = 0; i < aItems.length; i++) { // loop over all child controls
-			oRm.openStart("div", oControl.getId() + "-wrapperfor-" + aItems[i].getId());
+			oRm.openStart("div");
 			var oLay = oControl._getLayoutDataForControl(aItems[i]);
 			var bCellSpanXLChanged = false;
 

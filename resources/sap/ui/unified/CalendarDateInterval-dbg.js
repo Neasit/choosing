@@ -57,7 +57,7 @@ sap.ui.define([
 	 * @class
 	 * <code>CalendarDateInterval</code> only visualizes the dates in a one-line interval and allows the selection of a single day.
 	 * @extends sap.ui.unified.Calendar
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -553,7 +553,7 @@ sap.ui.define([
 		var iDays = this._getDays();
 		if (iDays > this._iDaysMonthHead) {
 			return true;
-		} else  {
+		}else {
 			return false;
 		}
 
@@ -575,7 +575,7 @@ sap.ui.define([
 			if (!oStartDate) {
 				// use focused date as start date
 				this._setStartDate(this._oFocusedDate, false, true);
-			} else if (!oDatesRow.checkDateFocusable(this._oFocusedDate.toLocalJSDate())) {
+			}else if (!oDatesRow.checkDateFocusable(this._oFocusedDate.toLocalJSDate())) {
 				this._oFocusedDate = CalendarDate.fromLocalJSDate(oStartDate, this.getPrimaryCalendarType());
 			}
 		}
@@ -625,7 +625,7 @@ sap.ui.define([
 	/**
 	* Focuses given date.
 	* @param {Date} oDate a JavaScript date
-	* @returns {this} <code>this</code> for method chaining
+	* @return {sap.ui.unified.Calendar} <code>this</code> for method chaining
 	*/
 	CalendarDateInterval.prototype.focusDate = function(oDate){
 
@@ -823,7 +823,7 @@ sap.ui.define([
 				(iYear == iYearMin &&
 						(!bCheckMonth || iMonth < iMonthMin || (iMonth == iMonthMin && iDate <= iDateMin)))) {
 			oHeader.setEnabledPrevious(false);
-		} else  {
+		}else {
 			oHeader.setEnabledPrevious(true);
 		}
 
@@ -868,7 +868,6 @@ sap.ui.define([
 			oStartDate =  new CalendarDate(this._getStartDate(),  this.getPrimaryCalendarType());
 			iDays = this._getDays();
 			this._shiftStartFocusDates(oStartDate, oFocusedDate, (iDays * -1));
-			this._addMonthFocusDelegate();
 			break;
 
 		case 1: // month picker
@@ -921,7 +920,6 @@ sap.ui.define([
 			oStartDate = new CalendarDate(this._getStartDate(), this.getPrimaryCalendarType());
 			iDays = this._getDays();
 			this._shiftStartFocusDates(oStartDate, oFocusedDate, iDays);
-			this._addMonthFocusDelegate();
 			break;
 
 		case 1: // month picker
@@ -1140,7 +1138,7 @@ sap.ui.define([
 				//focused date not longer visible -> focus start date
 				this._setFocusedDate(oStartDate);
 				oDatesRow.setDate(oLocaleDate);
-			} else  {
+			}else {
 				oDatesRow.setDate(oDate);
 			}
 		}

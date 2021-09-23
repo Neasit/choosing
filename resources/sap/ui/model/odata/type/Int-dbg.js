@@ -6,14 +6,14 @@
 
 sap.ui.define([
 	"sap/base/Log",
-	"sap/base/util/extend",
 	"sap/ui/core/format/NumberFormat",
 	"sap/ui/model/FormatException",
 	"sap/ui/model/ParseException",
 	"sap/ui/model/ValidateException",
-	"sap/ui/model/odata/type/ODataType"
-], function (Log, extend, NumberFormat, FormatException, ParseException, ValidateException,
-		ODataType) {
+	"sap/ui/model/odata/type/ODataType",
+	"sap/ui/thirdparty/jquery"
+], function (Log, NumberFormat, FormatException, ParseException, ValidateException, ODataType,
+		jQuery) {
 	"use strict";
 
 	/**
@@ -27,7 +27,7 @@ sap.ui.define([
 		var oFormatOptions;
 
 		if (!oType.oFormat) {
-			oFormatOptions = extend({groupingEnabled : true}, oType.oFormatOptions);
+			oFormatOptions = jQuery.extend({groupingEnabled : true}, oType.oFormatOptions);
 			oType.oFormat = NumberFormat.getIntegerInstance(oFormatOptions);
 		}
 		return oType.oFormat;
@@ -80,7 +80,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.odata.type.ODataType
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @abstract
 	 * @alias sap.ui.model.odata.type.Int

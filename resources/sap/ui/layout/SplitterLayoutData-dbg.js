@@ -24,7 +24,7 @@ sap.ui.define(['sap/ui/core/LayoutData', './library'],
 	 * (The CSS value "auto" is used internally to recalculate the size of the content
 	 * dynamically and is not directly set as style property.)
 	 * @extends sap.ui.core.LayoutData
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -45,11 +45,7 @@ sap.ui.define(['sap/ui/core/LayoutData', './library'],
 			resizable : {type : "boolean", group : "Behavior", defaultValue : true},
 
 			/**
-			 * The size of the splitter content.
-			 * This property is updated when the area is resized by the user.
-			 *
-			 * <b>Note:</b> Resizing areas in the sap.ui.layout.Splitter sets this property to "px" values,
-			 * while resizing areas in the sap.ui.layout.ResponsiveSplitter sets it to % values.
+			 * Sets the size of the splitter content.
 			 */
 			size : {type : "sap.ui.core.CSSSize", group : "Dimension", defaultValue : 'auto'},
 
@@ -60,18 +56,8 @@ sap.ui.define(['sap/ui/core/LayoutData', './library'],
 		}
 	}});
 
-	SplitterLayoutData.prototype.init = function () {
-		LayoutData.prototype.init.apply(this, arguments);
-		this._bIsModified = false;
-	};
-
-	SplitterLayoutData.prototype._markModified = function () {
-		this._bIsModified = true;
-	};
-
-	SplitterLayoutData.prototype._isMarked = function () {
-		return this._bIsModified;
-	};
+	/*** NOTHING ***/
 
 	return SplitterLayoutData;
+
 });

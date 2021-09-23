@@ -3,7 +3,6 @@
  * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-/*global FontFace */
 sap.ui.define([
 	'sap/ui/thirdparty/URI',
 	"sap/base/i18n/ResourceBundle",
@@ -716,8 +715,7 @@ sap.ui.define([
 				'translate': 0x1e28b,
 				'clear-all': 0xe28c,
 				'command-line-interfaces': 0xe28d,
-				'sum': 0x1e28e,
-				'qr-code': 0x1e28f
+				'sum': 0x1e28e
 			}
 		};
 
@@ -928,7 +926,6 @@ sap.ui.define([
 			var parts,
 				info,
 				async,
-				oLoaded,
 				nameIsURI = IconPool.isIconURI(iconName);
 
 			if (!iconName) {
@@ -992,7 +989,7 @@ sap.ui.define([
 
 			// load icon metadata if not available (except for default collection)
 			if (info === undefined && collectionName !== undefined) {
-				oLoaded = IconPool._loadFontMetadata(collectionName, async);
+				var oLoaded = IconPool._loadFontMetadata(collectionName, async);
 			}
 			if (async) {
 				if (oLoaded) {
@@ -1004,10 +1001,12 @@ sap.ui.define([
 						}
 						return info;
 					});
-				} else if (loadingMode === "async") {
-					return Promise.resolve(info);
 				} else {
-					info = getInfo();
+					if (loadingMode === "async") {
+						return Promise.resolve(info);
+					} else {
+						info = getInfo();
+					}
 				}
 			} else {
 				// refresh info if needed and return it
@@ -1095,13 +1094,7 @@ sap.ui.define([
 		 * @param {string} [sCollectionName] the collection name, if not specified the font face is used
 		 */
 		IconPool.insertFontFaceStyle = function (sFontFace, sPath, sCollectionName) {
-			var oFontFace;
-
-			function convertUrl(sUrl) {
-				// AppCacheBuster createds the '_covnertUrl' function when it's active. Call the function to include the
-				// CacheBuster token into the url.
-				return IconPool._convertUrl ? IconPool._convertUrl(sUrl) : sUrl;
-			}
+			var oElement;
 
 			if (arguments.length === 0 || sFontFace === SAP_ICON_FONT_FAMILY) {
 				// The font-face declaration for the predefined icon font is done in SAP-icons.css which is imported to the
@@ -1134,17 +1127,20 @@ sap.ui.define([
 				return;
 			}
 
-			oFontFace = new FontFace(sFontFace,
-				"url(" + convertUrl(sPath + sFontFace + ".woff2") + ") format('woff2'),"
-				+ "local(" + sFontFace + ")",
-				{
-					weight: "normal",
-					style: "normal"
-				}
-			);
+			oElement = document.createElement("style");
+			oElement.type = "text/css";
+			oElement.textContent = "@font-face {" +
+				"font-family: '" + sFontFace + "';" +
+				"src: url('" + sPath + sFontFace + ".woff2') format('woff2')," + /* Chrome 36+, Firefox 39+, Safari 10+, Edge 14+, Chrome 51+ for Android */
+				"url('" + sPath + sFontFace + ".woff') format('woff')," + /* IE9+, Safari 5.1+, iOS 5.1+, Android Browser 4.4+, IE Mobile 11+ */
+				"url('" + sPath + sFontFace + ".ttf') format('truetype')," + /* Fallback for any older browser (except IE8 and below which are not supported anyway) */
+				"local('" + sFontFace + "');" + /* fallback to local installed font in case it can't be loaded (e.g. font download is disabled due to browser security settings) */
+				"font-weight: normal;" +
+				"font-style: normal;" +
+				"}";
 
-			document.fonts.add(oFontFace);
-			oFontFace.load();
+			// load the font asynchronously via CSS
+			document.head.appendChild(oElement);
 
 			mFontRegistry[sCollectionName].inserted = true;
 			mFontRegistry[sCollectionName].fontFace = sFontFace;
@@ -1281,44 +1277,46 @@ sap.ui.define([
 
 					mFontRegistry[collectionName].metadataLoaded = oPromise;
 					return oPromise;
-				} else if (oConfig.metadataURI) {
-					if (mFontRegistry[collectionName].metadataXhr) { // there is an async request ongoing
-						// the async request is aborted before the sync request is sent
-						mFontRegistry[collectionName].metadataXhr.abort("Replaced by sync request");
-						mFontRegistry[collectionName].metadataXhr = null;
-					}
-					Log.warning("Synchronous loading of font meta data in IconPool, due to .getIconInfo() call" +
-						" for '" + collectionName + "'. Use loading mode 'async' to avoid this call.", "SyncXHR", null, function() {
-						return {
-							type: "SyncXHR",
-							name: "IconPool"
-						};
-					});
-					// load the metadata synchronously
-					jQuery.ajax(oConfig.metadataURI, {
-						dataType: "json",
-						async: false,
-						success: function (oJSON) {
-							loadFont(oJSON);
-							if (mFontRegistry[collectionName].metadataLoadedResolve) {
-								// resolve the Promise for the async request
-								mFontRegistry[collectionName].metadataLoadedResolve();
-								delete mFontRegistry[collectionName].metadataLoadedResolve;
-							}
-						},
-						error: function () {
-							if (mFontRegistry[collectionName].metadataLoadedResolve) {
-								// resolve the Promise for the async request
-								mFontRegistry[collectionName].metadataLoadedResolve();
-								delete mFontRegistry[collectionName].metadataLoadedResolve;
-							}
-							Log.error("An error occurred loading the font metadata for collection '" + collectionName + "'");
-							mFontRegistry[collectionName].metadataLoaded = false;
-						}
-					});
 				} else {
-					// pass on the configuration object
-					loadFont(oConfig.metadata);
+					if (oConfig.metadataURI) {
+						if (mFontRegistry[collectionName].metadataXhr) { // there is an async request ongoing
+							// the async request is aborted before the sync request is sent
+							mFontRegistry[collectionName].metadataXhr.abort("Replaced by sync request");
+							mFontRegistry[collectionName].metadataXhr = null;
+						}
+						Log.warning("Synchronous loading of font meta data in IconPool, due to .getIconInfo() call" +
+							" for '" + collectionName + "'. Use loading mode 'async' to avoid this call.", "SyncXHR", null, function() {
+							return {
+								type: "SyncXHR",
+								name: "IconPool"
+							};
+						});
+						// load the metadata synchronously
+						jQuery.ajax(oConfig.metadataURI, {
+							dataType: "json",
+							async: false,
+							success: function (oJSON) {
+								loadFont(oJSON);
+								if (mFontRegistry[collectionName].metadataLoadedResolve) {
+									// resolve the Promise for the async request
+									mFontRegistry[collectionName].metadataLoadedResolve();
+									delete mFontRegistry[collectionName].metadataLoadedResolve;
+								}
+							},
+							error: function () {
+								if (mFontRegistry[collectionName].metadataLoadedResolve) {
+									// resolve the Promise for the async request
+									mFontRegistry[collectionName].metadataLoadedResolve();
+									delete mFontRegistry[collectionName].metadataLoadedResolve;
+								}
+								Log.error("An error occurred loading the font metadata for collection '" + collectionName + "'");
+								mFontRegistry[collectionName].metadataLoaded = false;
+							}
+						});
+					} else {
+						// pass on the configuration object
+						loadFont(oConfig.metadata);
+					}
 				}
 			}
 		};

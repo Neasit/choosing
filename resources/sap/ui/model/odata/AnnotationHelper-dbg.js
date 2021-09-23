@@ -19,15 +19,20 @@ sap.ui.define([
 		 *
 		 * @param {function} fnAfter
 		 *   the second function, taking a single argument
-		 * @param {function} fnBefore
-		 *   the first function, taking multiple arguments
+		 * @param {function} [fnBefore]
+		 *   the optional first function, taking multiple arguments
 		 * @returns {function}
 		 *   the composition <code>fnAfter</code> after <code>fnBefore</code>
 		 */
 		function chain(fnAfter, fnBefore) {
-			return function () {
+			if (!fnBefore) {
+				return fnAfter;
+			}
+
+			function formatter() {
 				return fnAfter.call(this, fnBefore.apply(this, arguments));
-			};
+			}
+			return formatter;
 		}
 
 		/**
@@ -166,11 +171,10 @@ sap.ui.define([
 				if (bMergeNeeded) {
 					BindingParser.mergeParts(vPropertySetting);
 				}
-				fnRootFormatter = vPropertySetting.formatter; // may have changed due to merge
 
 				if (vPropertySetting.parts.length === 0) {
 					// special case: all parts are constant values, call formatter once
-					vPropertySetting = fnRootFormatter && fnRootFormatter();
+					vPropertySetting = vPropertySetting.formatter && vPropertySetting.formatter();
 					if (typeof vPropertySetting === "string") {
 						vPropertySetting = BindingParser.complexParser.escape(vPropertySetting);
 					}
@@ -178,17 +182,12 @@ sap.ui.define([
 					// special case: a single property setting only
 					// Note: sap.ui.base.ManagedObject#_bindProperty cannot handle the single-part
 					//       case with two formatters, unless the root formatter is marked with
-					//       "textFragments". Unpacking the single part does not work in case it has
-					//       a type! We do not unpack here, but chain the formatters ourselves.
-					// Note: we prefer a root formatter because it has access to "this" and has an
-					//       influence on the binding mode (OneTime/OneWay)
-					if (fnRootFormatter && !fnRootFormatter.textFragments
-							&& vPropertySetting.parts[0].formatter) {
+					//       "textFragments". We unpack here and chain the formatters ourselves.
+					fnRootFormatter = vPropertySetting.formatter;
+					vPropertySetting = vPropertySetting.parts[0];
+					if (fnRootFormatter) {
 						vPropertySetting.formatter
-							= chain(fnRootFormatter, vPropertySetting.parts[0].formatter);
-						// avoid changes visible to caller
-						vPropertySetting.parts[0] = Object.assign({}, vPropertySetting.parts[0]);
-						delete vPropertySetting.parts[0].formatter;
+							= chain(fnRootFormatter, vPropertySetting.formatter);
 					}
 				}
 

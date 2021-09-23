@@ -8,25 +8,24 @@
 sap.ui.define([
 	"sap/base/assert",
 	"sap/base/Log",
-	"sap/base/util/deepExtend",
-	"sap/base/util/each",
 	"sap/base/util/includes",
 	"sap/base/util/isEmptyObject",
-	"sap/ui/model/ChangeReason",
-	"sap/ui/model/Context",
-	"sap/ui/model/Filter",
-	"sap/ui/model/FilterProcessor",
-	"sap/ui/model/FilterType",
-	"sap/ui/model/Sorter",
-	"sap/ui/model/SorterProcessor",
-	"sap/ui/model/TreeBinding",
-	"sap/ui/model/TreeBindingUtils",
-	"sap/ui/model/odata/CountMode",
-	"sap/ui/model/odata/ODataUtils",
-	"sap/ui/model/odata/OperationMode"
-], function(assert, Log, deepExtend, each, includes, isEmptyObject, ChangeReason, Context, Filter,
-		FilterProcessor, FilterType, Sorter, SorterProcessor, TreeBinding, TreeBindingUtils,
-		CountMode, ODataUtils, OperationMode) {
+	'sap/ui/model/ChangeReason',
+	'sap/ui/model/Context',
+	'sap/ui/model/Filter',
+	'sap/ui/model/FilterProcessor',
+	'sap/ui/model/FilterType',
+	'sap/ui/model/Sorter',
+	'sap/ui/model/SorterProcessor',
+	'sap/ui/model/TreeBinding',
+	'sap/ui/model/TreeBindingUtils',
+	'sap/ui/model/odata/CountMode',
+	'sap/ui/model/odata/ODataUtils',
+	'sap/ui/model/odata/OperationMode',
+	"sap/ui/thirdparty/jquery"
+], function(assert, Log, includes, isEmptyObject, ChangeReason, Context, Filter, FilterProcessor,
+		FilterType, Sorter, SorterProcessor, TreeBinding, TreeBindingUtils, CountMode, ODataUtils,
+		OperationMode, jQuery) {
 	"use strict";
 
 	/**
@@ -92,7 +91,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.TreeBinding
 	 * @hideconstructor
 	 * @public
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var ODataTreeBinding = TreeBinding.extend("sap.ui.model.odata.v2.ODataTreeBinding", /** @lends sap.ui.model.odata.v2.ODataTreeBinding.prototype */ {
 
@@ -235,7 +234,7 @@ sap.ui.define([
 			this.mRequestHandles[sRequestKey].abort();
 		}
 		sGroupId = this.sRefreshGroupId ? this.sRefreshGroupId : this.sGroupId;
-		var sAbsolutePath = this.getResolvedPath();
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 		if (sAbsolutePath) {
 			this.mRequestHandles[sRequestKey] = this.oModel.read(sAbsolutePath, {
 				groupId: sGroupId,
@@ -316,7 +315,7 @@ sap.ui.define([
 			aRootContexts = this._getContextsForNodeId(null, iStartIndex, iLength, iThreshold);
 
 		} else {
-			sNodeId = this.getResolvedPath();
+			sNodeId = this.oModel.resolve(this.getPath(), this.getContext());
 
 			var bIsList = this.oModel.isList(this.sPath, this.getContext());
 			if (bIsList) {
@@ -354,8 +353,7 @@ sap.ui.define([
 	 * @param {sap.ui.model.Context} oContext the context for which the child nodes should be retrieved
 	 * @param {int} iStartIndex the start index of the requested contexts
 	 * @param {int} iLength the requested amount of contexts
-	 * @param {int} [iThreshold=0] the maximum number of contexts to read before and after the given range; with this,
-	 *   controls can prefetch data that is likely to be needed soon, e.g. when scrolling down in a table.
+	 * @param {int} iThreshold
 	 * @return {sap.ui.model.Context[]} the contexts array
 	 * @public
 	 */
@@ -748,7 +746,7 @@ sap.ui.define([
 			Log.warning(sErrorMsg);
 		}
 
-		var sAbsolutePath = this.getResolvedPath();
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 
 		// default filter is on the rootLevel
 		var sLevelFilter = "";
@@ -829,7 +827,7 @@ sap.ui.define([
 			var oNodeContext = this.oModel.getContext("/" + sNodeId);
 			var sHierarchyNodeId = oNodeContext.getProperty(this.oTreeProperties["hierarchy-node-for"]);
 
-			sAbsolutePath = this.getResolvedPath();
+			sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			// only filter for the parent node if the given node is not the root (null)
 			// if root and we $count the collection
 			if (sNodeId != null) {
@@ -1033,7 +1031,7 @@ sap.ui.define([
 			}
 			this.bSkipDataEvents = false;
 
-			sAbsolutePath = this.getResolvedPath();
+			sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			if (sAbsolutePath) {
 				sGroupId = this.sRefreshGroupId ? this.sRefreshGroupId : this.sGroupId;
 				this.mRequestHandles[sRequestKey] = this.oModel.read(sAbsolutePath, {
@@ -1187,7 +1185,7 @@ sap.ui.define([
 
 			var sAbsolutePath;
 			if (this.bHasTreeAnnotations) {
-				sAbsolutePath = this.getResolvedPath();
+				sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			} else {
 				sAbsolutePath = sNodeId;
 			}
@@ -1274,9 +1272,9 @@ sap.ui.define([
 				that.oFinalLengths["null"] = true;
 			}
 
-			that.oAllKeys = deepExtend({}, that.oKeys);
-			that.oAllLengths = deepExtend({}, that.oLengths);
-			that.oAllFinalLengths = deepExtend({}, that.oFinalLengths);
+			that.oAllKeys = jQuery.extend(true, {}, that.oKeys);
+			that.oAllLengths = jQuery.extend(true, {}, that.oLengths);
+			that.oAllFinalLengths = jQuery.extend(true, {}, that.oFinalLengths);
 
 			delete that.mRequestHandles[sRequestKey];
 			that.bNeedsUpdate = true;
@@ -1323,7 +1321,7 @@ sap.ui.define([
 		if (this.mRequestHandles[sRequestKey]) {
 			this.mRequestHandles[sRequestKey].abort();
 		}
-		var sAbsolutePath = this.getResolvedPath();
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 		if (sAbsolutePath) {
 			this.mRequestHandles[sRequestKey] = this.oModel.read(sAbsolutePath, {
 				urlParameters: aURLParams,
@@ -1434,7 +1432,7 @@ sap.ui.define([
 		var bChangeDetected = false;
 		if (!bForceUpdate) {
 			if (mEntityTypes){
-				var sResolvedPath = this.getResolvedPath();
+				var sResolvedPath = this.oModel.resolve(this.sPath, this.oContext);
 				if (sResolvedPath) {
 					// remove url parameters if any to get correct path for entity type resolving
 					if (sResolvedPath.indexOf("?") !== -1) {
@@ -1549,9 +1547,9 @@ sap.ui.define([
 			if (this.bClientOperation && (sFilterType === FilterType.Control || (sFilterType === FilterType.Application && !this.bUseServersideApplicationFilters))) {
 
 				if (this.oAllKeys) {
-					this.oKeys = deepExtend({}, this.oAllKeys);
-					this.oLengths = deepExtend({}, this.oAllLengths);
-					this.oFinalLengths = deepExtend({}, this.oAllFinalLengths);
+					this.oKeys = jQuery.extend(true, {}, this.oAllKeys);
+					this.oLengths = jQuery.extend(true, {}, this.oAllLengths);
+					this.oFinalLengths = jQuery.extend(true, {}, this.oAllFinalLengths);
 
 					this._applyFilter();
 					this._applySort();
@@ -1715,7 +1713,7 @@ sap.ui.define([
 			Log.warning("Cannot determine sort comparators, as entitytype of the collection is unkown!");
 			return;
 		}
-		each(aSorters, function(i, oSorter) {
+		jQuery.each(aSorters, function(i, oSorter) {
 			if (!oSorter.fnCompare) {
 				oPropertyMetadata = this.oModel.oMetadata._getPropertyMetadata(oEntityType, oSorter.sPath);
 				sType = oPropertyMetadata && oPropertyMetadata.type;
@@ -1762,8 +1760,8 @@ sap.ui.define([
 			if (this.bNeedsUpdate || !mChangedEntities) {
 				bChangeDetected = true;
 			} else {
-				each(this.oKeys, function(i, aNodeKeys) {
-					each(aNodeKeys, function(i, sKey) {
+				jQuery.each(this.oKeys, function(i, aNodeKeys) {
+					jQuery.each(aNodeKeys, function(i, sKey) {
 						if (sKey in mChangedEntities) {
 							bChangeDetected = true;
 							return false;
@@ -1862,8 +1860,9 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataTreeBinding.prototype._hasTreeAnnotations = function() {
-		var oMetadata = this.oModel.oMetadata,
-			sAbsolutePath = this.getResolvedPath(),
+		var oModel = this.oModel,
+			oMetadata = oModel.oMetadata,
+			sAbsolutePath = oModel.resolve(this.getPath(), this.getContext()),
 			oEntityType,
 			sTreeAnnotationNamespace = oMetadata.mNamespaces["sap"],
 			that = this;
@@ -1883,7 +1882,7 @@ sap.ui.define([
 
 			var iFoundAnnotations = 0;
 			var iMaxAnnotationLength = 0;
-			each(that.oTreeProperties, function (sPropName, sPropValue) {
+			jQuery.each(that.oTreeProperties, function (sPropName, sPropValue) {
 				iMaxAnnotationLength++;
 
 				if (sPropValue) {
@@ -1923,11 +1922,11 @@ sap.ui.define([
 		}
 
 		//Check if all required properties are available
-		each(oEntityType.property, function(iIndex, oProperty) {
+		jQuery.each(oEntityType.property, function(iIndex, oProperty) {
 			if (!oProperty.extensions) {
 				return true;
 			}
-			each(oProperty.extensions, function(iIndex, oExtension) {
+			jQuery.each(oProperty.extensions, function(iIndex, oExtension) {
 				var sName = oExtension.name;
 				if (oExtension.namespace === sTreeAnnotationNamespace &&
 						sName in that.oTreeProperties &&
@@ -2004,7 +2003,7 @@ sap.ui.define([
 				return;
 			}
 
-			if (this.getResolvedPath()) {
+			if (this.oModel.resolve(this.sPath, this.oContext)) {
 				this.resetData();
 				this._initialize(); // triggers metadata/annotation check
 				this._fireChange({ reason: ChangeReason.Context });
@@ -2076,7 +2075,7 @@ sap.ui.define([
 
 		if (this.bHasTreeAnnotations) {
 
-			var sAbsolutePath = this.getResolvedPath();
+			var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			// remove url parameters if any to get correct path for entity type resolving
 			if (sAbsolutePath.indexOf("?") !== -1) {
 				sAbsolutePath = sAbsolutePath.split("?")[0];
@@ -2085,11 +2084,11 @@ sap.ui.define([
 			var that = this;
 
 			//Check if all required properties are available
-			each(oEntityType.property, function(iIndex, oProperty) {
+			jQuery.each(oEntityType.property, function(iIndex, oProperty) {
 				if (!oProperty.extensions) {
 					return true;
 				}
-				each(oProperty.extensions, function(iIndex, oExtension) {
+				jQuery.each(oProperty.extensions, function(iIndex, oExtension) {
 					var sName = oExtension.name;
 					if (oExtension.namespace === that.oModel.oMetadata.mNamespaces["sap"] &&
 							(sName == sMagnitudeAnnotation || sName == sSiblingRankAnnotation || sName == sPreorderRankAnnotation)) {
@@ -2178,7 +2177,7 @@ sap.ui.define([
 				var aNewSelectParams = [];
 
 				if (this.oNavigationPaths) {
-					each(this.oNavigationPaths, function(sParamKey, sParamName){
+					jQuery.each(this.oNavigationPaths, function(sParamKey, sParamName){
 						if (aNewSelectParams.indexOf(sParamName) == -1) {
 							aNewSelectParams.push(sParamName);
 						}
@@ -2186,14 +2185,14 @@ sap.ui.define([
 				}
 
 				// add new select params to custom select params
-				each(aNewSelectParams, function(sParamKey, sParamName){
+				jQuery.each(aNewSelectParams, function(sParamKey, sParamName){
 					if (aSelectParams.indexOf(sParamName) == -1) {
 						aSelectParams.push(sParamName);
 					}
 				});
 				// add hierarchy annotation properties to select params if not there already
 				if (this.bHasTreeAnnotations) {
-					each(this.oTreeProperties, function(sAnnotationName, sTreePropName){
+					jQuery.each(this.oTreeProperties, function(sAnnotationName, sTreePropName){
 						if (sTreePropName) {
 							if (aSelectParams.indexOf(sTreePropName) == -1) {
 								aSelectParams.push(sTreePropName);
@@ -2259,7 +2258,7 @@ sap.ui.define([
 			aParams.push(this.sCustomParams);
 		}
 
-		sPath = this.getResolvedPath();
+		sPath = this.oModel.resolve(this.sPath,this.oContext);
 
 		if (sPath) {
 			return this.oModel._createRequestUrl(sPath, null, aParams);
@@ -2333,7 +2332,7 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataTreeBinding.prototype._getEntityType = function(){
-		var sResolvedPath = this.getResolvedPath();
+		var sResolvedPath = this.oModel.resolve(this.sPath, this.oContext);
 
 		if (sResolvedPath) {
 			var oEntityType = this.oModel.oMetadata._getEntityTypeByPath(sResolvedPath);
@@ -2374,7 +2373,7 @@ sap.ui.define([
 			this.bSkipDataEvents = true;
 
 			// abort running request and clear the map afterwards
-			each(this.mRequestHandles, function (sRequestKey, oRequestHandle) {
+			jQuery.each(this.mRequestHandles, function (sRequestKey, oRequestHandle) {
 				if (oRequestHandle) {
 					oRequestHandle.abort();
 				}

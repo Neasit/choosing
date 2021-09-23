@@ -20,7 +20,6 @@ sap.ui.define([
 	"sap/ui/core/RenderManager",
 	"sap/ui/core/InvisibleText",
 	"sap/ui/core/ResizeHandler",
-	"sap/ui/core/theming/Parameters",
 	"sap/ui/core/util/ResponsivePaddingsEnablement",
 	"sap/ui/Device",
 	"sap/ui/core/library",
@@ -52,7 +51,6 @@ function(
 	RenderManager,
 	InvisibleText,
 	ResizeHandler,
-	Parameters,
 	ResponsivePaddingsEnablement,
 	Device,
 	coreLibrary,
@@ -86,35 +84,14 @@ function(
 		var bUseAnimations = sAnimationMode !== Configuration.AnimationMode.none && sAnimationMode !== Configuration.AnimationMode.minimal;
 
 		// the time should be longer the longest transition in the CSS (200ms),
-		// because of focusing and transition related issues,
+		// because of focusing and transition relate issues especially in IE,
 		// where 200ms transition sometimes seems to last a little longer
 		var iAnimationDuration = bUseAnimations ? 300 : 10;
 
 		// HTML container scrollbar width
-		var SCROLLBAR_WIDTH = 17;
+		var iScrollbarWidth = 17;
 
 		var DRAGRESIZE_STEP = Rem.toPx(1);
-
-		/**
-		 * Margin on the left and right sides of dialog
-		 */
-		var HORIZONTAL_MARGIN = 5;
-
-		/**
-		 * Margin on top and bottom of dialog
-		 */
-		var VERTICAL_MARGIN = Parameters.get({
-				name: "_sap_m_Dialog_VerticalMargin",
-				callback: function(sValue) {
-					VERTICAL_MARGIN = parseFloat(sValue);
-				}
-			});
-
-		if (VERTICAL_MARGIN) {
-			VERTICAL_MARGIN = parseFloat(VERTICAL_MARGIN);
-		} else {
-			VERTICAL_MARGIN = 3; // default value
-		}
 
 		/**
 		* Constructor for a new Dialog.
@@ -172,7 +149,7 @@ function(
 		*
 		* @implements sap.ui.core.PopupInterface
 		* @author SAP SE
-		* @version 1.92.0
+		* @version 1.87.0
 		*
 		* @constructor
 		* @public
@@ -227,9 +204,7 @@ function(
 					stretchOnPhone: {type: "boolean", group: "Appearance", defaultValue: false, deprecated: true},
 
 					/**
-					 * Determines if the Dialog will be stretched to full screen on mobile.
-					 * On desktop, the Dialog will be stretched to approximately 90% of the viewport.
-					 * This property is only applicable to a Standard Dialog. Message-type Dialog ignores it.
+					 * Determines if the Dialog will be stretched to full screen on mobile. On desktop, the Dialog will be stretched to 93% of the viewport. This property is only applicable to a Standard Dialog. Message-type Dialog ignores it.
 					 * @since 1.13.1
 					 */
 					stretch: {type: "boolean", group: "Appearance", defaultValue: false},
@@ -452,10 +427,10 @@ function(
 		Dialog._bPaddingByDefault = (Core.getConfiguration().getCompatibilityVersion("sapMDialogWithPadding").compareTo("1.16") < 0);
 
 		Dialog._mIcons = {};
-		Dialog._mIcons[ValueState.Success] = IconPool.getIconURI("sys-enter-2");
-		Dialog._mIcons[ValueState.Warning] = IconPool.getIconURI("alert");
-		Dialog._mIcons[ValueState.Error] = IconPool.getIconURI("error");
-		Dialog._mIcons[ValueState.Information] = IconPool.getIconURI("information");
+		Dialog._mIcons[ValueState.Success] = IconPool.getIconURI("message-success");
+		Dialog._mIcons[ValueState.Warning] = IconPool.getIconURI("message-warning");
+		Dialog._mIcons[ValueState.Error] = IconPool.getIconURI("message-error");
+		Dialog._mIcons[ValueState.Information] = IconPool.getIconURI("hint");
 
 		/* =========================================================== */
 		/*                  begin: Lifecycle functions                 */
@@ -492,7 +467,7 @@ function(
 						top: that._oManuallySetPosition.y
 					};
 				} else {
-					oPosition.at = that._calcPosition();
+					oPosition.at = that._calcCenter();
 				}
 
 				//deregister the content resize handler before repositioning
@@ -514,11 +489,6 @@ function(
 
 		Dialog.prototype.onBeforeRendering = function () {
 			var oHeader = this.getCustomHeader() || this._header;
-
-			if (!Dialog._bPaddingByDefault && this.hasStyleClass("sapUiPopupWithPadding")) {
-				Log.warning("Usage of CSS class 'sapUiPopupWithPadding' is deprecated. Use 'sapUiContentPadding' instead", null, "sap.m.Dialog");
-			}
-
 			//if content has scrolling, disable scrolling automatically
 			if (this._hasSingleScrollableContent()) {
 				this.setVerticalScrolling(false);
@@ -925,7 +895,8 @@ function(
 
 			var $this = this._$dialog,
 				mOffset = $this.offset(),
-				oAreaDimensions = this._getAreaDimensions(),
+				iWindowWidth = window.innerWidth,
+				iWindowHeight = window.innerHeight,
 				iDialogWidth = $this.width(),
 				iDialogHeight = $this.height(),
 				iDialogOuterHeight = $this.outerHeight(true),
@@ -975,20 +946,20 @@ function(
 
 			if (bResize) {
 
-				iMaxHeight = oAreaDimensions.bottom - mOffset.top - iDialogOuterHeight + iDialogHeight;
+				iMaxHeight = iWindowHeight - mOffset.top - iDialogOuterHeight + iDialogHeight;
 
 				if (oEvent.keyCode === KeyCodes.ARROW_DOWN) {
 					iMaxHeight -= DRAGRESIZE_STEP;
 				}
 
 				mStyles = {
-					width: Math.min(iDialogWidth, oAreaDimensions.right - mOffset.left),
+					width: Math.min(iDialogWidth, iWindowWidth - mOffset.left),
 					height: Math.min(iDialogHeight, iMaxHeight)
 				};
 			} else {
 				mStyles = {
-					left: Math.min(Math.max(oAreaDimensions.left, mOffset.left), oAreaDimensions.right - iDialogWidth),
-					top: Math.min(Math.max(oAreaDimensions.top, mOffset.top), oAreaDimensions.bottom - iDialogOuterHeight)
+					left: Math.min(Math.max(0, mOffset.left), iWindowWidth - iDialogWidth),
+					top: Math.min(Math.max(0, mOffset.top), iWindowHeight - iDialogOuterHeight)
 				};
 			}
 
@@ -1025,6 +996,7 @@ function(
 		Dialog.prototype._openAnimation = function ($Ref, iRealDuration, fnOpened) {
 			$Ref.addClass("sapMDialogOpen");
 
+			$Ref.css("display", "block");
 			setTimeout(fnOpened, iAnimationDuration);
 		};
 
@@ -1079,8 +1051,8 @@ function(
 
 			$this.css(oStyles);
 
-			if (!this._oManuallySetSize && !this._bDisableRepositioning) {
-				this._positionDialog();
+			if (!bStretch && !this._oManuallySetSize && !this._bDisableRepositioning) {
+				this._centerDialog();
 			}
 
 			//In Chrome when the dialog is stretched the footer is not rendered in the right position;
@@ -1101,13 +1073,43 @@ function(
 		};
 
 		/**
+		 *
+		 * @private
+		 */
+		Dialog.prototype._reposition = function () {
+		};
+
+		/**
+		 *
+		 * @private
+		 */
+		Dialog.prototype._repositionAfterOpen = function () {
+		};
+
+		/**\
+		 *
+		 * @private
+		 */
+		Dialog.prototype._reapplyPosition = function () {
+			this._adjustScrollingPane();
+		};
+
+		/**
+		 *
+		 *
 		 * @private
 		 */
 		Dialog.prototype._onResize = function () {
 			var $dialog = this.$(),
 				$dialogContent = this.$('cont'),
+				dialogContentScrollTop,
+				sContentHeight = this.getContentHeight(),
 				sContentWidth = this.getContentWidth(),
-				iMaxDialogWidth = this._calcMaxSizes().maxWidth; // 90% of the max screen size
+				iDialogHeight,
+				maxDialogWidth =  Math.floor(window.innerWidth * 0.9), //90% of the max screen size
+				BORDER_THICKNESS = 2, // solves Scrollbar issue in IE when Table is in Dialog// TODO remove after the end of support for Internet Explorer
+				oBrowser = Device.browser,
+				iTotalChildrenHeight = 0;
 
 			//if height is set by manually resizing return;
 			if (this._oManuallySetSize) {
@@ -1117,8 +1119,29 @@ function(
 				return;
 			}
 
+			if (!sContentHeight || sContentHeight == 'auto') {
+				// save current scroll position so that it can be restored after the resize
+				dialogContentScrollTop = $dialogContent.scrollTop();
+
+				//reset the height so the dialog can grow
+				$dialogContent.css({
+					height: 'auto'
+				});
+
+				$dialog.children().each(function() {
+					iTotalChildrenHeight += jQuery(this).outerHeight(true);
+				});
+				if (this.getStretch() ||  iTotalChildrenHeight > $dialog.innerHeight()) {
+					//set the newly calculated size by getting it from the browser rendered layout - by the max-height
+					iDialogHeight = parseFloat($dialog.height()) + BORDER_THICKNESS;
+					$dialogContent.height(Math.round( iDialogHeight));
+				}
+
+				$dialogContent.scrollTop(dialogContentScrollTop);
+			}
+
 			// Browsers except chrome do not increase the width of the container to include scrollbar (when width is auto). So we need to compensate
-			if (Device.system.desktop && !Device.browser.chrome) {
+			if (Device.system.desktop && !oBrowser.chrome) {
 
 				var iCurrentWidthAndHeight = $dialogContent.width() + "x" + $dialogContent.height(),
 					bMinWidth = $dialog.css("min-width") !== $dialog.css("width");
@@ -1129,10 +1152,10 @@ function(
 					if (this._hasVerticalScrollbar() &&					// - there is a vertical scroll
 						(!sContentWidth || sContentWidth == 'auto') &&	// - when the developer hasn't set it explicitly
 						!this.getStretch() && 							// - when the dialog is not stretched
-						$dialogContent.width() < iMaxDialogWidth) {		// - if the dialog can't grow anymore
+						$dialogContent.width() < maxDialogWidth) {		// - if the dialog can't grow anymore
 
 						$dialog.addClass("sapMDialogVerticalScrollIncluded");
-						$dialogContent.css({"padding-right" : SCROLLBAR_WIDTH});
+						$dialogContent.css({"padding-right" : iScrollbarWidth});
 						this._iLastWidthAndHeightWithScroll = iCurrentWidthAndHeight;
 					} else {
 						$dialog.removeClass("sapMDialogVerticalScrollIncluded");
@@ -1142,8 +1165,8 @@ function(
 				}
 			}
 
-			if (!this._oManuallySetSize && !this._bDisableRepositioning) {
-				this._positionDialog();
+			if (!this.getStretch() && !this._oManuallySetSize && !this._bDisableRepositioning) {
+				this._centerDialog();
 			}
 		};
 
@@ -1155,129 +1178,44 @@ function(
 		Dialog.prototype._hasVerticalScrollbar = function() {
 			var $dialogContent = this.$('cont');
 
+			if (Device.browser.msie) {
+				// The scrollHeight property may return incorrect value in IE
+				// so we do the check based on the width of the vertical scrollbar
+				return $dialogContent[0].clientWidth < $dialogContent.outerWidth();
+			}
+
 			return $dialogContent[0].clientHeight < $dialogContent[0].scrollHeight;
 		};
 
 		/**
-		 * Positions the dialog in the center of designated area, or stretches it.
-		 * Max sizes are also added.
+		 * Centers the dialog
 		 *
 		 * @private
 		 */
-		Dialog.prototype._positionDialog = function() {
-			var $this = this.$();
-
-			$this.css(this._calcMaxSizes());
-			$this.css(this._calcPosition());
+		Dialog.prototype._centerDialog = function() {
+			this.$().css(this._calcCenter());
 		};
 
 		/**
-		 * Calculates "left" side ("right" side in RTL mode) and "top" positions, so the dialog is centered.
+		 * Calculates "left" and "top" positions, so the dialog is centered.
 		 *
-		 * @returns {object} Object that has "left" side ("right" side in RTL mode) and "top" positions of the dialog
 		 * @private
 		 */
-		Dialog.prototype._calcPosition = function () {
-			var oAreaDimensions = this._getAreaDimensions(),
+		Dialog.prototype._calcCenter = function () {
+			var windowWidth = window.innerWidth,
+				windowHeight = window.innerHeight,
 				$this = this.$(),
-				iLeft,
-				iTop,
-				oPosition;
-
-			if (Device.system.phone && this.getStretch()) {
-				iLeft = 0;
-				iTop = 0;
-			} else if (this.getStretch()) {
-				iLeft = this._percentOfSize(oAreaDimensions.width, HORIZONTAL_MARGIN); // 5% from left
-				iTop = this._percentOfSize(oAreaDimensions.height, VERTICAL_MARGIN); // 3% from top
-			} else {
-				iLeft = (oAreaDimensions.width - $this.outerWidth()) / 2;
-				iTop = (oAreaDimensions.height - $this.outerHeight()) / 2;
-			}
-
-			oPosition = {
-				top: Math.round(oAreaDimensions.top + iTop)
-			};
-			oPosition[this._bRTL ? "right" : "left"] = Math.round(oAreaDimensions.left + iLeft);
-
-			return oPosition;
-		};
-
-		/**
-		 * Calculates maximum width and height
-		 * @private
-		 * @returns {object} Object that contains 'maxHeight' and 'maxWidth'
-		 */
-		Dialog.prototype._calcMaxSizes = function () {
-			var oAreaDimensions = this._getAreaDimensions(),
-				$this = this.$(),
-				iHeaderHeight = $this.find(".sapMDialogTitle").height() || 0,
-				iSubHeaderHeight = $this.find(".sapMDialogSubHeader").height() || 0,
-				iFooterHeight = $this.find("footer").height() || 0,
-				iHeightAsPadding = iHeaderHeight + iSubHeaderHeight + iFooterHeight,
-				iMaxHeight,
-				iMaxWidth;
-
-			if (Device.system.phone && this.getStretch()) {
-				iMaxWidth = oAreaDimensions.width;
-				iMaxHeight = oAreaDimensions.height - iHeightAsPadding;
-			} else {
-				iMaxWidth = this._percentOfSize(oAreaDimensions.width, 100 - 2 * HORIZONTAL_MARGIN); // 90% of available width
-				iMaxHeight = this._percentOfSize(oAreaDimensions.height, 100 - 2 * VERTICAL_MARGIN) - iHeightAsPadding; // 94% of available height minus paddings for headers and footer
-			}
-
-			if (iMaxHeight < parseInt($this.css("min-height"))) {
-				Log.error("Height of Within Area is not enough to fit dialog");
-			}
-
-			if (iMaxWidth < parseInt($this.css("min-width"))) {
-				Log.error("Width of Within Area is not enough to fit dialog");
-			}
+				dialogWidth = $this.outerWidth(),
+				dialogHeight  = $this.outerHeight();
 
 			return {
-				maxWidth: Math.floor(iMaxWidth),
-				maxHeight: Math.floor(iMaxHeight)
+				left: Math.round((windowWidth - dialogWidth) / 2),
+				top: Math.round((windowHeight - dialogHeight) / 2)
 			};
 		};
 
 		/**
-		 * @returns {object} Object that has dimensions of the area in which the dialog is positioned
-		 * @private
-		 */
-		Dialog.prototype._getAreaDimensions = function() {
-			var oWithin = Popup.getWithinAreaDomRef(),
-				oAreaDimensions;
-
-			if (oWithin === window) {
-				oAreaDimensions = {
-					left: 0,
-					top: 0,
-					width: oWithin.innerWidth,
-					height: oWithin.innerHeight
-				};
-			} else {
-				var oClientRect = oWithin.getBoundingClientRect(),
-					$within = jQuery(oWithin);
-
-				oAreaDimensions = {
-					left: oClientRect.left + parseFloat($within.css("border-left-width")),
-					top: oClientRect.top + parseFloat($within.css("border-top-width")),
-					width: oWithin.clientWidth,
-					height: oWithin.clientHeight
-				};
-			}
-
-			oAreaDimensions.right = oAreaDimensions.left + oAreaDimensions.width;
-			oAreaDimensions.bottom = oAreaDimensions.top + oAreaDimensions.height;
-
-			return oAreaDimensions;
-		};
-
-		Dialog.prototype._percentOfSize = function (iSize, iPercent) {
-			return Math.round(iSize * iPercent / 100);
-		};
-
-		/**
+		 *
 		 * @private
 		 */
 		Dialog.prototype._createHeader = function () {
@@ -1294,6 +1232,7 @@ function(
 		};
 
 		/**
+		 *
 		 * @private
 		 */
 		Dialog.prototype._applyTitleToHeader = function () {
@@ -1594,14 +1533,12 @@ function(
 		 * @private
 		 */
 		Dialog.prototype._deregisterResizeHandler = function () {
-			var oWithin = Popup.getWithinAreaDomRef();
-
-			if (oWithin === window) {
-				Device.resize.detachHandler(this._onResize, this);
-			} else {
-				ResizeHandler.deregister(this._withinResizeListenerId);
-				this._withinResizeListenerId = null;
+			if (this._resizeListenerId) {
+				ResizeHandler.deregister(this._resizeListenerId);
+				this._resizeListenerId = null;
 			}
+
+			Device.resize.detachHandler(this._onResize, this);
 		};
 
 		/**
@@ -1609,13 +1546,12 @@ function(
 		 * @private
 		 */
 		Dialog.prototype._registerResizeHandler = function () {
-			var oWithin = Popup.getWithinAreaDomRef();
+			var _$srollSontent = this.$("scroll");
 
-			if (oWithin === window) {
-				Device.resize.attachHandler(this._onResize, this);
-			} else {
-				this._withinResizeListenerId = ResizeHandler.register(oWithin, this._onResize.bind(this));
-			}
+			//The content have to have explicit size so the scroll will work when the user's content is larger than the available space.
+			//This can be removed and the layout change to flex when the support for IE9 is dropped// TODO remove after the end of support for Internet Explorer
+			this._resizeListenerId = ResizeHandler.register(_$srollSontent.get(0), jQuery.proxy(this._onResize, this));
+			Device.resize.attachHandler(this._onResize, this);
 
 			//set the initial size of the content container so when a dialog with large content is open there will be a scroller
 			this._onResize();
@@ -1854,16 +1790,7 @@ function(
 
 			var oSubHeader = this.getSubHeader();
 			if (oSubHeader) {
-				var aSubtitles = oSubHeader.findAggregatedObjects(true, function(oObject) {
-					return oObject.isA("sap.m.Title");
-				});
-
-				// if there are titles in the subheader, add all of them to labels, else use the full subheader
-				if (aSubtitles.length) {
-					aLabels = aSubtitles.map(function (oTitle) {
-						return oTitle.getId();
-					}).concat(aLabels);
-				}
+				aLabels.unshift(oSubHeader.getId());
 			}
 
 			if (oHeader) {
@@ -1922,12 +1849,14 @@ function(
 		/*                           end: setters                      */
 		/* =========================================================== */
 
+		Dialog.prototype.forceInvalidate = Control.prototype.invalidate;
+
 		// stop propagating the invalidate to static UIArea before dialog is opened.
 		// otherwise the open animation can't be seen
 		// dialog will be rendered directly to static ui area when the open method is called.
 		Dialog.prototype.invalidate = function (oOrigin) {
 			if (this.isOpen()) {
-				Control.prototype.invalidate.call(this, oOrigin);
+				this.forceInvalidate(oOrigin);
 			}
 		};
 
@@ -1978,7 +1907,8 @@ function(
 			};
 
 			/**
-			 * @param {jQuery.Event} e The mousedown event
+			 *
+			 * @param {Object} e
 			 */
 			Dialog.prototype.onmousedown = function (e) {
 				if (e.which === 3) {
@@ -2000,7 +1930,8 @@ function(
 					}, 0);
 				};
 
-				var oAreaDimensions = this._getAreaDimensions();
+				var windowWidth = window.innerWidth;
+				var windowHeight = window.innerHeight;
 				var initial = {
 					x: e.pageX,
 					y: e.pageY,
@@ -2052,8 +1983,8 @@ function(
 
 					//set the new position of the dialog on mouse down when the transform is disabled by the class
 					that._$dialog.css({
-						left: Math.min(Math.max(oAreaDimensions.left, that._oManuallySetPosition.x), oAreaDimensions.right - initial.width),
-						top: Math.min(Math.max(oAreaDimensions.top, that._oManuallySetPosition.y), oAreaDimensions.bottom - initial.height),
+						left: Math.min(Math.max(0, that._oManuallySetPosition.x), windowWidth - initial.width),
+						top: Math.min(Math.max(0, that._oManuallySetPosition.y), windowHeight - initial.height),
 						width: initial.width
 					});
 				}
@@ -2072,21 +2003,21 @@ function(
 							that._bDisableRepositioning = true;
 
 							that._oManuallySetPosition = {
-								x: Math.max(oAreaDimensions.left, Math.min(event.pageX - e.pageX + initial.position.x, oAreaDimensions.right - initial.width)), // deltaX + initial dialog position
-								y: Math.max(oAreaDimensions.top, Math.min(event.pageY - e.pageY + initial.position.y, oAreaDimensions.bottom - initial.outerHeight)) // deltaY + initial dialog position
+								x: Math.max(0, Math.min(event.pageX - e.pageX + initial.position.x, windowWidth - initial.width)), // deltaX + initial dialog position
+								y: Math.max(0, Math.min(event.pageY - e.pageY + initial.position.y, windowHeight - initial.outerHeight)) // deltaY + initial dialog position
 							};
 
 							//move the dialog
 							that._$dialog.css({
-								top: that._oManuallySetPosition.y,
 								left: that._oManuallySetPosition.x,
-								right: that._bRTL ? "" : undefined
+								top: that._oManuallySetPosition.y
 							});
 						});
 					};
 
 					$w.on("mousemove", mouseMoveHandler);
 				} else if (bResize) {
+
 					that._$dialog.addClass('sapMDialogResizing');
 
 					var styles = {};
@@ -2102,12 +2033,12 @@ function(
 							// BCP: 1680048166 remove inline set height and width so that the content resizes together with the mouse pointer
 							that.$('cont').height('').width('');
 
-							if (event.pageY + handleOffsetY > oAreaDimensions.bottom) {
-								event.pageY = oAreaDimensions.bottom - handleOffsetY;
+							if (event.pageY + handleOffsetY > windowHeight) {
+								event.pageY = windowHeight - handleOffsetY;
 							}
 
-							if (event.pageX + handleOffsetX > oAreaDimensions.right) {
-								event.pageX = oAreaDimensions.right - handleOffsetX;
+							if (event.pageX + handleOffsetX > windowWidth) {
+								event.pageX = windowWidth - handleOffsetX;
 							}
 
 							that._oManuallySetSize = {

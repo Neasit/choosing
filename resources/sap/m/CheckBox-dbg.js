@@ -10,6 +10,7 @@ sap.ui.define([
 	'./library',
 	'sap/ui/Device',
 	'sap/ui/core/Control',
+	'sap/ui/core/IconPool',
 	'sap/ui/core/EnabledPropagator',
 	'sap/ui/core/library',
 	'./CheckBoxRenderer',
@@ -23,6 +24,7 @@ sap.ui.define([
 		library,
 		Device,
 		Control,
+		IconPool,
 		EnabledPropagator,
 		coreLibrary,
 		CheckBoxRenderer,
@@ -85,10 +87,10 @@ sap.ui.define([
 	 * @see {@link fiori:https://experience.sap.com/fiori-design-web/checkbox/ Check Box}
 	 *
 	 * @extends sap.ui.core.Control
-	 * @implements sap.ui.core.IFormContent, sap.ui.core.ISemanticFormContent
+	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -97,7 +99,7 @@ sap.ui.define([
 	 */
 	var CheckBox = Control.extend("sap.m.CheckBox", /** @lends sap.m.CheckBox.prototype */ { metadata : {
 
-		interfaces : ["sap.ui.core.IFormContent", "sap.ui.core.ISemanticFormContent"],
+		interfaces : ["sap.ui.core.IFormContent"],
 		library : "sap.m",
 		properties : {
 
@@ -262,6 +264,7 @@ sap.ui.define([
 	 */
 	CheckBox.prototype.init = function() {
 		this.addActiveState(this);
+		IconPool.insertFontFaceStyle();
 		this._handleReferencingLabels();
 	};
 
@@ -341,16 +344,6 @@ sap.ui.define([
 				}
 			});
 		}
-	};
-
-	CheckBox.prototype.getFormFormattedValue = function() {
-		var oBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
-
-		return this.getSelected() ? oBundle.getText("ACC_CTR_STATE_CHECKED") : oBundle.getText("ACC_CTR_STATE_NOT_CHECKED");
-	};
-
-	CheckBox.prototype.getFormValueProperty = function () {
-		return "selected";
 	};
 
 	/**
@@ -538,7 +531,7 @@ sap.ui.define([
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
 	 * @protected
-	 * @returns {object} The <code>sap.m.CheckBox</code> accessibility information
+	 * @returns {Object} The <code>sap.m.CheckBox</code> accessibility information
 	 */
 	CheckBox.prototype.getAccessibilityInfo = function() {
 		var oBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");

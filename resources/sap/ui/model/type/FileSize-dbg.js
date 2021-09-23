@@ -6,14 +6,23 @@
 
 // Provides class sap.ui.model.type.FileSize
 sap.ui.define([
-	"sap/base/util/each",
-	"sap/ui/core/format/FileSizeFormat",
-	"sap/ui/model/FormatException",
-	"sap/ui/model/ParseException",
-	"sap/ui/model/SimpleType",
-	"sap/ui/model/ValidateException"
-], function(each, FileSizeFormat, FormatException, ParseException, SimpleType, ValidateException) {
+	'sap/ui/core/format/FileSizeFormat',
+	'sap/ui/model/SimpleType',
+	'sap/ui/model/FormatException',
+	'sap/ui/model/ParseException',
+	'sap/ui/model/ValidateException',
+	"sap/ui/thirdparty/jquery"
+],
+	function(
+		FileSizeFormat,
+		SimpleType,
+		FormatException,
+		ParseException,
+		ValidateException,
+		jQuery
+	) {
 	"use strict";
+
 
 	/**
 	 * Constructor for a FileSize type.
@@ -24,7 +33,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.SimpleType
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @param {object} [oFormatOptions] formatting options. Supports the same options as {@link sap.ui.core.format.FileSizeFormat.getInstance FileSizeFormat.getInstance}
@@ -127,7 +136,7 @@ sap.ui.define([
 				throw new Error("No Validation possible: '" + vValue + "' is of type string but not input/source format specified.");
 			}
 
-			each(this.oConstraints, function(sName, oContent) {
+			jQuery.each(this.oConstraints, function(sName, oContent) {
 				if (oInputFormat && typeof oContent === "string") {
 					oContent = oInputFormat.parse(oContent);
 				} else if (!oInputFormat && typeof oContent === "string") {

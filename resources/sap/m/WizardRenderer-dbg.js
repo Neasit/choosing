@@ -30,7 +30,6 @@ sap.ui.define([
 			.style("width", oWizard.getWidth())
 			.style("height", oWizard.getHeight())
 			.accessibilityState({
-				role: "region",
 				label: sWizardLabelText
 			})
 			.openEnd();

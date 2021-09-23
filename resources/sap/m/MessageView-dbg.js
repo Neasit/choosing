@@ -112,7 +112,7 @@ sap.ui.define([
 	 * The responsiveness of the <code>MessageView</code> is determined by the container in which it is embedded. For that reason the control could not be visualized if the
 	 * container’s sizes are not defined.
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @extends sap.ui.core.Control
 	 * @constructor
@@ -188,8 +188,7 @@ sap.ui.define([
 						 * This refers to the control which opens the popover.
 						 */
 						openBy: {type: "sap.ui.core.Control"}
-					},
-					deprecated: true
+					}
 				},
 				/**
 				 * Event fired when description is shown.
@@ -1198,7 +1197,7 @@ sap.ui.define([
 
 		this._clearDetailsPage.call(this, aDetailsPageContent);
 
-		if (typeof asyncDescHandler === "function" && oMessageItem.getLongtextUrl()) {
+		if (typeof asyncDescHandler === "function" && !!oMessageItem.getLongtextUrl()) {
 			// Set markupDescription to true as markup description should be processed as markup
 			oMessageItem.setMarkupDescription(true);
 
@@ -1250,7 +1249,7 @@ sap.ui.define([
 		this._setTitle(oMessageItem, oListItem);
 		this._sanitizeDescription(oMessageItem);
 		this._setIcon(oMessageItem, oListItem);
-		this._detailsPage.invalidate();
+		this._detailsPage.rerender();
 		this.fireLongtextLoaded();
 
 		if (!bSuppressNavigate) {

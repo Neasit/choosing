@@ -146,7 +146,7 @@ sap.ui.define([
 
 		var aFailedLibs = [];
 
-		if (oThemeCheck._customCSSAdded && oThemeCheck._themeCheckedForCustom === sThemeName) {
+		if (!!oThemeCheck._customCSSAdded && oThemeCheck._themeCheckedForCustom === sThemeName) {
 			// include custom style sheet here because it has already been added using jQuery.sap.includeStyleSheet
 			// hence, needs to be checked for successful inclusion, too
 			mLibs[oThemeCheck._CUSTOMID] = {};
@@ -241,12 +241,12 @@ sap.ui.define([
 				if (!oThemeCheck._oThemeMetaDataCheckElement) {
 					// Create dummy element to retrieve custom theme metadata which is applied
 					// via background-image data-uri
-					oThemeCheck._oThemeMetaDataCheckElement = document.createElement("span");
+					oThemeCheck._oThemeMetaDataCheckElement = document.createElement("style");
 					jQuery.each(mLibs, function(sLib) {
 						var sClassName = "sapThemeMetaData-UI5-" + sLib.replace(/\./g, "-");
 						oThemeCheck._oThemeMetaDataCheckElement.classList.add(sClassName);
 					});
-					document.documentElement.appendChild(oThemeCheck._oThemeMetaDataCheckElement);
+					document.head.appendChild(oThemeCheck._oThemeMetaDataCheckElement);
 				}
 				oThemeCheck._sFallbackTheme = getFallbackTheme(oThemeCheck._oThemeMetaDataCheckElement);
 			}

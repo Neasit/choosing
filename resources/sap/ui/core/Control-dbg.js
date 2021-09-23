@@ -77,7 +77,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 * @abstract
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.Control
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -399,7 +399,7 @@ sap.ui.define([
 	 * Defines whether the user can select text inside this control.
 	 * Defaults to <code>true</code> as long as this method has not been called.
 	 *
-	 * <b>Note:</b>This only works in Safari; for Firefox the element's style must
+	 * <b>Note:</b>This only works in IE and Safari; for Firefox the element's style must
 	 * be set to:
 	 * <pre>
 	 *   -moz-user-select: none;
@@ -717,10 +717,9 @@ sap.ui.define([
 	 *
 	 * Subclasses of Control should override this hook to implement any necessary actions before the rendering.
 	 *
-	 * @param {jQuery.Event} oEvent onBeforeRendering event object
 	 * @protected
 	 */
-	Control.prototype.onBeforeRendering = function(oEvent) {
+	Control.prototype.onBeforeRendering = function() {
 		// Before adding any implementation, please remember that this method was first implemented in release 1.54.
 		// Therefore, many subclasses will not call this method at all.
 	};
@@ -732,10 +731,9 @@ sap.ui.define([
 	 *
 	 * Subclasses of Control should override this hook to implement any necessary actions after the rendering.
 	 *
-	 * @param {jQuery.Event} oEvent onAfterRendering event object
 	 * @protected
 	 */
-	Control.prototype.onAfterRendering = function(oEvent) {
+	Control.prototype.onAfterRendering = function() {
 		// Before adding any implementation, please remember that this method was first implemented in release 1.54.
 		// Therefore, many subclasses will not call this method at all.
 	};

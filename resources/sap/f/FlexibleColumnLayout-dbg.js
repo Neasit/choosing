@@ -92,7 +92,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -104,9 +104,6 @@ sap.ui.define([
 	 */
 	var FlexibleColumnLayout = Control.extend("sap.f.FlexibleColumnLayout", {
 		metadata: {
-			interfaces: [
-				"sap.ui.core.IPlaceholderSupport"
-			],
 			properties: {
 
 				/**
@@ -160,21 +157,21 @@ sap.ui.define([
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>Begin</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				beginColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getBeginColumn", aggregation: "pages"}},
 				/**
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>Mid</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				midColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getMidColumn", aggregation: "pages"}},
 				/**
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>End</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				endColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getEndColumn", aggregation: "pages"}},
 
@@ -641,9 +638,6 @@ sap.ui.define([
 	FlexibleColumnLayout.COLUMN_RESIZING_ANIMATION_DURATION = 560; // ms
 	FlexibleColumnLayout.PINNED_COLUMN_CLASS_NAME = "sapFFCLPinnedColumn";
 	FlexibleColumnLayout.COLUMN_ORDER = ["begin", "mid", "end"]; // natural order of the columns in FCL
-	// synced with @_sap_f_FCL_navigation_arrow_width in base less file
-	FlexibleColumnLayout.NAVIGATION_ARROW_WIDTH = DomUnitsRem.toPx("1rem");
-
 	FlexibleColumnLayout.prototype.init = function () {
 		this._iWidth = 0;
 
@@ -667,6 +661,9 @@ sap.ui.define([
 
 		// Indicates if there are rendered pages inside columns
 		this._oRenderedColumnPagesBoolMap = {};
+
+		// We need to have column navigating buttons single width for animations of the layout
+		this._iNavigationArrowWidth = DomUnitsRem.toPx(Parameters.get("_sap_f_FCL_navigation_arrow_width"));
 
 		this._oColumnWidthInfo = {
 			begin: 0,
@@ -1084,7 +1081,7 @@ sap.ui.define([
 			iSeparatorsCount++;
 		}
 
-		return this._getControlWidth() - iSeparatorsCount * FlexibleColumnLayout.NAVIGATION_ARROW_WIDTH;
+		return this._getControlWidth() - iSeparatorsCount * this._iNavigationArrowWidth;
 	};
 
 	/**
@@ -1733,7 +1730,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can or should not directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1766,10 +1763,10 @@ sap.ui.define([
 	 * Columns are scanned for the page in the following order: <code>Begin</code>, <code>Mid</code>, <code>End</code>.
 	 *
 	 * Calling this navigation method, first triggers the (cancelable) navigate event on the SplitContainer,
-	 * then the BeforeHide pseudo event on the source page, BeforeFirstShow (if applicable),
-	 * and BeforeShow on the target page. Later, after the transition has completed,
-	 * the AfterShow pseudo event is triggered on the target page and AfterHide - on the page, which has been left.
-	 * The given backData object is available in the BeforeFirstShow, BeforeShow, and AfterShow event objects as data
+	 * then the beforeHide pseudo event on the source page, beforeFirstShow (if applicable),
+	 * and beforeShow on the target page. Later, after the transition has completed,
+	 * the afterShow pseudo event is triggered on the target page and afterHide - on the page, which has been left.
+	 * The given backData object is available in the beforeFirstShow, beforeShow, and afterShow event objects as data
 	 * property. The original "data" object from the "to" navigation is also available in these event objects.
 	 *
 	 * @param {string} sPageId
@@ -1834,7 +1831,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1866,7 +1863,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1898,7 +1895,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -2214,76 +2211,6 @@ sap.ui.define([
 		ThreeColumnsBeginExpandedEndHidden: {
 			"left": LT.ThreeColumnsMidExpandedEndHidden
 		}
-	};
-
-	/**
-	 * Shows the placeholder on the corresponding column for the provided aggregation name.
-	 *
-	 * @param {object} mSettings Object containing the aggregation name
-	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be shown
-	 * @public
-	 * @since 1.91
-	 */
-	FlexibleColumnLayout.prototype.showPlaceholder = function(mSettings) {
-		switch (mSettings.aggregation) {
-			case "beginColumnPages":
-				this.getAggregation("_beginColumnNav").showPlaceholder(mSettings);
-				break;
-			case "midColumnPages":
-				this.getAggregation("_midColumnNav").showPlaceholder(mSettings);
-				break;
-			default:
-				this.getAggregation("_endColumnNav").showPlaceholder(mSettings);
-		}
-	};
-
-	/**
-	 * Hides the placeholder on the corresponding column for the provided aggregation name.
-	 *
-	 * @param {object} mSettings Object containing the aggregation name
-	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be hidden
-	 * @public
-	 * @since 1.91
-	 */
-	FlexibleColumnLayout.prototype.hidePlaceholder = function(mSettings) {
-		switch (mSettings.aggregation) {
-			case "beginColumnPages":
-				this.getAggregation("_beginColumnNav").hidePlaceholder(mSettings);
-				break;
-			case "midColumnPages":
-				this.getAggregation("_midColumnNav").hidePlaceholder(mSettings);
-				break;
-			default:
-				this.getAggregation("_endColumnNav").hidePlaceholder(mSettings);
-		}
-	};
-
-	/**
-	 * Checks whether a placeholder is needed by comparing the currently displayed page with
-	 * the page object that is going to be displayed. If they are the same, no placeholder needs
-	 * to be shown.
-	 *
-	 * @param {string} sAggregationName The aggregation name for the corresponding column
-	 * @param {sap.ui.core.Control} oObject The page object to be displayed
-	 * @returns {boolean} Whether placeholder is needed or not
-	 * @private
-	 * @ui5-restricted sap.ui.core.routing
-	 */
-	FlexibleColumnLayout.prototype.needPlaceholder = function(sAggregationName, oObject) {
-		var oContainer;
-
-		switch (sAggregationName) {
-			case "beginColumnPages":
-				oContainer = this.getAggregation("_beginColumnNav");
-				break;
-			case "midColumnPages":
-				oContainer = this.getAggregation("_midColumnNav");
-				break;
-			default:
-				oContainer = this.getAggregation("_endColumnNav");
-		}
-
-		return oContainer.getCurrentPage() !== oObject;
 	};
 
 	/**

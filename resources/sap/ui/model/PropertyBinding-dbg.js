@@ -202,7 +202,7 @@ sap.ui.define([
 	 * setting the binding value and if so set the new value also in the model.
 	 *
 	 * @param {any} vValue the value to set for this binding
-	 * @return {undefined|Promise} a promise in case of asynchronous type parsing or validation
+	 * @return {undefined|Promise} a Promise in case asynchronous parsing/validation is done
 	 * @throws sap.ui.model.ParseException
 	 * @throws sap.ui.model.ValidateException
 	 *

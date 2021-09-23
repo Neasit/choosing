@@ -40,8 +40,7 @@ sap.ui.define(["sap/ui/core/Element", "sap/ui/core/library", "sap/ui/core/Icon",
 		};
 
 		SelectListRenderer.writeOpenListTag = function(oRm, oList, mStates) {
-			var CSS_CLASS = SelectListRenderer.CSS_CLASS,
-				tabIndex = oList.getProperty("_tabIndex");
+			var CSS_CLASS = SelectListRenderer.CSS_CLASS;
 
 			if (mStates.elementData) {
 				oRm.openStart("ul", oList);
@@ -57,10 +56,6 @@ sap.ui.define(["sap/ui/core/Element", "sap/ui/core/library", "sap/ui/core/Icon",
 
 			if (!oList.getEnabled()) {
 				oRm.class(CSS_CLASS + "Disabled");
-			}
-
-			if (tabIndex) {
-				oRm.attr("tabindex", tabIndex);
 			}
 
 			oRm.style("width", oList.getWidth());
@@ -80,7 +75,7 @@ sap.ui.define(["sap/ui/core/Element", "sap/ui/core/library", "sap/ui/core/Icon",
 		 */
 		SelectListRenderer.renderItems = function(oRm, oList) {
 			var iSize = oList._getNonSeparatorItemsCount(),
-				aItems = oList.getHideDisabledItems() ? oList.getEnabledItems() : oList.getItems(),
+				aItems = oList.getItems(),
 				oSelectedItem = oList.getSelectedItem(),
 				iCurrentPosInSet = 1,
 				oItemStates,
@@ -97,7 +92,7 @@ sap.ui.define(["sap/ui/core/Element", "sap/ui/core/library", "sap/ui/core/Icon",
 					elementData: true
 				};
 
-				if (!(aItems[i] instanceof sap.ui.core.SeparatorItem) && aItems[i].getEnabled()) {
+				if (!(aItems[i] instanceof sap.ui.core.SeparatorItem)) {
 					oItemStates.posinset = iCurrentPosInSet++;
 				}
 

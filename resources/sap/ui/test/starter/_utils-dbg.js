@@ -31,11 +31,6 @@ sap.ui.define([
 		return tag ? tag.getAttribute(name) : null;
 	}
 
-	function getDefaultSuiteName() {
-		var sName = sap.ui.loader._.guessResourceName(location.href);
-		return sName ? sName.replace(/\.html$/, "") : null;
-	}
-
 	/**
 	 * Execute the given callback once the DOM is ready (which might already be the case).
 	 *
@@ -72,7 +67,7 @@ sap.ui.define([
 	/**
 	 * Very basic HTML escaping, not bullet proof.
 	 *
-	 * @param {string} str HTML string to encode
+	 * @param {strin} str HTML string to encode
 	 * @returns {string} Encoded HTML string.
 	 */
 	function encode(str) {
@@ -88,33 +83,9 @@ sap.ui.define([
 		page: "resources/sap/ui/test/starter/Test.qunit.html?testsuite={suite}&test={name}",
 		title: "QUnit tests '{name}' of suite '{suite}'",
 		qunit: {
-			versions: {
-				1: {
-					module: "sap/ui/thirdparty/qunit",
-					css: "sap/ui/thirdparty/qunit.css"
-				},
-				2: {
-					module: "sap/ui/thirdparty/qunit-2",
-					css: "sap/ui/thirdparty/qunit-2.css"
-				},
-				edge: 2,
-				"true": "edge"
-			},
 			version: "edge"
 		},
 		sinon: {
-			versions: {
-				1: {
-					module: "sap/ui/thirdparty/sinon",
-					bridge: "sap/ui/thirdparty/sinon-qunit"
-				},
-				4: {
-					module: "sap/ui/thirdparty/sinon-4",
-					bridge: "sap/ui/qunit/sinon-qunit-bridge"
-				},
-				edge: 4,
-				"true": "edge"
-			},
 			version: "edge",
 			qunitBridge: true,
 			useFakeTimers: false,
@@ -282,7 +253,6 @@ sap.ui.define([
 		addStylesheet: addStylesheet,
 		encode: encode,
 		getAttribute: getAttribute,
-		getDefaultSuiteName: getDefaultSuiteName,
 		getSuiteConfig: getSuiteConfig,
 		whenDOMReady: whenDOMReady
 	};

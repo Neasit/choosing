@@ -11,6 +11,7 @@ sap.ui.define([
 	"sap/m/ListBase",
 	"sap/ui/base/ManagedObjectObserver",
 	"sap/ui/core/Core",
+	"sap/ui/core/delegate/ItemNavigation",
 	"sap/ui/Device",
 	"sap/ui/layout/cssgrid/GridLayoutDelegate",
 	"sap/ui/layout/cssgrid/GridLayoutBase"
@@ -23,6 +24,7 @@ sap.ui.define([
 	ListBase,
 	ManagedObjectObserver,
 	Core,
+	ItemNavigation,
 	Device,
 	GridLayoutDelegate,
 	GridLayoutBase
@@ -89,11 +91,16 @@ sap.ui.define([
 	 * When the user presses an arrow key in a direction outward of the <code>GridList</code>, a <code>borderReached</code> event will be fired.
 	 * The implementation of the <code>borderReached</code> event allows the application developer to control where the focus goes, and depending on the surrounding layout pass the focus to a specific place in a neighboring <code>GridList</code> using the method {@link #focusItemByDirection}.
 	 *
+	 * <h3>Current Limitations</h3>
+	 * <ul>
+	 * <li>For Microsoft Internet Explorer some layouts are not supported, due to browser specifics.</li>
+	 * </ul>
+	 *
 	 * @see {@link topic:32d4b9c2b981425dbc374d3e9d5d0c2e Grid Controls}
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @extends sap.m.ListBase
 	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
@@ -179,8 +186,6 @@ sap.ui.define([
 	 * @override
 	 */
 	GridList.prototype.onAfterPageLoaded = function () {
-		ListBase.prototype.onAfterPageLoaded.apply(this, arguments);
-
 		if (this._oItemNavigation) {
 			this._oItemNavigation.resetFocusPosition();
 		}
@@ -276,9 +281,11 @@ sap.ui.define([
 		}
 
 		if (!this._oItemNavigation) {
-
-			this._oItemNavigation = new GridItemNavigation();
-
+			if (Device.browser.msie && (!this.getCustomLayout() || !this.getCustomLayout().hasGridPolyfill())) {
+				this._oItemNavigation = new ItemNavigation();
+			} else {
+				this._oItemNavigation = new GridItemNavigation();
+			}
 			this._oItemNavigation.setCycling(false)
 				.setDisabledModifiers({
 					sapnext : ["alt"],
@@ -327,17 +334,10 @@ sap.ui.define([
 	 * @private
 	 */
 	GridList.prototype._onGridChange = function (oChanges) {
-		var bCallBefore;
-
-		if (oChanges.name !== "items" || !oChanges.child) {
-			return;
-		}
+		if (oChanges.name !== "items" || !oChanges.child) { return; }
 
 		if (oChanges.mutation === "insert") {
-			// The sap.ui.core.HTML has a special behavior
-			// and the delegate should be called after the real onAfterRendering  method
-			bCallBefore = !oChanges.child.isA("sap.ui.core.HTML");
-			oChanges.child.addDelegate(this._oItemDelegate, bCallBefore, oChanges.child);
+			oChanges.child.addEventDelegate(this._oItemDelegate, oChanges.child);
 		} else if (oChanges.mutation === "remove") {
 			oChanges.child.removeEventDelegate(this._oItemDelegate, oChanges.child);
 		}
@@ -376,12 +376,19 @@ sap.ui.define([
 
 	GridList.prototype._getActiveLayoutSizes = function () {
 		var oGridDomRef = this.getItemsContainerDomRef(),
-			mGridStyles = window.getComputedStyle(oGridDomRef);
-		return {
-			gap: parseFloat(mGridStyles.rowGap),
-			rows: mGridStyles.gridTemplateRows.split(/\s+/),
-			columns: mGridStyles.gridTemplateColumns.split(/\s+/)
-		};
+			mGridStyles = window.getComputedStyle(oGridDomRef),
+			oCl = this.getCustomLayout();
+
+		if (Device.browser.msie && oCl) {
+			return oCl.getPolyfillSizes(this);
+		} else {
+			return {
+				gap: parseFloat(mGridStyles.rowGap),
+				rows: mGridStyles.gridTemplateRows.split(/\s+/),
+				columns: mGridStyles.gridTemplateColumns.split(/\s+/)
+			};
+		}
+
 	};
 
 	return GridList;

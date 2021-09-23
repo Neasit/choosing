@@ -120,12 +120,6 @@ sap.ui.define([
 				}
 			}
 		},
-		actions: {
-			localReset: {
-				changeType: "localReset",
-				changeOnRelevantContainer: true
-			}
-		},
 		getStableElements: getStableElements
 	};
 

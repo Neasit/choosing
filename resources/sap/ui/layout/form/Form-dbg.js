@@ -44,7 +44,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -254,7 +254,7 @@ sap.ui.define([
 		var oLayout = this.getLayout();
 		if (oLayout && oLayout.getContainerRenderedDomRef) {
 			return oLayout.getContainerRenderedDomRef(oContainer);
-		} else  {
+		}else {
 			return null;
 		}
 
@@ -273,7 +273,7 @@ sap.ui.define([
 		var oLayout = this.getLayout();
 		if (oLayout && oLayout.getElementRenderedDomRef) {
 			return oLayout.getElementRenderedDomRef(oElement);
-		} else  {
+		}else {
 			return null;
 		}
 

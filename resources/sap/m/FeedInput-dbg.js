@@ -13,18 +13,13 @@ sap.ui.define([
 	"./FeedInputRenderer",
 	"sap/ui/thirdparty/jquery",
 	"sap/base/security/URLListValidator",
-	"sap/base/security/sanitizeHTML",
-	"sap/m/Avatar",
-	"sap/m/AvatarShape",
-	"sap/m/AvatarSize"
+	"sap/base/security/sanitizeHTML"
 ],
-	function(library, Control, IconPool, TextArea, Button, FeedInputRenderer, jQuery, URLListValidator, sanitizeHTML0, Avatar,
-		AvatarShape, AvatarSize) {
+	function(library, Control, IconPool, TextArea, Button, FeedInputRenderer, jQuery, URLListValidator, sanitizeHTML0) {
 	"use strict";
 
 	// shortcut for sap.m.ButtonType
 	var ButtonType = library.ButtonType;
-
 
 	var MAX_ROWS = 15,
 		MIN_ROWS = 2,
@@ -40,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -107,24 +102,6 @@ sap.ui.define([
 			icon : {type : "sap.ui.core.URI", group : "Data", defaultValue : null},
 
 			/**
-			 * Defines the shape of the icon.
-			* @since 1.88
-			*/
-			iconDisplayShape: { type: "sap.m.AvatarShape", defaultValue: AvatarShape.Circle},
-
-			/**
-			 * Defines the initials of the icon.
-			 * @since 1.88
-			 */
-			iconInitials: { type: "string", defaultValue: "" },
-
-			/**
-			 * Defines the size of the icon.
-			 * @since 1.88
-			 */
-			iconSize: { type: "sap.m.AvatarSize", defaultValue: AvatarSize.M},
-
-			/**
 			 * If set to "true" (default), icons will be displayed. In case no icon is provided the standard placeholder will be displayed. if set to "false" icons are hidden
 			 */
 			showIcon : {type : "boolean", group : "Behavior", defaultValue : true},
@@ -136,8 +113,6 @@ sap.ui.define([
 			 * If you do not have higher resolution images, you should set the property to "false" to avoid unnecessary round-trips.
 			 *
 			 * Please be aware that this property is relevant only for images and not for icons.
-			 *
-			 * Deprecated as of version 1.88. Image is replaced by avatar.
 			 */
 			iconDensityAware : {type : "boolean", group : "Appearance", defaultValue : true},
 
@@ -153,16 +128,11 @@ sap.ui.define([
 			/**
 			 * Text for Picture which will be read by screenreader.
 			 * If a new ariaLabelForPicture is set, any previously set ariaLabelForPicture is deactivated.
-			 * Deprecated as of version 1.88. This will not have any effect in code now.
+			 * @since 1.30
 			 */
 			ariaLabelForPicture : {type : "string", group : "Accessibility", defaultValue : null}
 		},
-		aggregations : {
-			/**
-			* Defines the inner avatar control.
-			 */
-			_avatar: { type: "sap.m.Avatar", multiple: false, visibility: "hidden" }
-		},
+
 		events : {
 
 			/**
@@ -332,12 +302,21 @@ sap.ui.define([
 		if (this._oButton) {
 			this._oButton.destroy();
 		}
-		if (this.oAvatar) {
-			this.oAvatar.destroy();
+		if (this._oImageControl) {
+			this._oImageControl.destroy();
 		}
 	};
 
 	/////////////////////////////////// Properties /////////////////////////////////////////////////////////
+
+	FeedInput.prototype.setIconDensityAware = function (iIconDensityAware) {
+		this.setProperty("iconDensityAware", iIconDensityAware, true);
+		var fnClass = sap.ui.require("sap/m/Image");
+		if (this._getImageControl() instanceof fnClass) {
+			this._getImageControl().setDensityAware(iIconDensityAware);
+		}
+		return this;
+	};
 
 	FeedInput.prototype.setRows = function (iRows) {
 		var iMaxLines = this.getProperty("growingMaxLines");
@@ -503,32 +482,24 @@ sap.ui.define([
 	 * Lazy load feed icon image.
 	 *
 	 * @private
-	 * @returns {sap.m.Avatar} The Avatar control
+	 * @returns {sap.m.Image} The image control
 	 */
-	FeedInput.prototype._getAvatar = function() {
-		var sIconSrc = this.getIcon();
-		var sId = this.getId() + '-icon';
+	FeedInput.prototype._getImageControl = function() {
 
-		this.oAvatar = this.getAggregation("_avatar");
-		if (!this.oAvatar) {
-			this.oAvatar = new Avatar({
-				id: sId,
-				src: sIconSrc,
-				displayShape: this.getIconDisplayShape(),
-				initials: this.getIconInitials(),
-				displaySize: this.getIconSize()
-			}).addStyleClass("sapMFeedInImage");
-		} else {
-			this.oAvatar
-				.setSrc(sIconSrc)
-				.setDisplayShape(this.getIconDisplayShape())
-				.setInitials(this.getIconInitials())
-				.setDisplaySize(this.getIconSize());
-		}
+		var sIconSrc = this.getIcon() || IconPool.getIconURI("person-placeholder"),
+			sImgId = this.getId() + '-icon',
+			mProperties = {
+				src : sIconSrc,
+				alt : this.getAriaLabelForPicture(),
+				densityAware : this.getIconDensityAware(),
+				decorative : false,
+				useIconTooltip: false
+			},
+			aCssClasses = ['sapMFeedInImage'];
 
-		this.setAggregation("_avatar", this.oAvatar);
+		this._oImageControl = library.ImageHelper.getImageControl(sImgId, this._oImageControl, this, mProperties, aCssClasses);
 
-		return this.oAvatar;
+		return this._oImageControl;
 	};
 
 	return FeedInput;

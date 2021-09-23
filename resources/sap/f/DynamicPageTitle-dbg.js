@@ -90,7 +90,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -119,7 +119,7 @@ sap.ui.define([
 				* <code>primaryArea=Middle</code> can be achieved by setting a low number for the Content area to
 				* <code>areaShrinkRatio</code>, for example <code>1.6:1:1.6</code>.
 				*/
-				primaryArea : {type: "sap.f.DynamicPageTitleArea", group: "Appearance", defaultValue: DynamicPageTitleArea.Begin, deprecated: true},
+				primaryArea : {type: "sap.f.DynamicPageTitleArea", group: "Appearance", defaultValue: DynamicPageTitleArea.Begin},
 
 				/**
 				 * Assigns shrinking ratio to the <code>DynamicPageTitle</code> areas (Heading, Content, Actions).
@@ -1277,8 +1277,6 @@ sap.ui.define([
 			hasOnlyNavigationActions: bHasOnlyNavigationActions,
 			contentAreaFlexBasis: this._sContentAreaFlexBasis,
 			actionsAreaFlexBasis: this._sActionsAreaFlexBasis,
-			contentAreaHasContent: this._bContentAreaHasContent,
-			actionsAreaHasContent: this._bActionsAreaHasContent,
 			isFocusable: this._bIsFocusable
 		};
 	};
@@ -1362,24 +1360,19 @@ sap.ui.define([
 	 */
 	DynamicPageTitle.prototype._setContentAreaFlexBasis = function (iContentSize, $node) {
 		var sFlexBasis,
-			sFlexBasisCachedValue,
-			bAreaHasContent;
+			sFlexBasisCachedValue;
 
 		iContentSize = parseInt(iContentSize);
-		bAreaHasContent = iContentSize && iContentSize > 1;
 		sFlexBasis = iContentSize ? iContentSize + "px" : "auto";
+
 		sFlexBasisCachedValue = sFlexBasis !== "auto" ? sFlexBasis : undefined;
 
 		$node.css({ "flex-basis": sFlexBasis });
 
 		if ($node.hasClass("sapFDynamicPageTitleMainContent")) {
 			this._sContentAreaFlexBasis = sFlexBasisCachedValue;
-			this._bContentAreaHasContent = bAreaHasContent;
-			$node.toggleClass("sapFDynamicPageTitleMainContentHasContent", bAreaHasContent);
 		} else if ($node.hasClass("sapFDynamicPageTitleMainActions")) {
 			this._sActionsAreaFlexBasis = sFlexBasisCachedValue;
-			this._bActionsAreaHasContent = bAreaHasContent;
-			$node.toggleClass("sapFDynamicPageTitleMainActionsHasContent", bAreaHasContent);
 		}
 	};
 
@@ -1396,12 +1389,10 @@ sap.ui.define([
 
 	DynamicPageTitle.prototype._getARIALabelReferences = function (bExpanded) {
 		var sReferences = "",
-			oTitle,
 			oHeading = this.getHeading() || (bExpanded ? this.getExpandedHeading() : this.getSnappedHeading());
 
 		if (oHeading) {
-			oTitle = oHeading.getTitle && oHeading.getTitle();
-			sReferences += oTitle ? oTitle.getId() : oHeading.getId();
+			sReferences += oHeading.getId();
 		}
 
 		return sReferences;

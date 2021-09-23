@@ -82,10 +82,6 @@
 			display: none;
 		}
 
-		.sapFCardBaseContent.sapFCardContentLoading > :not(.sapFCardContentPlaceholder) {
-			display: none;
-		}
-
 		.sapFCardContentPlaceholder {
 			outline: none;
 		}
@@ -100,6 +96,10 @@
 			top: 1px;
 			border: @_sap_f_Card_FocusBorderWidth dotted @sapUiContentFocusColor;
 			pointer-events: none;
+		}
+
+		html[data-sap-ui-browser^="ie"] .sapFCardContentPlaceholder:focus::before {
+			border: @_sap_f_Card_FocusBorderWidth dashed @sapUiContentFocusColor;
 		}
 
 		.sapFCardContentGenericPlaceholder {

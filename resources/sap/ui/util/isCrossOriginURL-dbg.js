@@ -3,8 +3,7 @@
  * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-/*global URL */
-sap.ui.define([], function() {
+sap.ui.define(['sap/ui/thirdparty/URI'], function(URI) {
 	"use strict";
 
 	/**
@@ -19,10 +18,13 @@ sap.ui.define([], function() {
 	 * @since 1.84
 	 */
 	function isCrossOriginURL(sHref) {
-		var oURL = new URL(sHref, document.baseURI),
-			sOrigin = window.location.origin || new URL(document.baseURI);
+		// Code can be similfied during IE11 cleanup as URL API can handle URNs without errors:
+		// --> new URL("mailto:info.germany@sap.com', document.baseURI).toString()
+		var oURI = new URI(sHref),
+			oURI = oURI.is("relative") ? oURI.absoluteTo(document.baseURI) : oURI,
+			sOrigin = window.location.origin || new URI().origin();
 
-		return oURL.origin !== sOrigin;
+		return oURI.origin() !== sOrigin;
 	}
 
 	return isCrossOriginURL;

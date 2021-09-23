@@ -44,7 +44,7 @@ sap.ui.define([
 	 * The ScrollBar control can be used for virtual scrolling of a certain area.
 	 * This means: to simulate a very large scrollable area when technically the area is small and the control takes care of displaying the respective part only. E.g. a Table control can take care of only rendering the currently visible rows and use this ScrollBar control to make the user think he actually scrolls through a long list.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @deprecated as of version 1.56
@@ -446,6 +446,15 @@ sap.ui.define([
 		if (this._bLargeDataScrolling && eAction === ScrollBarAction.Drag) {
 			this._eAction = eAction;
 			this._bForward = bForward;
+			if (Device.browser.msie) {
+				if (this._scrollTimeout) {
+					window.clearTimeout(this._scrollTimeout);
+				}
+				this._scrollTimeout = window.setTimeout(
+					this._onScrollTimeout.bind(this),
+					300
+				);
+			}
 		} else {
 			this._doScroll(eAction, bForward);
 		}
@@ -455,7 +464,6 @@ sap.ui.define([
 		return false;
 	};
 
-	// TODO: IE removal ==> check if still needed
 	ScrollBar.prototype._onScrollTimeout = function(){
 		this._scrollTimeout = undefined;
 		this._doScroll(this._eAction, this._bForward);
@@ -465,7 +473,7 @@ sap.ui.define([
 	};
 
 	ScrollBar.prototype.onmouseup = function() {
-		if (this._bLargeDataScrolling && (this._eAction || this._bForward || this._bTouchScroll)) {
+		if (this._bLargeDataScrolling && (this._eAction || this._bForward || this._bTouchScroll) && !Device.browser.msie) {
 			this._doScroll(this._eAction, this._bForward);
 			this._eAction = undefined;
 			this._bForward = undefined;
@@ -688,6 +696,7 @@ sap.ui.define([
 	 * @private
 	 */
 	ScrollBar.prototype._doScroll = function(sAction, bForward) {
+
 		// Get new scroll position
 		var iScrollPos = null;
 		if (this._$ScrollDomRef) {
@@ -729,7 +738,10 @@ sap.ui.define([
 			Log.debug("-----PIXELMODE-----: New ScrollPos: " + iScrollPos + " --- Old ScrollPos: " +  this._iOldScrollPos + " --- Action: " + sAction + " --- Direction is forward: " + bForward);
 			this.fireScroll({ action: sAction, forward: bForward, newScrollPos: iScrollPos, oldScrollPos: this._iOldScrollPos});
 		}
-		this._bSuppressScroll = false;
+		// rounding errors in IE lead to infinite scrolling
+		if (Math.round(this._iFactor) == this._iFactor || !Device.browser.msie) {
+			this._bSuppressScroll = false;
+		}
 		this._iOldScrollPos = iScrollPos;
 		this._bMouseWheel = false;
 

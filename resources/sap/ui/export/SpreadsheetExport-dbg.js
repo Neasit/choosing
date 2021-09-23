@@ -20,7 +20,7 @@ sap.ui.define(['jquery.sap.global', 'sap/base/Log', 'sap/ui/Device'], function(j
 	 *
 	 * @class Utility class to perform spreadsheet export
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @static
 	 *
 	 * @private
@@ -63,7 +63,7 @@ sap.ui.define(['jquery.sap.global', 'sap/base/Log', 'sap/ui/Device'], function(j
 			function start(DataProvider, XLSXBuilder) {
 				fnConvertData = DataProvider.getDataConverter(mParams);
 				oSpreadsheet =
-					new XLSXBuilder(mParams.workbook.columns, mParams.workbook.context, mParams.workbook.hierarchyLevel, mParams.customizing);
+					new XLSXBuilder(mParams.workbook.columns, mParams.workbook.context, mParams.workbook.hierarchyLevel, mParams.customconfig);
 
 				var aData = mParams.dataSource.data || [];
 				var iCount = aData.length;
@@ -100,7 +100,7 @@ sap.ui.define(['jquery.sap.global', 'sap/base/Log', 'sap/ui/Device'], function(j
 				var provider = new DataProvider(mParams);
 
 				oSpreadsheet =
-					new XLSXBuilder(mParams.workbook.columns, mParams.workbook.context, mParams.workbook.hierarchyLevel, mParams.customizing);
+					new XLSXBuilder(mParams.workbook.columns, mParams.workbook.context, mParams.workbook.hierarchyLevel, mParams.customconfig);
 				oRequest = provider.requestData(processCallback);
 			}
 
@@ -112,10 +112,7 @@ sap.ui.define(['jquery.sap.global', 'sap/base/Log', 'sap/ui/Device'], function(j
 
 				oSpreadsheet.append(oMessage.rows);
 				onProgress(oMessage.fetched, oMessage.total);
-
-				if (oMessage.finished) {
-					oSpreadsheet.build().then(onFinish);
-				}
+				oMessage.finished && oSpreadsheet.build().then(onFinish);
 			}
 
 			function cancel() {
@@ -211,7 +208,8 @@ sap.ui.define(['jquery.sap.global', 'sap/base/Log', 'sap/ui/Device'], function(j
 
 		if (mParams.dataSource.type === 'array') {
 			return exportArray();
-		} else if (mParams.worker === false || sap.ui.disableExportWorkers === true) {
+		} else if (mParams.worker === false || sap.ui.disableExportWorkers === true || (Device.browser.msie && mParams.dataSource.dataUrl.indexOf('.') === 0)) {
+			// URI.js bug prevents relative paths starting with ./ or ../ from resolving, therefore worker is disabled for MSIE
 			return exportInProcess();
 		} else {
 			return exportInWorker();

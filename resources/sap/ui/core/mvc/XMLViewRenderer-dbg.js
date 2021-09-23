@@ -72,9 +72,7 @@ sap.ui.define([
 	 */
 	XMLViewRenderer.render = function(rm, oControl) {
 		// write the HTML into the render manager
-		var vFragment,
-		 $oldContent = oControl._$oldContent = RenderManager.findPreservedContent(oControl.getId());
-
+		var $oldContent = oControl._$oldContent = RenderManager.findPreservedContent(oControl.getId());
 		if ( $oldContent.length === 0) {
 			// Log.debug("rendering " + oControl + " anew");
 			var bSubView = oControl.isSubView();
@@ -93,20 +91,19 @@ sap.ui.define([
 			}
 			if (oControl._aParsedContent) {
 				for (var i = 0; i < oControl._aParsedContent.length; i++) {
-					vFragment = oControl._aParsedContent[i];
-					if (vFragment && typeof (vFragment) === "string") {
+					var fragment = oControl._aParsedContent[i];
+					if (fragment && typeof (fragment) === "string") {
 						// Due to the possibility of mixing (X)HTML and UI5 controls in the XML content,
 						// the XMLViewRenderer cannot be migrated fully to API version 2 yet.
 						// Here we need to pass the raw strings to the RenderManager as it was written in the *.view.xml.
-						rm.write(vFragment);
+						rm.write(fragment);
 					} else {
-						rm.renderControl(vFragment);
+						rm.renderControl(fragment);
 						// when the child control did not render anything (e.g. visible=false), we add a placeholder to know where to render the child later
-						if ( !vFragment.bOutput ) {
-							rm.openStart("div", PREFIX_DUMMY + vFragment.getId());
+						if ( !fragment.bOutput ) {
+							rm.openStart("div", PREFIX_DUMMY + fragment.getId());
 							rm.class("sapUiHidden");
 							rm.openEnd();
-							rm.close("div");
 						}
 					}
 				}
@@ -124,15 +121,15 @@ sap.ui.define([
 			rm.openStart("div", PREFIX_TEMPORARY + oControl.getId());
 			rm.class("sapUiHidden");
 			rm.openEnd();
-			for (var k = 0; k < oControl._aParsedContent.length; k++) {
-				vFragment = oControl._aParsedContent[k];
-				if ( typeof (vFragment) !== "string") {
+			for (var i = 0; i < oControl._aParsedContent.length; i++) {
+				var fragment = oControl._aParsedContent[i];
+				if ( typeof (fragment) !== "string") {
 
 					// render DOM string for child control
-					rm.renderControl(vFragment);
+					rm.renderControl(fragment);
 
 					// replace any old DOM (or invisible placeholder) for a child control with a dummy placeholder
-					var sFragmentId = vFragment.getId(),
+					var sFragmentId = fragment.getId(),
 						$fragment = jQuery(document.getElementById(sFragmentId));
 					if ($fragment.length == 0) {
 						$fragment = jQuery(document.getElementById(PREFIX_INVISIBLE + sFragmentId));

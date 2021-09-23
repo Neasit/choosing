@@ -98,12 +98,12 @@ sap.ui.define([
 	 *   wins). The same annotations are overwritten; if an annotation file contains other elements
 	 *   (like a type definition) that are already merged, an error is thrown.
 	 *   Supported since 1.41.0
-	 * @param {boolean} [mParameters.autoExpandSelect]
+	 * @param {boolean} [mParameters.autoExpandSelect=false]
 	 *   Whether the OData model's bindings automatically generate $select and $expand system query
 	 *   options from the binding hierarchy. Note: Dynamic changes to the binding hierarchy are not
 	 *   supported. This parameter is supported since 1.47.0, and since 1.75.0 it also enables
 	 *   property paths containing navigation properties in <code>$select</code>.
-	 * @param {boolean} [mParameters.earlyRequests]
+	 * @param {boolean} [mParameters.earlyRequests=false]
 	 *   Whether the following is requested at the earliest convenience:
 	 *   <ul>
 	 *     <li> root $metadata document and annotation files;
@@ -208,7 +208,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.Model
 	 * @public
 	 * @since 1.37.0
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var ODataModel = Model.extend("sap.ui.model.odata.v4.ODataModel",
 			/** @lends sap.ui.model.odata.v4.ODataModel.prototype */
@@ -345,7 +345,7 @@ sap.ui.define([
 	 *
 	 * @param {string} sGroupId
 	 *   The group ID
-	 * @param {boolean} [bCatch]
+	 * @param {boolean} [bCatch=false]
 	 *   Whether the returned promise always resolves and never rejects
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise on the outcome of the HTTP request resolving with <code>undefined</code>; it is
@@ -421,7 +421,7 @@ sap.ui.define([
 	 *
 	 * @param {function} fnPrerenderingTask
 	 *   A function that is called before the rendering
-	 * @param {boolean} [bFirst]
+	 * @param {boolean} [bFirst=false]
 	 *   Whether the task should become the first one, not the last one
 	 * @private
 	 */
@@ -446,7 +446,7 @@ sap.ui.define([
 			// runs after all setTimeout(0) tasks scheduled from within the current task, even those
 			// that were scheduled afterwards. A simple setTimeout(n) with n > 0 is not sufficient
 			// because this doesn't help if the current task runs very long.
-			iTimeoutId = setTimeout(function () {
+			iTimeoutId = setTimeout(function() {
 				iTimeoutId = setTimeout(fnRunTasks, 0);
 			}, 0);
 		}
@@ -460,18 +460,12 @@ sap.ui.define([
 	/**
 	 * See {@link sap.ui.base.EventProvider#attachEvent}
 	 *
-	 * @param {string} sEventId The identifier of the event to listen for
-	 * @param {object} [_oData]
-	 * @param {function} [_fnFunction]
-	 * @param {object} [_oListener]
-	 * @returns {this} <code>this</code> to allow method chaining
-	 *
 	 * @public
 	 * @see sap.ui.base.EventProvider#attachEvent
 	 * @since 1.37.0
 	 */
 	// @override sap.ui.base.EventProvider#attachEvent
-	ODataModel.prototype.attachEvent = function (sEventId, _oData, _fnFunction, _oListener) {
+	ODataModel.prototype.attachEvent = function (sEventId) {
 		if (!(sEventId in mSupportedEvents)) {
 			throw new Error("Unsupported event '" + sEventId
 				+ "': v4.ODataModel#attachEvent");
@@ -779,21 +773,13 @@ sap.ui.define([
 	/**
 	 * Method not supported
 	 *
-	 * @param {string} _sPath
-	 * @param {sap.ui.model.Context} [_oContext]
-	 * @param {sap.ui.model.Filter[]} [_aFilters]
-	 * @param {object} [_mParameters]
-	 * @param {sap.ui.model.Sorter[]} [_aSorters]
-	 * @returns {sap.ui.model.TreeBinding}
 	 * @throws {Error}
 	 *
 	 * @public
 	 * @see sap.ui.model.Model#bindTree
 	 * @since 1.37.0
 	 */
-	// @override sap.ui.model.Model#bindTree
-	ODataModel.prototype.bindTree = function (_sPath, _oContext, _aFilters, _mParameters,
-			_aSorters) {
+	ODataModel.prototype.bindTree = function () {
 		throw new Error("Unsupported operation: v4.ODataModel#bindTree");
 	};
 
@@ -812,9 +798,9 @@ sap.ui.define([
 	 *
 	 * @param {object} [mParameters={}]
 	 *   Map of binding parameters
-	 * @param {boolean} [bSystemQueryOptionsAllowed]
+	 * @param {boolean} [bSystemQueryOptionsAllowed=false]
 	 *   Whether system query options are allowed
-	 * @param {boolean} [bSapAllowed]
+	 * @param {boolean} [bSapAllowed=false]
 	 *   Whether custom query options starting with "sap-" are allowed (Note: "sap-valid-" is always
 	 *   allowed)
 	 * @throws {Error}
@@ -958,7 +944,7 @@ sap.ui.define([
 				if (sHeaderName === "x-csrf-token") {
 					sKey = "X-CSRF-Token";
 				}
-				mHeadersCopy[sHeaderName] = {key : sKey, value : sHeaderValue};
+				mHeadersCopy[sHeaderName] = {key : sKey, value: sHeaderValue};
 			}
 		}
 		this.oRequestor.checkForOpenRequests();
@@ -1130,83 +1116,6 @@ sap.ui.define([
 		}
 
 		return new BaseContext(this, sResolvedPath);
-	};
-
-	/**
-	 * Creates a {@link sap.ui.core.message.Message} from a given "raw" message object. For a
-	 * bound message, targets are resolved if they are not yet resolved. A message is called a bound
-	 * message if is has a target, even if it is empty.
-	 *
-	 * @param {object} oRawMessage
-	 *   The raw message
-	 * @param {string} [oRawMessage.code]
-	 *   The error code
-	 * @param {string} [oRawMessage.longtextUrl]
-	 *   The message longtext URL; can be relative to the given <code>sResourcePath</code>
-	 * @param {string} [oRawMessage.message]
-	 *   The message text
-	 * @param {number} [oRawMessage.numericSeverity]
-	 *   The numeric message severity
-	 * @param {string} [oRawMessage.target]
-	 *   The message target; can be relative to the <code>sResourcePath</code> plus
-	 *   <code>sCachePath</code>
-	 * @param {string[]} [oRawMessage.additionalTargets]
-	 *   Array of additional targets with the same meaning as <code>target</code>
-	 * @param {boolean} [oRawMessage.technical]
-	 *   Whether the message is reported as <code>technical</code>
-	 * @param {boolean} [oRawMessage.transition]
-	 *   Whether the message is a transition message and not a state message. Unbound messages
-	 *   cannot be state messages
-	 * @param {object} [oRawMessage.@$ui5.error]
-	 *   The original error instance
-	 * @param {object} [oRawMessage.@$ui5.originalMessage]
-	 *   The original message object which is used to create the technical details
-	 * @param {string} [sResourcePath]
-	 *   The resource path of the cache that saw the messages; used to resolve the targets and
-	 *   the longtext URL
-	 * @param {string} [sCachePath]
-	 *   The cache-relative path to the entity; used to resolve the targets
-	 * @returns {sap.ui.core.message.Message}
-	 *   The created UI5 message object
-	 *
-	 * @private
-	 */
-	ODataModel.prototype.createUI5Message = function (oRawMessage, sResourcePath, sCachePath) {
-		var bIsBound = oRawMessage.target !== undefined,
-			sMessageLongtextUrl = oRawMessage.longtextUrl,
-			aTargets;
-
-		function resolveTarget(sTarget) {
-			return sTarget[0] === "/"
-				? sTarget
-				: _Helper.buildPath("/" + sResourcePath, sCachePath, sTarget);
-		}
-
-		if (bIsBound) {
-			aTargets = [resolveTarget(oRawMessage.target)];
-			if (oRawMessage.additionalTargets) {
-				oRawMessage.additionalTargets.forEach(function (sTarget) {
-					aTargets.push(resolveTarget(sTarget));
-				});
-			}
-		}
-		if (sMessageLongtextUrl && sResourcePath) {
-			sMessageLongtextUrl = _Helper.makeAbsolute(sMessageLongtextUrl,
-				this.sServiceUrl + sResourcePath);
-		}
-
-		return new Message({
-			code : oRawMessage.code,
-			descriptionUrl : sMessageLongtextUrl || undefined,
-			message : oRawMessage.message,
-			persistent : bIsBound ? oRawMessage.transition : true,
-			processor : this,
-			// Note: "" instead of undefined makes filtering easier (agreement with FE!)
-			target : bIsBound ? aTargets : "",
-			technical : oRawMessage.technical,
-			technicalDetails : _Helper.createTechnicalDetails(oRawMessage),
-			type : aMessageTypes[oRawMessage.numericSeverity] || MessageType.None
-		});
 	};
 
 	/**
@@ -1480,26 +1389,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns a function to be used as a Promise catch handler in order to report not yet reported
-	 * errors.
-	 *
-	 * @returns {function(Error)}
-	 *   A catch handler function expecting an <code>Error</code> instance. This function will call
-	 *   {@link #reportError} if the error has not been reported yet
-	 *
-	 * @private
-	 */
-	ODataModel.prototype.getReporter = function () {
-		var that = this;
-
-		return function (oError) {
-			if (!oError.$reported) {
-				that.reportError(oError.message, sClassName, oError);
-			}
-		};
-	};
-
-	/**
 	 * Returns <code>true</code> if there are pending changes, meaning updates or created entities
 	 * (see {@link sap.ui.model.odata.v4.ODataListBinding#create}) that have not yet been
 	 * successfully sent to the server.
@@ -1623,16 +1512,14 @@ sap.ui.define([
 	 * there are pending changes. If there are changes, call {@link #submitBatch} to submit the
 	 * changes or {@link #resetChanges} to reset the changes before calling {@link #refresh}.
 	 *
-	 * @param {string|boolean} [sGroupId]
+	 * @param {string} [sGroupId]
 	 *   The group ID to be used for refresh; valid values are <code>undefined</code>, '$auto',
 	 *   '$auto.*', '$direct' or application group IDs as specified in
 	 *   {@link sap.ui.model.odata.v4.ODataModel}. It is ignored for suspended bindings, because
-	 *   resume uses the binding's group ID. A value of type boolean is not
-	 *   accepted and an error will be thrown (a forced refresh is not supported).
+	 *   resume uses the binding's group ID.
 	 * @throws {Error}
 	 *   If the given group ID is invalid or if there are pending changes, see
-	 *   {@link #hasPendingChanges}.
-	 *   If a value of type boolean is given.
+	 *   {@link #hasPendingChanges}
 	 *
 	 * @public
 	 * @see sap.ui.model.Model#refresh
@@ -1643,9 +1530,6 @@ sap.ui.define([
 	 */
 	// @override sap.ui.model.Model#refresh
 	ODataModel.prototype.refresh = function (sGroupId) {
-		if (typeof sGroupId === "boolean") {
-			throw new Error("Unsupported parameter bForceUpdate");
-		}
 		this.checkGroupId(sGroupId);
 
 		// Note: getBindings() returns an array that contains all bindings with change listeners (owned by Model)
@@ -1663,14 +1547,35 @@ sap.ui.define([
 	 * the new messages.
 	 *
 	 * @param {string} sResourcePath
-	 *   The resource path of the cache that saw the messages; used to resolve the targets and
-	 *   the longtext URL
+	 *   The resource path of the cache that saw the messages
 	 * @param {object} mPathToODataMessages
-	 *   Maps a cache-relative path with key predicates or indices to an array of messages suitable
-	 *   for {@link #createUI5Message}
+	 *   Maps a cache-relative path with key predicates or indices to an array of messages with the
+	 *   following properties. Each message is passed to the "technicalDetails" (see
+	 *   _Helper.createTechnicalDetails). Currently the "technicalDetails" only contain an attribute
+	 *   named "originalMessage" that contains the message that is received from the back end.
+	 *   {string} code
+	 *     The error code
+	 *   {string} [longtextUrl]
+	 *     The absolute URL for the message's long text
+	 *   {string} message
+	 *     The message text
+	 *   {number} numericSeverity
+	 *     The numeric message severity (1 for "success", 2 for "info", 3 for "warning" and 4 for
+	 *     "error")
+	 *   {string} target
+	 *     The target for the message; if relative the reported target path is a concatenation of
+	 *     the resource path, the cache-relative path and this property
+	 *   {boolean} [technical]
+	 *     Whether the message is reported as <code>technical</code> (supplied by #reportError)
+	 *   {boolean} [transition]
+	 *     Whether the message is reported as <code>persistent=true</code> and therefore needs to be
+	 *     managed by the application
+	 *   {object} [@$ui5.originalMessage]
+	 *     The original message object supplied by #reportError. In case this is supplied it is used
+	 *     in _Helper.createTechnicalDetails to create the "originalMessage" property
 	 * @param {string[]} [aCachePaths]
-	 *   An array of cache-relative paths of the entities for which non-persistent messages have to
-	 *   be removed; if the array is not given, all entities are affected
+	 *    An array of cache-relative paths of the entities for which non-persistent messages have to
+	 *    be removed; if the array is not given, all entities are affected
 	 *
 	 * @private
 	 */
@@ -1683,7 +1588,21 @@ sap.ui.define([
 
 		Object.keys(mPathToODataMessages).forEach(function (sCachePath) {
 			mPathToODataMessages[sCachePath].forEach(function (oRawMessage) {
-				aNewMessages.push(that.createUI5Message(oRawMessage, sResourcePath, sCachePath));
+				var sTarget = oRawMessage.target[0] === "/"
+						? oRawMessage.target
+						: _Helper.buildPath(sDataBindingPath, sCachePath, oRawMessage.target);
+
+				aNewMessages.push(new Message({
+					code : oRawMessage.code,
+					descriptionUrl : oRawMessage.longtextUrl || undefined,
+					message : oRawMessage.message,
+					persistent : oRawMessage.transition,
+					processor : that,
+					target : sTarget,
+					technical : oRawMessage.technical,
+					technicalDetails : _Helper.createTechnicalDetails(oRawMessage),
+					type : aMessageTypes[oRawMessage.numericSeverity] || MessageType.None
+				}));
 			});
 		});
 		(aCachePaths || [""]).forEach(function (sCachePath) {
@@ -1729,24 +1648,75 @@ sap.ui.define([
 	 *   Whether <code>oError.error</code> itself is not reported, but only the
 	 *   <code>oError.error.details</code>.
 	 * @param {string} [oError.requestUrl]
-	 *   The absolute request URL of the failed OData request; required to resolve a long text URL.
+	 *   The request URL of the failed OData request, added by the requestor; it is required to
+	 *   resolve a longtextUrl.
 	 * @param {string} [oError.resourcePath]
 	 *   The resource path by which the resource causing the error has originally been requested;
-	 *   required to resolve a target.
+	 *   since a request can fail before reaching the server this may be set even if there is no
+	 *   error property; it is required to resolve a longtextUrl or a target.
 	 *
 	 * @private
 	 */
 	ODataModel.prototype.reportError = function (sLogMessage, sReportingClassName, oError) {
-		var sDetails,
-			oRawMessages;
+		var aBoundMessages = [],
+			sDetails,
+			sResourcePath,
+			aUnboundMessages = [];
+
+		/*
+		 * Clones the message object taking all relevant properties, converts the annotations for
+		 * numeric severity and longtext to the corresponding properties and adds it to one of the
+		 * arrays to be reported later.
+		 * @param {object} oMessage The message
+		 * @param {number} [iNumericSeverity] The numeric severity
+		 * @param {boolean} [bTechnical] Whether the message is reported as technical
+		 */
+		function addMessage(oMessage, iNumericSeverity, bTechnical) {
+			var oReportMessage = {
+					code : oMessage.code,
+					message : oMessage.message,
+					numericSeverity : iNumericSeverity,
+					technical : bTechnical || oMessage.technical,
+					// use "@$ui5." prefix to overcome name collisions with instance annotations
+					// returned from back end.
+					"@$ui5.error" : oError,
+					"@$ui5.originalMessage" : oMessage
+				};
+
+			Object.keys(oMessage).forEach(function (sProperty) {
+				if (sProperty[0] === '@') {
+					if (sProperty.endsWith(".numericSeverity")) {
+						oReportMessage.numericSeverity = oMessage[sProperty];
+					} else if (sProperty.endsWith(".longtextUrl") && oError.requestUrl
+							&& sResourcePath) {
+						oReportMessage.longtextUrl =
+							_Helper.makeAbsolute(oMessage[sProperty], oError.requestUrl);
+					}
+				}
+			});
+
+			if (typeof oMessage.target !== "string") {
+				aUnboundMessages.push(oReportMessage);
+			} else if (oMessage.target[0] === "$" || !sResourcePath) {
+				// target for the bound message is a system query option or cannot be resolved
+				// -> report as unbound message
+				oReportMessage.message = oMessage.target + ": " + oReportMessage.message;
+				aUnboundMessages.push(oReportMessage);
+			} else {
+				oReportMessage.target = oMessage.target;
+				oReportMessage.transition = true;
+				aBoundMessages.push(oReportMessage);
+			}
+		}
 
 		if (oError.canceled === "noDebugLog") {
 			return;
 		}
 
-		sDetails = oError.stack.includes(oError.message)
-			? oError.stack
-			: oError.message + "\n" + oError.stack;
+		sDetails = oError.stack || oError.message;
+		if (!sDetails.includes(oError.message)) {
+			sDetails = oError.message + "\n" + oError.stack;
+		}
 
 		if (oError.canceled) {
 			Log.debug(sLogMessage, sDetails, sReportingClassName);
@@ -1759,36 +1729,77 @@ sap.ui.define([
 		}
 		oError.$reported = true;
 
-		oRawMessages = _Helper.extractMessages(oError);
-		if (oRawMessages.bound.length) {
-			this.reportBoundMessages(
-				oError.resourcePath.split("?")[0],
-				{"" : oRawMessages.bound},
-				[]
-			);
+		if (oError.error) {
+			sResourcePath = oError.resourcePath && oError.resourcePath.split("?")[0];
+			if (!oError.error.$ignoreTopLevel) {
+				addMessage(oError.error, 4 /* Error */, true);
+			}
+			if (oError.error.details) {
+				oError.error.details.forEach(function (oMessage) {
+					addMessage(oMessage);
+				});
+			}
+			if (aBoundMessages.length) {
+				this.reportBoundMessages(sResourcePath, {"" : aBoundMessages}, []);
+			}
+		} else {
+			addMessage(oError, 4 /* Error */, true);
 		}
-		// The longtextUrls are already absolute, so sResourcePath is not needed here
-		this.reportUnboundMessages(oRawMessages.unbound);
+
+		this.reportUnboundMessages(sResourcePath, aUnboundMessages);
 	};
 
 	/**
 	 * Reports the given unbound OData messages by firing a <code>messageChange</code> event with
 	 * the new messages.
 	 *
-	 * @param {object[]} aMessages
-	 *   An array of messages suitable for {@link #createUI5Message}
 	 * @param {string} [sResourcePath]
-	 *   The resource path of the cache that saw the messages; used to resolve the longtext URL
+	 *   The resource path of the request whose response contained the messages. If it is
+	 *   <code>undefined</code> the message's long text URL cannot be determined.
+	 * @param {object[]} [aMessages]
+	 *   The array of messages as contained in the <code>sap-messages</code> response header with
+	 *   the following properties. Each message is passed to the "technicalDetails" (see
+	 *   _Helper.createTechnicalDetails). Currently the "technicalDetails" only contain an attribute
+	 *   named "originalMessage" that contains the message that is received from the back end.
+	 *   {string} code
+	 *     The error code
+	 *   {string} [longtextUrl]
+	 *     The absolute URL for the message's long text
+	 *   {string} message
+	 *     The message text
+	 *   {number} numericSeverity
+	 *     The numeric message severity (1 for "success", 2 for "info", 3 for "warning" and 4 for
+	 *     "error")
+	 *   {boolean} [technical]
+	 *     Whether the message is reported as <code>technical</code> (supplied by #reportError)
+	 *   {object} [@$ui5.originalMessage]
+	 *     The original message object supplied by #reportError. In case this is supplied it is used
+	 *     in _Helper.createTechnicalDetails to create the "originalMessage" property
 	 *
 	 * @private
 	 */
-	ODataModel.prototype.reportUnboundMessages = function (aMessages, sResourcePath) {
+	ODataModel.prototype.reportUnboundMessages = function (sResourcePath, aMessages) {
 		var that = this;
 
 		if (aMessages && aMessages.length) {
 			this.fireMessageChange({
 				newMessages : aMessages.map(function (oMessage) {
-					return that.createUI5Message(oMessage, sResourcePath);
+					var sMessageLongTextUrl = oMessage.longtextUrl;
+
+					return new Message({
+						code : oMessage.code,
+						descriptionUrl : sMessageLongTextUrl && sResourcePath
+							? _Helper.makeAbsolute(sMessageLongTextUrl,
+								that.sServiceUrl + sResourcePath)
+							: undefined,
+						message : oMessage.message,
+						persistent : true,
+						processor : that,
+						target : "",
+						technical : oMessage.technical,
+						technicalDetails : _Helper.createTechnicalDetails(oMessage),
+						type : aMessageTypes[oMessage.numericSeverity] || MessageType.None
+					});
 				})
 			});
 		}
@@ -1825,22 +1836,41 @@ sap.ui.define([
 	 * @param {string} sGroupId
 	 *   The effective group ID
 	 * @param {string[]} aAbsolutePaths
-	 *   The absolute paths to request side effects for; each path must not start with the fully
+	 *   The absolute paths to request side effects for; each path must start with the fully
 	 *   qualified container name.
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise resolving without a defined result, or rejecting with an error if loading of side
 	 *   effects fails, or <code>undefined</code> if there is nothing to do
+	 * @throws {Error}
+	 *   If a path does not start with the entity container
 	 *
 	 * @private
 	 */
 	ODataModel.prototype.requestSideEffects = function (sGroupId, aAbsolutePaths) {
+		var sEntityContainer;
+
 		if (!aAbsolutePaths.length) {
 			return undefined; // nothing to do
 		}
 
+		sEntityContainer = this.oMetaModel.getObject("/$EntityContainer");
+		aAbsolutePaths = aAbsolutePaths.map(function (sAbsolutePath) {
+			var aSegments = sAbsolutePath.split("/");
+
+			// aSegments[0] is empty because the path starts with "/"
+			if (aSegments[1] !== sEntityContainer) {
+				throw new Error("Path must start with '/" + sEntityContainer + "': "
+					+ sAbsolutePath);
+			}
+
+			aSegments.splice(1, 1); // remove the entity container from the path
+
+			return aSegments.join("/");
+		});
+
 		return SyncPromise.all(
 			this.aAllBindings.filter(function (oBinding) {
-				return oBinding.isRoot();
+				return oBinding.isRoot() && oBinding.requestAbsoluteSideEffects;
 			}).map(function (oRootBinding) {
 				return oRootBinding.requestAbsoluteSideEffects(sGroupId, aAbsolutePaths);
 			})

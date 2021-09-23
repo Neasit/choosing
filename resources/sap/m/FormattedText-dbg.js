@@ -42,7 +42,7 @@ function(
 		 * @class
 		 * The FormattedText control allows the usage of a limited set of tags for inline display of formatted text in HTML format.
 		 * @extends sap.ui.core.Control
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -337,7 +337,7 @@ function(
 			var sText = this.getHtmlText(),
 				sAutoGenerateLinkTags = this.getConvertLinksToAnchorTags();
 
-			if (sAutoGenerateLinkTags === LinkConversion.None) {
+			if (sAutoGenerateLinkTags === library.LinkConversion.None) {
 				return sText;
 			}
 

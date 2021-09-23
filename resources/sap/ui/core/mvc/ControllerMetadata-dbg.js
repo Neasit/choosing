@@ -15,11 +15,6 @@ sap.ui.define([
 	"use strict";
 
 	/**
-	 * The controller metadata
-	 *
-	 * @param {string} sClassName Fully qualified name of the described class
-	 * @param {object} oClassInfo Info to construct the class and its metadata from
-	 *
 	 * @alias sap.ui.core.mvc.ControllerMetadata
 	 * @extends sap.ui.base.Metadata
 	 * @private

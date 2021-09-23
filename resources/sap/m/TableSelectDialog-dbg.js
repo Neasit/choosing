@@ -12,12 +12,12 @@ sap.ui.define([
 	'./Table',
 	'./library',
 	'sap/ui/core/Control',
-	'sap/ui/core/InvisibleText',
 	'sap/ui/Device',
 	'sap/m/Toolbar',
 	'sap/m/Text',
 	'sap/m/BusyIndicator',
 	'sap/m/Bar',
+	'sap/ui/core/theming/Parameters',
 	'sap/m/Title',
 	'sap/base/Log'
 ], function (
@@ -27,15 +27,15 @@ sap.ui.define([
 	Table,
 	library,
 	Control,
-	InvisibleText,
 	Device,
 	Toolbar,
 	Text,
 	BusyIndicator,
 	Bar,
+	Parameters,
 	Title,
-	Log
-) {
+	Log) {
+
 	"use strict";
 
 	// shortcut for sap.m.ListMode
@@ -98,7 +98,7 @@ sap.ui.define([
 	 * When using the <code>sap.m.TableSelectDialog</code> in SAP Quartz themes, the breakpoints and layout paddings could be determined by the dialog's width. To enable this concept and add responsive paddings to an element of the control, you have to add the following classes depending on your use case: <code>sapUiResponsivePadding--header</code>, <code>sapUiResponsivePadding--subHeader</code>, <code>sapUiResponsivePadding--content</code>, <code>sapUiResponsivePadding--footer</code>.
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -381,7 +381,6 @@ sap.ui.define([
 		// store a reference to the searchField for filtering
 		this._oSearchField = new SearchField(this.getId() + "-searchField", {
 			width: "100%",
-			ariaLabelledBy: InvisibleText.getStaticId("sap.m", "SELECTDIALOG_SEARCH"),
 			liveChange: function (oEvent) {
 				var sValue = oEvent.getSource().getValue(),
 				iDelay = (sValue ? 300 : 0); // no delay if value is empty
@@ -441,6 +440,10 @@ sap.ui.define([
 		}).addStyleClass("sapMTableSelectDialog");
 		this._dialog = this._oDialog; // for downward compatibility
 		this.setAggregation("_dialog", this._oDialog);
+
+		// internally set top and bottom margin of the dialog to 8rem respectively
+		// CSN# 333642/2014: in base theme the parameter sapUiFontSize is "medium", implement a fallback
+		this._oDialog._iVMargin = 8 * (parseInt(Parameters.get("sapUiFontSize")) || 16); //128
 
 		// helper variables for search update behaviour
 		this._sSearchFieldValue = "";

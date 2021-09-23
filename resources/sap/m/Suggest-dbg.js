@@ -4,24 +4,8 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['jquery.sap.global',
-		'./Toolbar',
-		'./Button',
-		'./SuggestionsList',
-		'./SuggestionItem',
-		'sap/ui/Device',
-		'sap/m/library',
-		'sap/ui/core/Core',
-		'sap/ui/core/InvisibleText'],
-	function(jQuery,
-			 Toolbar,
-			 Button,
-			 SuggestionsList,
-			 SuggestionItem,
-			 Device,
-			 library,
-			 Core,
-			 InvisibleText) {
+sap.ui.define(['jquery.sap.global', './Toolbar', './Button', './SuggestionsList', './SuggestionItem', 'sap/ui/Device', 'sap/m/library', 'sap/ui/core/Core'],
+	function(jQuery, Toolbar, Button, SuggestionsList, SuggestionItem, Device, library, Core) {
 	"use strict";
 
 	// shortcut for sap.m.PlacementType
@@ -173,7 +157,6 @@ sap.ui.define(['jquery.sap.global',
 				offsetY: 0,
 				initialFocus: parent,
 				bounce: false,
-				ariaLabelledBy: InvisibleText.getStaticId("sap.m", "INPUT_AVALIABLE_VALUES"),
 				afterOpen: function () {
 					oInput._applySuggestionAcc();
 				},

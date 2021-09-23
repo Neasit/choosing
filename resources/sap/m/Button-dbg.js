@@ -18,8 +18,7 @@ sap.ui.define([
 	"sap/ui/events/KeyCodes",
 	"sap/ui/core/LabelEnablement",
 	"sap/m/BadgeEnabler",
-	"sap/ui/core/InvisibleText",
-	"sap/base/Log"
+	"sap/ui/core/InvisibleText"
 ], function(
 	library,
 	Control,
@@ -33,8 +32,7 @@ sap.ui.define([
 	KeyCodes,
 	LabelEnablement,
 	BadgeEnabler,
-	InvisibleText,
-	Log
+	InvisibleText
 ) {
 	"use strict";
 
@@ -89,7 +87,7 @@ sap.ui.define([
 	 * @mixes sap.ui.core.ContextMenuSupport
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -159,11 +157,6 @@ sap.ui.define([
 			 * Specifies the value of the <code>aria-haspopup</code> attribute
 			 *
 			 * If the value is <code>None</code>, the attribute will not be rendered. Otherwise it will be rendered with the selected value.
-			 *
-			 * NOTE: Use this property only when a button is related to a popover/popup. The value needs to be equal to the main/root role of the popup - e.g. dialog,
-			 * menu or list (examples: if you have dialog -> dialog, if you have menu -> menu; if you have list -> list; if you have dialog containing a list -> dialog).
-			 * Do not use it, if you open a standard sap.m.Dialog, MessageBox or other type of dialogs displayed as on overlay over the application.
-			 *
 			 * @since 1.84.0
 			 */
 			ariaHasPopup : {type : "sap.ui.core.aria.HasPopup", group : "Accessibility", defaultValue : AriaHasPopup.None}
@@ -268,18 +261,16 @@ sap.ui.define([
 	Button.prototype.setBadgeMinValue = function(iMin) {
 		var iValue = this.getBadgeCustomData().getValue();
 
-		if (iMin && !isNaN(iMin) && iMin >= BADGE_MIN_VALUE && iMin != this._badgeMinValue && iMin <= this._badgeMaxValue) {
+		if (iMin && !isNaN(iMin) && iMin >= BADGE_MIN_VALUE && iMin != this._badgeMinValue) {
 			this._badgeMinValue = iMin;
 			this.badgeValueFormatter(iValue);
 			this.invalidate();
-		} else {
-			Log.warning("minValue is not valid (it is is less than minimum allowed badge value [" + BADGE_MIN_VALUE + "] or greater than maximum badge value [" + this._badgeMaxValue + "])", this);
 		}
 		return this;
 	};
 
 	/**
-	 * Badge maximum value setter - called when someone wants to change the value
+	 * Badge minimum value setter - called when someone wants to change the value
 	 * above which the badge value is displayed with + after the value (ex. 999+)
 	 *
 	 * @param {number} iMax maximum visible value of the badge (not greater than maximum Badge value - 9999)
@@ -287,11 +278,9 @@ sap.ui.define([
 	 * @public
 	 */
 	Button.prototype.setBadgeMaxValue = function(iMax) {
-		if (iMax && !isNaN(iMax) && iMax <= BADGE_MAX_VALUE && iMax != this._badgeMaxValue && iMax >= this._badgeMinValue) {
+		if (iMax && !isNaN(iMax) && iMax <= BADGE_MAX_VALUE && iMax != this._badgeMaxValue) {
 			this._badgeMaxValue = iMax;
 			this.invalidate();
-		} else {
-			Log.warning("maxValue is not valid (it is is greater than than maximum allowed badge value [" + BADGE_MAX_VALUE + "] or less than minimum badge value [" + this._badgeMinValue + "])", this);
 		}
 		return this;
 	};
@@ -455,12 +444,15 @@ sap.ui.define([
 			if ((Device.browser.safari || Device.browser.firefox) && (oEvent.originalEvent && oEvent.originalEvent.type === "mousedown")) {
 				this._setButtonFocus();
 			}
-
-			// set the tag ID where the touch event started
-			this._sTouchStartTargetId = oEvent.target.id.replace(this.getId(), '');
+			if (!Device.browser.msie) {
+				// set the tag ID where the touch event started
+				this._sTouchStartTargetId = oEvent.target.id.replace(this.getId(), '');
+			}
 		} else {
-			// clear the starting tag ID in case the button is not enabled and visible
-			this._sTouchStartTargetId = '';
+			if (!Device.browser.msie) {
+				// clear the starting tag ID in case the button is not enabled and visible
+				this._sTouchStartTargetId = '';
+			}
 		}
 	};
 
@@ -482,15 +474,17 @@ sap.ui.define([
 			this.ontap(oEvent, true);
 		}
 
-		// get the tag ID where the touch event ended
-		sEndingTagId = oEvent.target.id.replace(this.getId(), '');
-		// there are some cases when tap event won't come. Simulate it:
-		if (this._buttonPressed === 0
-			&& ((this._sTouchStartTargetId === "-BDI-content"
-				&& (sEndingTagId === '-content' || sEndingTagId === '-inner' || sEndingTagId === '-img'))
-				|| (this._sTouchStartTargetId === "-content" && (sEndingTagId === '-inner' || sEndingTagId === '-img'))
-				|| (this._sTouchStartTargetId === '-img' && sEndingTagId !== '-img'))) {
-			this.ontap(oEvent, true);
+		if (!Device.browser.msie) {
+			// get the tag ID where the touch event ended
+			sEndingTagId = oEvent.target.id.replace(this.getId(), '');
+			// there are some cases when tap event won't come. Simulate it:
+			if (this._buttonPressed === 0
+				&& ((this._sTouchStartTargetId === "-BDI-content"
+						&& (sEndingTagId === '-content' || sEndingTagId === '-inner' || sEndingTagId === '-img'))
+					|| (this._sTouchStartTargetId === "-content" && (sEndingTagId === '-inner' || sEndingTagId === '-img'))
+					|| (this._sTouchStartTargetId === '-img' && sEndingTagId !== '-img'))) {
+				this.ontap(oEvent, true);
+			}
 		}
 
 		// clear the starting target
@@ -841,7 +835,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {object} Current accessibility state of the control
+	 * @returns {Object} Current accessibility state of the control
 	 * @protected
 	 */
 	Button.prototype.getAccessibilityInfo = function() {

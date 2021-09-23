@@ -348,7 +348,7 @@ sap.ui.define([
 			 * this function is ignored
 			 *
 			 * @param {sap.ui.core.routing.Router} oRouter The router instance
-			 * @returns {this} The Targets itself
+			 * @return {sap.ui.core.routing.Targets} The Targets itself
 			 * @private
 			 */
 			_setRouter: function(oRouter) {
@@ -363,7 +363,7 @@ sap.ui.define([
 			/**
 			 * Destroys the targets instance and all created targets. Does not destroy the views instance passed to the constructor. It has to be destroyed separately.
 			 * @public
-			 * @returns {this} this for method chaining.
+			 * @returns { sap.ui.core.routing.Targets } this for chaining.
 			 */
 			destroy : function () {
 				var sTargetName;
@@ -392,9 +392,6 @@ sap.ui.define([
 			 * @property {boolean} [propagateTitle=false] Whether the titleChanged event from this target should be propagated to the parent or not
 			 * @property {boolean} [routeRelevant=false] Whether the target is relevant to the current matched route or not. If 'true', then the dynamic target is linked to the route's life cycle.
 			 *     When switching to a different route, then the dynamic target will be suspended.
-			 * @property {boolean} [ignoreInitialHash=false] Since 1.90. Whether the router of the "Component" target ignores the browser hash when it's re-initialized.
-			 *     This parameter only has effect when the target is of type "Component" and its router is currently stopped. It has no effect on the first call of
-			 *     {link sap.ui.core.routing.Router#initialize}, because this is done by the application and not by the UI5 routing.
 			 * @protected
 			 * @since 1.84.0
 			 */
@@ -776,10 +773,10 @@ sap.ui.define([
 			/**
 			 * Called by the UIComponent since the rootView id is not known in the constructor
 			 *
-			 * @param {string|Promise} vId The id of the root view or a promise which resolves with the id of the root view
+			 * @param {string} sId The id of the root view
 			 * @private
 			 */
-			_setRootViewId: function (vId) {
+			_setRootViewId: function (sId) {
 				var sTargetName,
 					oTargetOptions;
 
@@ -787,7 +784,7 @@ sap.ui.define([
 					if (this._mTargets.hasOwnProperty(sTargetName)) {
 						oTargetOptions = this._mTargets[sTargetName]._oOptions;
 						if (oTargetOptions.rootView === undefined) {
-							oTargetOptions.rootView = vId;
+							oTargetOptions.rootView = sId;
 						}
 					}
 				}

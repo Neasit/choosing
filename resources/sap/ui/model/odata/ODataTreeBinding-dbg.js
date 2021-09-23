@@ -6,12 +6,14 @@
 
 // Provides the OData model implementation of a tree binding
 sap.ui.define([
-	"./CountMode",
+	'sap/ui/model/TreeBinding',
+	'./CountMode',
 	"sap/base/Log",
-	"sap/base/util/each",
-	"sap/ui/model/TreeBinding"
-], function(CountMode, Log, each, TreeBinding) {
+	"sap/ui/thirdparty/jquery"
+],
+	function(TreeBinding, CountMode, Log, jQuery) {
 	"use strict";
+
 
 	/**
 	 *
@@ -134,11 +136,10 @@ sap.ui.define([
 
 	/**
 	 * Return node contexts for the tree
-	 * @param {sap.ui.model.Context} oContext the context for which the child nodes should be retrieved
 	 * @param {int} iStartIndex the start index of the requested contexts
 	 * @param {int} iLength the requested amount of contexts
 	 * @param {int} iThreshold
-	 * @return {sap.ui.model.Context[]} the contexts array
+	 * @return {Array} the contexts array
 	 * @protected
 	 */
 	ODataTreeBinding.prototype.getNodeContexts = function(oContext, iStartIndex, iLength, iThreshold) {
@@ -491,8 +492,8 @@ sap.ui.define([
 				}
 			}
 			if (mChangedEntities && !bChangeDetected) {
-				each(this.oKeys, function(i, aNodeKeys) {
-					each(aNodeKeys, function(i, sKey) {
+				jQuery.each(this.oKeys, function(i, aNodeKeys) {
+					jQuery.each(aNodeKeys, function(i, sKey) {
 						if (sKey in mChangedEntities) {
 							bChangeDetected = true;
 							return false;
@@ -538,8 +539,8 @@ sap.ui.define([
 			if (this.bNeedsUpdate || !mChangedEntities) {
 				bChangeDetected = true;
 			} else {
-				each(this.oKeys, function(i, aNodeKeys) {
-					each(aNodeKeys, function(i, sKey) {
+				jQuery.each(this.oKeys, function(i, aNodeKeys) {
+					jQuery.each(aNodeKeys, function(i, sKey) {
 						if (sKey in mChangedEntities) {
 							bChangeDetected = true;
 							return false;
@@ -629,11 +630,11 @@ sap.ui.define([
 		}
 
 		//Check if all required proeprties are available
-		each(oEntityType.property, function(iIndex, oProperty) {
+		jQuery.each(oEntityType.property, function(iIndex, oProperty) {
 			if (!oProperty.extensions) {
 				return true;
 			}
-			each(oProperty.extensions, function(iIndex, oExtension) {
+			jQuery.each(oProperty.extensions, function(iIndex, oExtension) {
 				var sName = oExtension.name;
 				if (oExtension.namespace === sTreeAnnotationNamespace &&
 						sName in that.oTreeProperties &&
@@ -644,7 +645,7 @@ sap.ui.define([
 		});
 
 		var bMissing = false;
-		each(this.oTreeProperties, function(iIndex, oTreeProperty) {
+		jQuery.each(this.oTreeProperties, function(iIndex, oTreeProperty) {
 			if (!oTreeProperty) {
 				bMissing = true;
 				return false;

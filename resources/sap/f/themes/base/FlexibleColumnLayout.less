@@ -3,7 +3,6 @@
 /* Base theme                                  */
 /* =========================================== */
 
-// synced with FlexibleColumnLayout.NAVIGATION_ARROW_WIDTH
 @_sap_f_FCL_navigation_arrow_width: 1rem;
 
 .sapFFCL {
@@ -52,7 +51,7 @@
 	}
 
 	.sapUiLocalBusyIndicator {
-		z-index: 4;
+		z-index: 400;
 	}
 }
 
@@ -127,7 +126,7 @@
 	vertical-align: middle;
 	display: inline-block;
 	height: 100%;
-	z-index: 4;
+	z-index: 400;
 
 	&:after {
 		content: "";
@@ -151,15 +150,15 @@
 
 // In order to have reveal effect, columns should overlap each other
 .sapFFCLColumnBegin {
-	z-index: 3;
+	z-index: 300;
 }
 
 .sapFFCLColumnMid {
-	z-index: 2;
+	z-index: 200;
 }
 
 .sapFFCLColumnEnd {
-	z-index: 1;
+	z-index: 100;
 }
 
 html[data-sap-ui-animation='on'] {

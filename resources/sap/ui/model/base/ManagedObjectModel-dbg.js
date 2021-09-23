@@ -18,7 +18,6 @@ sap.ui.define([
 	 * @param {boolean} <code>true</code> for observing and <code>false</code> for unobserving
 	 *
 	 * @private
-	 * @ui5-restricted sap.ui.mdc
 	 */
 	function _adaptDeepChildObservation(caller, oControl, oAggregation, bObserve) {
 		var aChildren = oAggregation.get(oControl) || [], oChild, bRecord;
@@ -290,7 +289,7 @@ sap.ui.define([
 	 * this object.
 	 *
 	 * @param {sap.ui.base.ManagedObject} oObject the managed object models root object
-	 * @param {object} [oData] an object for custom data
+	 * @param {object} oData an object for custom data
 	 * @alias sap.ui.model.base.ManagedObjectModel
 	 * @extends sap.ui.model.json.JSONModel
 	 * @public
@@ -314,8 +313,6 @@ sap.ui.define([
 				]);
 
 				this._oObserver = new ManagedObjectObserver(this.observerChanges.bind(this));
-
-				this.setSizeLimit(1000000); // SizeLimit should be set on Model the control is bound to, the ManagedObjectModel should not limit aggregations inside.
 			}
 		});
 

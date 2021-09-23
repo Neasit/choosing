@@ -79,6 +79,7 @@ sap.ui.define([
 	var Configuration = BaseObject.extend("sap.ui.core.Configuration", /** @lends sap.ui.core.Configuration.prototype */ {
 
 		constructor : function(oCore) {
+
 			this._oCore = oCore;
 
 			function detectLanguage() {
@@ -254,7 +255,7 @@ sap.ui.define([
 
 			function getMetaTagValue(sName) {
 				var oMetaTag = document.querySelector("META[name='" + sName + "']"),
-					sMetaContent = oMetaTag && oMetaTag.getAttribute("content");
+				    sMetaContent = oMetaTag && oMetaTag.getAttribute("content");
 				if (sMetaContent) {
 					return sMetaContent;
 				}
@@ -341,7 +342,7 @@ sap.ui.define([
 					// always remember as SAP Logon language
 					var sValue = config.sapLogonLanguage = oUriParams.get('sap-language');
 					// try to interpret it as a BCP47 language tag, taking some well known  SAP language codes into account
-					var oLocale = Locale.fromSAPLogonLanguage(sValue);
+					var oLocale = sValue && convertToLocaleOrNull(M_ABAP_LANGUAGE_TO_LOCALE[sValue.toUpperCase()] || sValue);
 					if ( oLocale ) {
 						config.language = oLocale;
 					} else if ( sValue && !oUriParams.get('sap-locale') && !oUriParams.get('sap-ui-language')) {
@@ -554,6 +555,12 @@ sap.ui.define([
 				// Validate and set the provided value for the animation mode
 				this.setAnimationMode(this.getAnimationMode());
 			}
+
+			// disable the css variables in case of IE11
+			if (Device.browser.msie && config["xx-cssVariables"] !== "false") {
+				config["xx-cssVariables"] = "false";
+				Log.warning("The option xx-cssVariables is not supported on Microsoft Internet Explorer!");
+			}
 		},
 
 		/**
@@ -657,29 +664,23 @@ sap.ui.define([
 		/**
 		 * Returns a BCP47-compliant language tag for the current language.
 		 *
-		 * The return value of this method is especially useful for an HTTP <code>Accept-Language</code> header.
+		 * The return value of this method is especially useful for an HTTP <code>Accept</code> header.
 		 *
-		 * Retrieves the modern locale,
-		 * e.g. sr-Latn (Serbian (Cyrillic)), he (Hebrew), yi (Yiddish)
-		 *
-		 * @returns {string} The language tag for the current language, conforming to BCP47
+		 * @return {string} The language tag for the current language, conforming to BCP47
 		 * @public
 		 */
 		getLanguageTag : function () {
-			return this.language.toLanguageTag();
+			return this.language.toString();
 		},
 
 		/**
 		 * Returns an SAP logon language for the current language.
 		 *
-		 * It will be returned in uppercase.
-		 * e.g. "EN", "DE"
-		 *
 		 * @return {string} The SAP logon language code for the current language
 		 * @public
 		 */
 		getSAPLogonLanguage : function () {
-			return (this.sapLogonLanguage && this.sapLogonLanguage.toUpperCase()) || this.language.getSAPLogonLanguage();
+			return this.sapLogonLanguage || this.language.getSAPLogonLanguage();
 		},
 
 		/**
@@ -1180,7 +1181,7 @@ sap.ui.define([
 		 * @returns {boolean} whether the design mode is active or not.
 		 * @since 1.13.2
 		 * @private
-		 * @ui5-restricted sap.watt, com.sap.webide
+	 	 * @ui5-restricted sap.watt, com.sap.webide
 		 */
 		getDesignMode : function() {
 			return this["xx-designMode"];
@@ -1192,7 +1193,7 @@ sap.ui.define([
 		 * @returns {boolean} whether the activation of the controller code is suppressed or not
 		 * @since 1.13.2
 		 * @private
-		 * @ui5-restricted sap.watt, com.sap.webide
+	 	 * @ui5-restricted sap.watt, com.sap.webide
 		 */
 		getSuppressDeactivationOfControllerCode : function() {
 			return this["xx-suppressDeactivationOfControllerCode"];
@@ -1204,7 +1205,7 @@ sap.ui.define([
 		 * @returns {boolean} whether the activation of the controller code is suppressed or not
 		 * @since 1.26.4
 		 * @private
-		 * @ui5-restricted sap.watt, com.sap.webide
+	 	 * @ui5-restricted sap.watt, com.sap.webide
 		 */
 		getControllerCodeDeactivated : function() {
 			return this.getDesignMode() && !this.getSuppressDeactivationOfControllerCode();
@@ -1380,7 +1381,7 @@ sap.ui.define([
 		/**
 		 * Returns a configuration object that bundles the format settings of UI5.
 		 *
-		 * @returns {sap.ui.core.Configuration.FormatSettings} A FormatSettings object.
+		 * @return {sap.ui.core.Configuration.FormatSettings} A FormatSettings object.
 		 * @public
 		 */
 		getFormatSettings : function() {
@@ -1637,6 +1638,14 @@ sap.ui.define([
 		return oLocale ? oLocale.toString() : null;
 	}
 
+	var M_ABAP_LANGUAGE_TO_LOCALE = {
+		"ZH" : "zh-Hans",
+		"ZF" : "zh-Hant",
+		"1Q" : "en-US-x-saptrc",
+		"2Q" : "en-US-x-sappsd",
+		"3Q" : "en-US-x-saprigi"
+	};
+
 	var M_ABAP_DATE_FORMAT_PATTERN = {
 		"" : {pattern: null},
 		"1": {pattern: "dd.MM.yyyy"},
@@ -1808,7 +1817,7 @@ sap.ui.define([
 		 *
 		 * E.g. In locale 'en' value <code>1</code> would result in <code>1 Bag</code>, while <code>2</code> would result in <code>2 Bags</code>
 		 * @param mUnits {object} custom unit object which replaces the current custom unit definition. Call with <code>null</code> to delete custom units.
-		 * @returns {this}
+		 * @return {sap.ui.core.Configuration.FormatSettings}
 		 */
 		setCustomUnits: function (mUnits) {
 			// add custom units, or remove the existing ones if none are given
@@ -1826,7 +1835,7 @@ sap.ui.define([
 		 * Adds custom units.
 		 * Similar to {@link sap.ui.core.Configuration#setCustomUnits} but instead of setting the custom units, it will add additional ones.
 		 * @param mUnits {object} custom unit object which replaces the current custom unit definition. Call with <code>null</code> to delete custom units.
-		 * @returns {this}
+		 * @return {sap.ui.core.Configuration.FormatSettings}
 		 * @see sap.ui.core.Configuration#setCustomUnits
 		 */
 		addCustomUnits: function (mUnits) {
@@ -1853,9 +1862,8 @@ sap.ui.define([
 		 * }
 		 * </code>
 		 * Note: It is possible to create multiple entries per unit key.
-		 * Call with <code>null</code> to delete unit mappings.
 		 * @param mUnitMappings {object} unit mappings
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings}. Call with <code>null</code> to delete unit mappings.
 		 */
 		setUnitMappings: function (mUnitMappings) {
 			this._set("unitMappings", mUnitMappings);
@@ -1866,7 +1874,7 @@ sap.ui.define([
 		 * Adds unit mappings.
 		 * Similar to {@link sap.ui.core.Configuration#setUnitMappings} but instead of setting the unit mappings, it will add additional ones.
 		 * @param mUnitMappings {object} unit mappings
-		 * @returns {this}
+		 * @return {sap.ui.core.Configuration.FormatSettings}
 		 * @see sap.ui.core.Configuration#setUnitMappings
 		 */
 		addUnitMappings: function (mUnitMappings) {
@@ -1914,7 +1922,7 @@ sap.ui.define([
 		 *
 		 * @param {string} sStyle must be one of short, medium, long or full.
 		 * @param {string} sPattern the format pattern to be used in LDML syntax.
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setDatePattern : function(sStyle, sPattern) {
@@ -1947,7 +1955,7 @@ sap.ui.define([
 		 *
 		 * @param {string} sStyle must be one of short, medium, long or full.
 		 * @param {string} sPattern the format pattern to be used in LDML syntax.
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setTimePattern : function(sStyle, sPattern) {
@@ -1981,7 +1989,7 @@ sap.ui.define([
 		 *
 		 * @param {string} sStyle must be one of decimal, group, plusSign, minusSign.
 		 * @param {string} sSymbol will be used to represent the given symbol type
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setNumberSymbol : function(sType, sSymbol) {
@@ -2090,7 +2098,7 @@ sap.ui.define([
 		 * for details and restrictions.
 		 *
 		 * @param {int} iValue must be an integer value between 0 and 6
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setFirstDayOfWeek : function(iValue) {
@@ -2125,7 +2133,7 @@ sap.ui.define([
 		 * for details and restrictions.
 		 *
 		 * @param {string} sFormatId id of the ABAP data format (one of '1','2','3','4','5','6','7','8','9','A','B','C')
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setLegacyDateFormat : function(sFormatId) {
@@ -2160,7 +2168,7 @@ sap.ui.define([
 		 * for details and restrictions.
 		 *
 		 * @param {string} sFormatId id of the ABAP time format (one of '0','1','2','3','4')
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setLegacyTimeFormat : function(sFormatId) {
@@ -2194,7 +2202,7 @@ sap.ui.define([
 		 * for details and restrictions.
 		 *
 		 * @param {string} sFormatId id of the ABAP number format set (one of ' ','X','Y')
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setLegacyNumberFormat : function(sFormatId) {
@@ -2215,7 +2223,7 @@ sap.ui.define([
 		 * @param {string} aMappings[].dateFormat The date format
 		 * @param {string} aMappings[].islamicMonthStart The Islamic date
 		 * @param {string} aMappings[].gregDate The corresponding Gregorian date
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @public
 		 */
 		setLegacyDateCalendarCustomizing : function(aMappings) {
@@ -2245,11 +2253,11 @@ sap.ui.define([
 		 * When set to <code>false</code> the placement of the currency code is done dynamically, depending on the
 		 * configured locale using data provided by the Unicode Common Locale Data Repository (CLDR).
 		 *
-		 * Each currency instance ({@link sap.ui.core.format.NumberFormat.getCurrencyInstance}) will be created
+		 * Each currency instance ({@link sap.ui.core.format.NumberFormat#getCurrencyInstance}) will be created
 		 * with this setting unless overwritten on instance level.
 		 *
 		 * @param {boolean} bTrailingCurrencyCode Whether currency codes shall always be placed after the numeric value
-		 * @returns {this} Returns <code>this</code> to allow method chaining
+		 * @return {sap.ui.core.Configuration.FormatSettings} Returns <code>this</code> to allow method chaining
 		 * @since 1.75.0
 		 * @public
 		 */

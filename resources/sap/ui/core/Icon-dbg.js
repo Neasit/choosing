@@ -70,7 +70,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @since 1.11.1
@@ -283,7 +283,6 @@ sap.ui.define([
 	/**
 	 * Handle the click or tap event on the Icon.
 	 *
-	 * @param {sap.ui.base.Event} oEvent The event
 	 * @private
 	 */
 	Icon.prototype[Device.support.touch && !Device.system.desktop ? "ontap" : "onclick"] = function(oEvent) {
@@ -537,10 +536,12 @@ sap.ui.define([
 		if (this.getDecorative()) {
 			mAccAttributes.role = "presentation";
 			mAccAttributes.hidden = "true";
-		} else if (this.hasListeners("press")) {
-			mAccAttributes.role = "button";
 		} else {
-			mAccAttributes.role = "img";
+			if (this.hasListeners("press")) {
+				mAccAttributes.role = "button";
+			} else {
+				mAccAttributes.role = "img";
+			}
 		}
 
 		if (aLabelledBy.length > 0) {

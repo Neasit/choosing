@@ -28,7 +28,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -251,7 +251,7 @@ sap.ui.define([
 
 		if (oForm && oForm.getContainerRenderedDomRef) {
 			return oForm.getContainerRenderedDomRef(that);
-		} else  {
+		}else {
 			return null;
 		}
 
@@ -271,7 +271,7 @@ sap.ui.define([
 
 		if (oForm && oForm.getElementRenderedDomRef) {
 			return oForm.getElementRenderedDomRef(oElement);
-		} else  {
+		}else {
 			return null;
 		}
 

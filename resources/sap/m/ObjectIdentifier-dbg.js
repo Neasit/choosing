@@ -15,8 +15,7 @@ sap.ui.define([
 	'sap/ui/core/library',
 	'sap/ui/Device',
 	'sap/ui/base/ManagedObject',
-	'./ObjectIdentifierRenderer',
-	"sap/ui/events/KeyCodes"
+	'./ObjectIdentifierRenderer'
 ],
 function(
 	library,
@@ -28,8 +27,7 @@ function(
 	coreLibrary,
 	Device,
 	ManagedObject,
-	ObjectIdentifierRenderer,
-	KeyCodes
+	ObjectIdentifierRenderer
 	) {
 	"use strict";
 
@@ -38,8 +36,7 @@ function(
 	// shortcut for sap.ui.core.TextDirection
 	var TextDirection = coreLibrary.TextDirection;
 
-	// shortcut for sap.m.EmptyIndicator
-	var EmptyIndicatorMode = library.EmptyIndicatorMode;
+
 
 	/**
 	 * Constructor for a new ObjectIdentifier.
@@ -52,7 +49,7 @@ function(
 	 *
      * <b>Note:</b> This control should not be used with {@link sap.m.Label} or in Forms along with {@link sap.m.Label}.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -110,14 +107,7 @@ function(
 			 * Specifies the element's text directionality with enumerated options. By default, the control inherits text direction from the DOM.
 			 * @since 1.28.0
 			 */
-			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit},
-
-			/**
-			 * Specifies if an empty indicator should be displayed when there is no text.
-			 *
-			 * @since 1.89
-			 */
-			emptyIndicatorMode: { type: "sap.m.EmptyIndicatorMode", group: "Appearance", defaultValue: EmptyIndicatorMode.Off }
+			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit}
 		},
 		aggregations : {
 
@@ -401,10 +391,8 @@ function(
 	 * @param {jQuery.Event} oEvent The fired event
 	 * @private
 	 */
-	ObjectIdentifier.prototype.onkeyup = function(oEvent) {
-		if (oEvent && oEvent.which === KeyCodes.SPACE) {
-			ObjectIdentifier.prototype._handlePress.apply(this, arguments);
-		}
+	ObjectIdentifier.prototype.onsapspace = function(oEvent) {
+		ObjectIdentifier.prototype._handlePress.apply(this, arguments);
 	};
 
 	/**
@@ -445,7 +433,7 @@ function(
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {object} Current accessibility state of the control
+	 * @returns {Object} Current accessibility state of the control
 	 * @protected
 	 */
 	ObjectIdentifier.prototype.getAccessibilityInfo = function() {
@@ -459,9 +447,7 @@ function(
 			oType = (ObjectIdentifier.OI_ARIA_ROLE + " " + (oTitleInfo.type || "")).trim();
 
 		// add ObjectIdentifier type to the title type
-		if (this.getTitle() || this.getText()) {
-			oTitleInfo.type = oType;
-		}
+		oTitleInfo.type = oType;
 		// add ObjectIdentifier text to the description of the title
 		oTitleInfo.description = oTitleInfo.description + " " + this.getText();
 

@@ -52,7 +52,6 @@ sap.ui.define([
 
 	/* Returns the Export Settings used by the User Settings Dialog */
 	function getExportSettings(oCustomConfig, oResourceBundle) {
-		var sSelectedKey;
 		var oDefaultConfig = {
 			fileName: 'Standard',
 			fileType: [
@@ -67,8 +66,7 @@ sap.ui.define([
 		var oExportConfig = Object.assign({}, oDefaultConfig, oCustomConfig || {});
 
 		for (var i = 0; i < oExportConfig.fileType.length; i++) {
-			sSelectedKey = null;
-
+			var sSelectedKey;
 			if (!oExportConfig.fileType[i].text) {
 				oExportConfig.fileType[i].text = oResourceBundle.getText(oExportConfig.fileType[i].key.toUpperCase() + '_FILETYPE');
 			}
@@ -87,7 +85,7 @@ sap.ui.define([
 	 * Utilities related to export to enable reuse in integration scenarios (e.g. tables).
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @since 1.59
 	 * @name sap.ui.export.ExportUtils
@@ -560,6 +558,18 @@ sap.ui.define([
 				};
 			}
 
+			/*
+			 * IE/Edge implementation
+			 *
+			 * Microsoft Edge also supports the download attribute but ignores the value of the attribute.
+			 * This is why we override it with the navigator.msSaveOrOpenBlob function in case of MS Edge.
+			 */
+			if (typeof navigator !== 'undefined' && navigator.msSaveOrOpenBlob) {
+				fnSave = function(data, fileName) {
+					window.navigator.msSaveOrOpenBlob(data, fileName);
+				};
+			}
+
 			/* Save file to device */
 			fnSave(oBlob, sFilename);
 		},
@@ -577,7 +587,6 @@ sap.ui.define([
 		 * @param {boolean} mSettings.showProgress Controls whether the progress dialog will be shown during export or not
 		 * @param {Object} mSettings.workbook Export settings that are relevant for the file structure
 		 * @param {boolean} mSettings.worker Controls whether the export will be run in a dedicated Web Worker or not
-		 * @param {Object} mSettings.customizing Contains export customizing like currency and unit scale settings
 		 *
 		 * @since 1.78
 		 */
@@ -609,10 +618,6 @@ sap.ui.define([
 			if (typeof mSettings.worker !== 'boolean') {
 				mSettings.worker = true; // Default value
 			}
-
-			/* Validate customizing */
-			Utils._validateScaleCustomizing(mSettings.customizing, 'currency');
-			Utils._validateScaleCustomizing(mSettings.customizing, 'unit');
 		},
 
 		/**
@@ -776,7 +781,7 @@ sap.ui.define([
 				/* *** Validation of type specific properties *** */
 
 				/* Validate boolean based properties (not column type Boolean related) */
-				['autoScale', 'delimiter', 'displayUnit', 'utc', 'wrap'].forEach(function(sProperty) {
+				['delimiter', 'displayUnit', 'wrap'].forEach(function(sProperty) {
 					Utils._validateProperty(oColumn, sProperty, 'boolean');
 				});
 
@@ -798,24 +803,10 @@ sap.ui.define([
 					delete oColumn.falseValue;
 				}
 
-				/* Validate autoScale property */
-				if (oColumn.autoScale === true && (oColumn.type !== EdmType.Number || (!oColumn.unit && !oColumn.unitProperty))) {
-					Log.warning(CLASS_NAME + ': autoScale cannot be taken into account due to invalid configuration.');
-					delete oColumn.autoScale;
-				}
-
-				/* Validate utc property */
-				if (oColumn.utc != null && (oColumn.type === EdmType.Date || oColumn.type === EdmType.Time)) {
-					oColumn.utc = true; // Date and Time always use UTC
-				}
-				if (oColumn.type === EdmType.DateTime) {
-					Utils._validateProperty(oColumn, 'utc', 'boolean', true);
-				}
-
 				/* Validate scale property */
 				var scale = oColumn.scale;
 				if (oColumn.type === EdmType.Number && isNaN(scale) && scale !== 'variable') {
-					Log.warning(CLASS_NAME + ': scale parameter for numerical column configuration is missing.');
+					Log.warning(CLASS_NAME + 'scale parameter for numerical column configuration is missing.');
 				}
 				if (typeof scale === 'string') {
 					scale = parseInt(scale);
@@ -884,7 +875,7 @@ sap.ui.define([
 		 *
 		 * @param {Object} oContext Context object
 		 * @param {string} [oContext.application] Name of the application (default: "SAP UI5")
-		 * @param {string} [oContext.version] Application version (default: "1.92.0")
+		 * @param {string} [oContext.version] Application version (default: "1.87.0")
 		 * @param {string} [oContext.title] Title that will be written to the file (NOT the filename)
 		 * @param {string} [oContext.modifiedBy] Optional user context that will be written to the file
 		 * @param {string} [oContext.sheetName] Name of the data sheet - Maximum length of 31 characters
@@ -973,36 +964,6 @@ sap.ui.define([
 			}
 
 			oContext[sProperty] = value == null && defaultValue ? defaultValue : value;
-		},
-
-		/**
-		 * Validates the unit specific scale settings and ensures
-		 * that the format is according to the definition.
-		 *
-		 * @param {Object} oCustomizing General export customizing
-		 * @param {Object} oCustomizing.currency Currency specific customizing
-		 * @param {Object} oCustomizing.unit Unit of measure specific customizing
-		 * @private
-		 */
-		_validateScaleCustomizing: function(oCustomizing, sProperty) {
-			var sKey, mScaleSettings;
-
-			mScaleSettings = oCustomizing[sProperty];
-
-			if (!(mScaleSettings instanceof Object) || Array.isArray(mScaleSettings)) {
-				Log.warning(CLASS_NAME + ': Invalid scale customizing for ' + sProperty + '.');
-				oCustomizing[sProperty] = {};
-			} else {
-				for (sKey in mScaleSettings) {
-					if (!(mScaleSettings[sKey] instanceof Object)) {
-						Log.warning(CLASS_NAME + ': Key ' + sKey + ' has been removed from customizing.');
-						delete mScaleSettings[sKey];
-					} else if (typeof mScaleSettings[sKey].scale !== 'number' || mScaleSettings[sKey].scale < 0) {
-						Log.warning(CLASS_NAME + ': Key ' + sKey + ' has been removed from customizing due to invalid scale.');
-						delete mScaleSettings[sKey];
-					}
-				}
-			}
 		}
 	};
 

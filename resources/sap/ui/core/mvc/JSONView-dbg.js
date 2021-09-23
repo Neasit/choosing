@@ -8,10 +8,10 @@
 sap.ui.define([
 	'./View',
 	'./JSONViewRenderer',
-	'./ViewType',
 	'./EventHandlerResolver',
 	'sap/base/util/merge',
 	'sap/ui/base/ManagedObject',
+	'sap/ui/core/library',
 	'sap/ui/model/resource/ResourceModel',
 	'sap/base/Log',
 	'sap/base/util/LoaderExtensions'
@@ -19,15 +19,19 @@ sap.ui.define([
 	function(
 		View,
 		JSONViewRenderer,
-		ViewType,
 		EventHandlerResolver,
 		merge,
 		ManagedObject,
+		library,
 		ResourceModel,
 		Log,
 		LoaderExtensions
 	) {
 	"use strict";
+
+	// shortcut for enum(s)
+	var ViewType = library.mvc.ViewType;
+
 
 	/**
 	 * Constructor for a new mvc/JSONView.
@@ -43,7 +47,7 @@ sap.ui.define([
 	 * @class
 	 * A View defined using JSON.
 	 * @extends sap.ui.core.mvc.View
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.JSONView
@@ -77,7 +81,7 @@ sap.ui.define([
 		for (var sOption in mParameters) {
 			if (sOption === 'preprocessors') {
 				delete mParameters['preprocessors'];
-				Log.warning("JSONView.create does not support the option preprocessors!");
+				Log.warning("JSView.create does not support the option preprocessors!");
 			}
 		}
 		mParameters.type = ViewType.JSON;
@@ -115,7 +119,7 @@ sap.ui.define([
 	 * @param {sap.ui.core.mvc.Controller} [vView.controller] controller to be used for this view instance
 	 * @public
 	 * @static
-	 * @deprecated Since 1.56. Use {@link sap.ui.core.mvc.JSONView.create JSONView.create} to create view instances
+	 * @deprecated since 1.56: Use {@link sap.ui.core.mvc.JSONView.create JSONView.create} instead.
 	 * @return {sap.ui.core.mvc.JSONView} the created JSONView instance
 	 * @ui5-global-only
 	 */

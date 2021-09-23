@@ -82,7 +82,7 @@ sap.ui.define([
 	 * @param {Element[]} aItemDomRefs Array of DOM references representing the items for the navigation
 	 * @param {boolean} [bNotInTabChain=false] Whether the selected element should be in the tab chain or not
 	 *
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.delegate.ItemNavigation
 	 * @public
 	 */
@@ -108,7 +108,7 @@ sap.ui.define([
 			this.iTabIndex = -1;
 
 			// whether the active element should get a tabindex of 0 or -1
-			this.iActiveTabIndex = bNotInTabChain ? -1 : 0;
+			this.iActiveTabIndex = !!bNotInTabChain ? -1 : 0;
 
 			// the initial focusedindex
 			this.iFocusedIndex = -1;
@@ -536,10 +536,9 @@ sap.ui.define([
 	 *
 	 * @param {int} iIndex Index of the item to focus
 	 * @param {jQuery.Event} oEvent Event that leads to focus change
-	 * @param {boolean} bPreventScroll Whether scrolling should be prevented when focusing the DOM element
 	 * @private
 	 */
-	ItemNavigation.prototype.focusItem = function(iIndex, oEvent, bPreventScroll) {
+	ItemNavigation.prototype.focusItem = function(iIndex, oEvent) {
 
 		Log.info("FocusItem: " + iIndex + " iFocusedIndex: " + this.iFocusedIndex, "focusItem", "ItemNavigation");
 
@@ -592,9 +591,7 @@ sap.ui.define([
 		}
 
 		Log.info("Set Focus on ID: " + this.aItemDomRefs[this.iFocusedIndex].id, "focusItem", "ItemNavigation");
-		this.aItemDomRefs[this.iFocusedIndex].focus({
-			preventScroll: bPreventScroll
-		});
+		this.aItemDomRefs[this.iFocusedIndex].focus();
 
 		this.fireEvent(ItemNavigation.Events.AfterFocus, {
 			index: iIndex,
@@ -847,7 +844,7 @@ sap.ui.define([
 		// set the focus to the clicked element or back to the last
 		var oSource = oEvent.target;
 
-		var checkFocusableParent = function(oDomRef, oItem) {
+		var checkFocusableParent = function( oDomRef, oItem){
 
 			// as table cell might have focusable content that have not focusable DOM insinde
 			// the table cell should not get the focus but the focusable element inside
@@ -875,9 +872,7 @@ sap.ui.define([
 					if (!this.bTableMode) {
 
 						// the mousedown occured inside of an item
-						// prevent scrolling when setting focus to the DOM element to make sure
-						// that the "mouseup" event is fired on the same DOM element
-						this.focusItem(i, oEvent, true /* prevent scrolling*/);
+						this.focusItem(i, oEvent);
 
 						// no oEvent.preventDefault(); because cursor will not be set in Textfield
 						// no oEvent.stopPropagation(); because e.g. DatePicker can not close popup
@@ -885,9 +880,7 @@ sap.ui.define([
 						// only focus the items if the click did not happen on a
 						// focusable element!
 						if (oItem === oSource || !checkFocusableParent(oSource, oItem)) {
-							// prevent scrolling when setting focus to the DOM element to make sure
-							// that the "mouseup" event is fired on the same DOM element
-							this.focusItem(i, oEvent, true /* prevent scrolling*/);
+							this.focusItem(i, oEvent);
 
 							// the table mode requires not to prevent the default
 							// behavior on click since we want to allow text selection
@@ -1345,7 +1338,7 @@ sap.ui.define([
 				iIndex = iRow * this.iColumns;
 			}
 		} else {
-			if ((oEvent.metaKey || oEvent.ctrlKey) && !this._bCtrlEnabled) {
+			if (!!(oEvent.metaKey || oEvent.ctrlKey) && !this._bCtrlEnabled) {
 
 				// do not handle ctrl
 				return;
@@ -1420,7 +1413,7 @@ sap.ui.define([
 			}
 		} else {
 
-			if ((oEvent.metaKey || oEvent.ctrlKey) && !this._bCtrlEnabled) {
+			if (!!(oEvent.metaKey || oEvent.ctrlKey) && !this._bCtrlEnabled) {
 
 				// do not handle ctrl
 				return;

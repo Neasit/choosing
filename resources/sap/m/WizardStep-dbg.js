@@ -36,7 +36,7 @@ sap.ui.define([
 	 * <li>If the execution needs to branch after a given step, you should set all possible next steps in the <code>subsequentSteps</code> aggregation.
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -51,7 +51,7 @@ sap.ui.define([
 				 * Determines the title of the step.
 				 * The title is visualized in the Wizard control.
 				 */
-				title: {type: "string", group: "Appearance", defaultValue: ""},
+				title: {type: "string", group: "appearance", defaultValue: ""},
 				/**
 				 * Determines the icon that is displayed for this step.
 				 * The icon is visualized in the progress navigation part of the Wizard control.

@@ -87,7 +87,7 @@ sap.ui.define([
 		this.aLockedGroupLocks = [];
 		this.oModelInterface = oModelInterface;
 		this.sQueryParams = _Helper.buildQuery(mQueryParams); // Used for $batch and CSRF token only
-		this.mRunningChangeRequests = {}; // map from group ID to a SyncPromise[]
+		this.mRunningChangeRequests = {}; // map from group ID to a SyncPromise
 		this.oSecurityTokenPromise = null; // be nice to Chrome v8
 		this.iSessionTimer = 0;
 		this.iSerialNumber = 0;
@@ -216,31 +216,31 @@ sap.ui.define([
 	 *
 	 * @param {string} sGroupId
 	 *   The group ID
-	 * @param {object[]} aRequests
-	 *   The array of requests; only used to identify the batch request.
 	 * @param {boolean} bHasChanges
 	 *   Whether the batch contains change requests; when <code>true</code> this is memorized in an
 	 *   internal map
+	 * @throws {Error}
+	 *   If there is already a batch request containing change requests
 	 *
 	 * @private
 	 * @see #batchResponseReceived
 	 * @see #hasPendingChanges
 	 * @see #waitForRunningChangeRequests
 	 */
-	_Requestor.prototype.batchRequestSent = function (sGroupId, aRequests, bHasChanges) {
+	_Requestor.prototype.batchRequestSent = function (sGroupId, bHasChanges) {
 		var oPromise,
 			fnResolve;
 
 		if (bHasChanges) {
-			if (!(sGroupId in this.mRunningChangeRequests)) {
-				this.mRunningChangeRequests[sGroupId] = [];
+			if (this.mRunningChangeRequests[sGroupId]) {
+				throw new Error("Unexpected second $batch");
 			}
+			// The resolving of this promise is truly async
 			oPromise = new SyncPromise(function (resolve) {
 				fnResolve = resolve;
 			});
 			oPromise.$resolve = fnResolve;
-			oPromise.$requests = aRequests;
-			this.mRunningChangeRequests[sGroupId].push(oPromise);
+			this.mRunningChangeRequests[sGroupId] = oPromise;
 		}
 	};
 
@@ -249,8 +249,6 @@ sap.ui.define([
 	 *
 	 * @param {string} sGroupId
 	 *   The group ID
-	 * @param {object[]} aRequests
-	 *   The array of requests; only used to identify the batch request.
 	 * @param {boolean} bHasChanges
 	 *   Whether the batch contained change requests; when <code>true</code> the entry memorized in
 	 *   the internal map is deleted
@@ -260,25 +258,11 @@ sap.ui.define([
 	 * @see #hasPendingChanges
 	 * @see #waitForRunningChangeRequests
 	 */
-	_Requestor.prototype.batchResponseReceived = function (sGroupId, aRequests, bHasChanges) {
-		var aPromises;
-
+	_Requestor.prototype.batchResponseReceived = function (sGroupId, bHasChanges) {
 		if (bHasChanges) {
-			aPromises = this.mRunningChangeRequests[sGroupId].filter(function (oPromise) {
-					if (oPromise.$requests === aRequests) {
-						// Note: no handler can run synchronously
-						oPromise.$resolve();
-
-						return false; // remove (should happen exactly once)
-					}
-
-					return true; // keep
-				});
-			if (aPromises.length) {
-				this.mRunningChangeRequests[sGroupId] = aPromises;
-			} else {
-				delete this.mRunningChangeRequests[sGroupId];
-			}
+			// no handler can run synchronously
+			this.mRunningChangeRequests[sGroupId].$resolve();
+			delete this.mRunningChangeRequests[sGroupId];
 		}
 	};
 
@@ -291,9 +275,9 @@ sap.ui.define([
 	 *   The meta path corresponding to the resource path
 	 * @param {object} [mQueryOptions]
 	 *   A map of key-value pairs representing the query string
-	 * @param {boolean} [bDropSystemQueryOptions]
+	 * @param {boolean} [bDropSystemQueryOptions=false]
 	 *   Whether all system query options are dropped (useful for non-GET requests)
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 * @returns {string}
 	 *   The query string; it is empty if there are no options; it starts with "?" otherwise
@@ -378,7 +362,8 @@ sap.ui.define([
 				oChangeRequest,
 				aChangeSet,
 				oError,
-				i, j;
+				i,
+				j;
 
 			// restore changes in reverse order to get the same initial state
 			for (j = aBatchQueue.length - 1; j >= 0; j -= 1) {
@@ -427,40 +412,6 @@ sap.ui.define([
 				oGroupLock.cancel();
 			}
 		});
-	};
-
-	/**
-	 * Throws an error if the new request uses strict handling and there is a change set containing
-	 * a strict handling request except the one at index <code>iChangeSetNo</code>.
-	 *
-	 * @param {object} oRequest
-	 *   The new request
-	 * @param {object[]} aRequests
-	 *   The batch queue
-	 * @param {number} iChangeSetNo
-	 *   The index of the irrelevant change set
-	 * @throws {Error}
-	 *   If there is a conflicting change set
-	 *
-	 * @private
-	 */
-	_Requestor.prototype.checkConflictingStrictRequest = function (oRequest, aRequests,
-		iChangeSetNo) {
-
-		function isOtherChangeSetWithStrictHandling(aChangeSet, i) {
-			return iChangeSetNo !== i && aChangeSet.some(isUsingStrictHandling);
-		}
-
-		function isUsingStrictHandling(oRequest) {
-			return oRequest.headers["Prefer"] === "handling=strict";
-		}
-
-		// do not look past aRequests.iChangeSet because these cannot be change sets
-		if (isUsingStrictHandling(oRequest)
-				&& aRequests.slice(0, aRequests.iChangeSet + 1)
-					.some(isOtherChangeSetWithStrictHandling)) {
-			throw new Error("All requests with strict handling must belong to the same change set");
-		}
 	};
 
 	/**
@@ -594,7 +545,7 @@ sap.ui.define([
 	 * Converts the value for a "$expand" in mQueryParams.
 	 *
 	 * @param {object} mExpandItems The expand items, a map from path to options
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 * @returns {string} The resulting value for the query string
 	 * @throws {Error} If the expand items are not an object
@@ -634,7 +585,7 @@ sap.ui.define([
 	 * @param {string} sExpandPath The expand path
 	 * @param {boolean|object} vExpandOptions
 	 *   The options; either a map or simply <code>true</code>
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 * @returns {string} The resulting string for the OData query in the form "path" (if no
 	 *   options) or "path($option1=foo;$option2=bar)"
@@ -663,9 +614,9 @@ sap.ui.define([
 	 * @param {string} sMetaPath
 	 *   The meta path corresponding to the resource path
 	 * @param {object} [mQueryOptions] The query options
-	 * @param {boolean} [bDropSystemQueryOptions]
+	 * @param {boolean} [bDropSystemQueryOptions=false]
 	 *   Whether all system query options are dropped (useful for non-GET requests)
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 * @returns {object} The converted query options or undefined if there are no query options
 	 *
@@ -714,7 +665,7 @@ sap.ui.define([
 	 *   search by header name
 	 * @param {string} sResourcePath
 	 *   The resource path of the request
-	 * @param {boolean} [bVersionOptional]
+	 * @param {boolean} [bVersionOptional=false]
 	 *   Indicates whether the OData service version is optional, which is the case for responses
 	 *   contained in a response for a $batch request
 	 * @throws {Error} If the "OData-Version" header is not "4.0"
@@ -768,9 +719,9 @@ sap.ui.define([
 	 * @param {object} mQueryOptions The query options
 	 * @param {function (string,any)} fnResultHandler
 	 *   The function to process the converted options getting the name and the value
-	 * @param {boolean} [bDropSystemQueryOptions]
+	 * @param {boolean} [bDropSystemQueryOptions=false]
 	 *   Whether all system query options are dropped (useful for non-GET requests)
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 *
 	 * @private
@@ -970,8 +921,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Tells whether there are changes (that is, updates via PATCH or bound actions via POST) for
-	 * the given group ID and given entity.
+	 * Tells whether there are changes for the given group ID and given entity.
 	 *
 	 * @param {string} sGroupId
 	 *   The group ID
@@ -1073,7 +1023,7 @@ sap.ui.define([
 		function merge(oRequest) {
 			return oRequest.$queryOptions && aResultingRequests.some(function (oCandidate) {
 				if (oCandidate.$queryOptions && oRequest.url === oCandidate.url) {
-					_Helper.aggregateExpandSelect(oCandidate.$queryOptions, oRequest.$queryOptions);
+					_Helper.aggregateQueryOptions(oCandidate.$queryOptions, oRequest.$queryOptions);
 					oRequest.$resolve(oCandidate.$promise);
 
 					return true;
@@ -1173,14 +1123,12 @@ sap.ui.define([
 					vResponse.getResponseHeader = getResponseHeader;
 					// Note: vRequest is an array in case a change set fails, hence url and
 					// $resourcePath are undefined
-					oCause = _Helper.createError(vResponse, "Communication error",
-						vRequest.url ? that.sServiceUrl + vRequest.url : undefined,
+					oCause = _Helper.createError(vResponse, "Communication error", vRequest.url,
 						vRequest.$resourcePath);
 					if (Array.isArray(vRequest)) {
-						_Helper.decomposeError(oCause, vRequest, that.sServiceUrl)
-							.forEach(function (oError, i) {
-								vRequest[i].$reject(oError);
-							});
+						_Helper.decomposeError(oCause, vRequest).forEach(function (oError, i) {
+							vRequest[i].$reject(oError);
+						});
 					} else {
 						vRequest.$reject(oCause);
 					}
@@ -1218,9 +1166,9 @@ sap.ui.define([
 			return Promise.resolve();
 		}
 
+		this.batchRequestSent(sGroupId, bHasChanges);
 		aRequests = this.mergeGetRequests(aRequests);
-		this.batchRequestSent(sGroupId, aRequests, bHasChanges);
-		return this.sendBatch(aRequests, sGroupId)
+		return this.sendBatch(_Requestor.cleanBatch(aRequests), sGroupId)
 			.then(function (aResponses) {
 				visit(aRequests, aResponses);
 			}).catch(function (oError) {
@@ -1231,7 +1179,7 @@ sap.ui.define([
 				reject(oRequestError, aRequests);
 				throw oError;
 			}).finally(function () {
-				that.batchResponseReceived(sGroupId, aRequests, bHasChanges);
+				that.batchResponseReceived(sGroupId, bHasChanges);
 			});
 	};
 
@@ -1460,9 +1408,7 @@ sap.ui.define([
 	 * @private
 	 */
 	_Requestor.prototype.reportUnboundMessagesAsJSON = function (sResourcePath, sMessages) {
-		if (sMessages) {
-			this.oModelInterface.reportUnboundMessages(JSON.parse(sMessages), sResourcePath);
-		}
+		this.oModelInterface.reportUnboundMessages(sResourcePath, JSON.parse(sMessages || null));
 	};
 
 	/**
@@ -1505,7 +1451,7 @@ sap.ui.define([
 	 *   The path by which this resource has originally been requested and thus can be identified on
 	 *   the client. Only required for non-GET requests where <code>sResourcePath</code> is a
 	 *   different (canonical) path.
-	 * @param {boolean} [bAtFront]
+	 * @param {boolean} [bAtFront=false]
 	 *   Whether the request is added at the front of the first change set (ignored for method
 	 *   "GET")
 	 * @param {object} [mQueryOptions]
@@ -1582,8 +1528,6 @@ sap.ui.define([
 					while (aRequests[iChangeSetNo].iSerialNumber > iRequestSerialNumber) {
 						iChangeSetNo -= 1;
 					}
-					that.checkConflictingStrictRequest(oRequest, aRequests, iChangeSetNo);
-
 					aRequests[iChangeSetNo].push(oRequest);
 				}
 			});
@@ -1599,7 +1543,7 @@ sap.ui.define([
 		}
 		return this.sendRequest(sMethod, sResourcePath,
 			Object.assign({}, mHeaders, this.mFinalHeaders),
-			JSON.stringify(oPayload), sOriginalResourcePath
+			JSON.stringify(_Requestor.cleanPayload(oPayload)), sOriginalResourcePath
 		).then(function (oResponse) {
 			that.reportUnboundMessagesAsJSON(oResponse.resourcePath, oResponse.messages);
 			return that.doConvertResponse(oResponse.body, sMetaPath);
@@ -1830,26 +1774,68 @@ sap.ui.define([
 	};
 
 	/**
-	 * Waits for all currently running change requests for the given group ID.
+	 * Waits for all running change requests for the given group ID.
 	 *
 	 * @param {string} sGroupId
 	 *   The group ID
 	 * @returns {sap.ui.base.SyncPromise}
-	 *   A promise that resolves without a defined result when all currently running change requests
-	 *   for the given group ID have been processed completely, no matter if they succeed or fail
+	 *   A promise that resolves when all change requests for the given group ID have been processed
+	 *   completely, no matter if they succeed or fail
 	 *
 	 * @public
 	 * @see #batchRequestSent
 	 * @see #batchResponseReceived
 	 */
 	_Requestor.prototype.waitForRunningChangeRequests = function (sGroupId) {
-		var aPromises = this.mRunningChangeRequests[sGroupId];
+		return this.mRunningChangeRequests[sGroupId] || SyncPromise.resolve();
+	};
 
-		if (aPromises) {
-			return aPromises.length > 1 ? SyncPromise.all(aPromises) : aPromises[0];
+	/**
+	 * Recursively cleans the payload of all contained requests via {@link #.cleanPayload}.
+	 * Modifies the array in-place.
+	 *
+	 * @param {object[]} aRequests
+	 *   The requests
+	 * @returns {object[]}
+	 *   The cleaned requests
+	 *
+	 * @private
+	 */
+	_Requestor.cleanBatch = function (aRequests) {
+		aRequests.forEach(function (oRequest) {
+			if (Array.isArray(oRequest)) {
+				_Requestor.cleanBatch(oRequest);
+			} else {
+				oRequest.body = _Requestor.cleanPayload(oRequest.body);
+			}
+		});
+		return aRequests;
+	};
+
+	/**
+	 * Creates a duplicate of the payload where all properties starting with "@$ui5." are
+	 * removed.
+	 *
+	 * @param {object} [oPayload]
+	 *   The request payload
+	 * @returns {object}
+	 *   The payload without the unwanted properties (only copied if necessary)
+	 *
+	 * @private
+	 */
+	_Requestor.cleanPayload = function (oPayload) {
+		var oResult = oPayload;
+		if (oResult) {
+			Object.keys(oResult).forEach(function (sKey) {
+				if (sKey.startsWith("@$ui5.")) {
+					if (oResult === oPayload) {
+						oResult = Object.assign({}, oPayload);
+					}
+					delete oResult[sKey];
+				}
+			});
 		}
-
-		return SyncPromise.resolve();
+		return oResult;
 	};
 
 	/**

@@ -6,9 +6,10 @@
 
 sap.ui.define([
 	'sap/ui/core/library',
+	'sap/ui/core/theming/Parameters',
 	'sap/ui/layout/library',
 	'sap/ui/layout/form/Form'
-	], function(coreLibrary, library, Form) {
+	], function(coreLibrary, themingParameters, library, Form) {
 	"use strict";
 
 	// shortcut for sap.ui.core.TitleLevel
@@ -59,7 +60,11 @@ sap.ui.define([
 		rm.openEnd();
 
 		// Form header
-		this.renderHeader(rm, oToolbar, oForm.getTitle(), undefined, false, oLayout._sFormTitleSize, oForm.getId());
+		var sSize;
+		if (!oToolbar) {
+			sSize = themingParameters.get('sap.ui.layout.FormLayout:_sap_ui_layout_FormLayout_FormTitleSize');
+		}
+		this.renderHeader(rm, oToolbar, oForm.getTitle(), undefined, false, sSize, oForm.getId());
 
 		this.renderContainers(rm, oLayout, oForm);
 
@@ -112,7 +117,7 @@ sap.ui.define([
 
 		rm.openEnd();
 
-		this.renderHeader(rm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, oLayout._sFormSubTitleSize, oContainer.getId());
+		this.renderHeader(rm, oToolbar, oTitle, oContainer._oExpandButton, bExpandable, TitleLevel.H4, oContainer.getId());
 
 		if (bExpandable) {
 			rm.openStart("div", oContainer.getId() + "-content");
@@ -161,27 +166,20 @@ sap.ui.define([
 
 	};
 
-	/**
-	 * Renders the title for a <code>Form</code> or a <code>FormContainer</code>
-	 *
+	/*
+	 * Renders the title for a Form or a FormContainer
 	 * If this function is overwritten in a Layout please use the right IDs to be sure aria-describedby works fine
-	 *
-	 * @param {sap.ui.core.RenderManager} rm the RenderManager that can be used for writing to the Render-Output-Buffer
-	 * @param {string|sap.ui.core.Title} oTitle Title text or <code>Title</code> element
-	 * @param {sap.ui.core.Control} [oExpandButton] Button control for expander
-	 * @param {boolean} [bExpander] If <code>true</code> an expander is rendered
-	 * @param {string} sLevel Level of the title. If not set <code>H5</code> is used as default
-	 * @param {string} sContentId ID of the header element (<code>Form</code> or <code>FormContainer</code>)
 	 */
-	FormLayoutRenderer.renderTitle = function(rm, oTitle, oExpandButton, bExpander, sLevel, sContentId){
+	FormLayoutRenderer.renderTitle = function(rm, oTitle, oExpandButton, bExpander, sLevelDefault, sContentId){
 
 		if (oTitle) {
+			//determine title level -> if not set use H4 as default
+			var sLevel = themingParameters.get('sap.ui.layout.FormLayout:_sap_ui_layout_FormLayout_FormSubTitleSize');
+			if (sLevelDefault) {
+				sLevel = sLevelDefault;
+			}
 			if (typeof oTitle !== "string" && oTitle.getLevel() != TitleLevel.Auto) {
 				sLevel = oTitle.getLevel();
-			}
-			if (!sLevel) {
-				// use H5 as fallback -> but it should be set from outside
-				sLevel = "H5";
 			}
 
 			// just reuse TextView class because there font size & co. is already defined
@@ -198,9 +196,6 @@ sap.ui.define([
 			}
 			rm.class("sapUiFormTitle");
 			rm.class("sapUiFormTitle" + sLevel);
-			if (bExpander && oExpandButton) {
-				rm.class("sapUiFormTitleExpandable");
-			}
 			rm.openEnd();
 
 			if (bExpander && oExpandButton) {
@@ -240,25 +235,16 @@ sap.ui.define([
 
 	};
 
-	/**
+	/*
 	 * Renders the header, containing Toolbar or Title, for a Form or a FormContainer
-	 *
 	 * If this function is overwritten in a Layout please use the right IDs to be sure aria-describedby works fine
-	 *
-	 * @param {sap.ui.core.RenderManager} rm the RenderManager that can be used for writing to the Render-Output-Buffer
-	 * @param {sap.ui.core.Toolbar} [oToolbar] <code>Toolbar</code> control
-	 * @param {string|sap.ui.core.Title} [oTitle] Title text or <code>Title</code> element
-	 * @param {sap.ui.core.Control} [oExpandButton] Button control for expander
-	 * @param {boolean} [bExpander] If <code>true</code> an expander is rendered
-	 * @param {string} sLevel Level of the title.
-	 * @param {string} sContentId ID of the header element (<code>Form</code> or <code>FormContainer</code>)
 	 */
-	FormLayoutRenderer.renderHeader = function(rm, oToolbar, oTitle, oExpandButton, bExpander, sLevel, sContentId){
+	FormLayoutRenderer.renderHeader = function(rm, oToolbar, oTitle, oExpandButton, bExpander, sLevelDefault, sContentId){
 
 		if (oToolbar) {
 			rm.renderControl(oToolbar);
 		} else {
-			this.renderTitle(rm, oTitle, oExpandButton, bExpander, sLevel, sContentId);
+			this.renderTitle(rm, oTitle, oExpandButton, bExpander, sLevelDefault, sContentId);
 		}
 
 	};

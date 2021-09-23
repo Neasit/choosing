@@ -60,7 +60,7 @@ sap.ui.define([
 	 * This control cannot be used stand-alone, it just renders a <code>Form</code> control,
 	 * so it must be assigned to a <code>Form</code> control using the <code>layout</code> aggregation.
 	 * @extends sap.ui.layout.form.FormLayout
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -109,8 +109,6 @@ sap.ui.define([
 
 	ColumnLayout.prototype.init = function(){
 
-		FormLayout.prototype.init.apply(this, arguments);
-
 		this._iBreakPointTablet = Device.media._predefinedRangeSets[Device.media.RANGESETS.SAP_STANDARD_EXTENDED].points[0];
 		this._iBreakPointDesktop = Device.media._predefinedRangeSets[Device.media.RANGESETS.SAP_STANDARD_EXTENDED].points[1];
 		this._iBreakPointLargeDesktop = Device.media._predefinedRangeSets[Device.media.RANGESETS.SAP_STANDARD_EXTENDED].points[2];
@@ -131,8 +129,6 @@ sap.ui.define([
 	};
 
 	ColumnLayout.prototype.onBeforeRendering = function( oEvent ){
-
-		FormLayout.prototype.onBeforeRendering.apply(this, arguments);
 
 		if (this.getColumnsM() > this.getColumnsL() || this.getColumnsL() > this.getColumnsXL() ) {
 			throw new Error("Column size not correct defined for " + this);

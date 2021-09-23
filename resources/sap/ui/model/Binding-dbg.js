@@ -191,8 +191,7 @@ sap.ui.define([
 			sap.ui.getCore().getMessageManager()
 				.removeMessages(this.getDataState().getControlMessages(), true);
 			this.oContext = oContext;
-			this.getDataState().reset();
-			this.checkDataState();
+			this.oDataState = null;
 			mChangeParameters = {reason : ChangeReason.Context};
 			if (mParameters && mParameters.detailedReason) {
 				mChangeParameters.detailedReason = mParameters.detailedReason;
@@ -228,19 +227,6 @@ sap.ui.define([
 	 */
 	Binding.prototype.getModel = function() {
 		return this.oModel;
-	};
-
-	/**
-	 * Provides the resolved path for this binding's path and context and returns it, or
-	 * <code>undefined</code> if the binding is not resolved or has no model.
-	 *
-	 * @returns {string|undefined} The resolved path
-	 *
-	 * @public
-	 * @since 1.88.0
-	 */
-	Binding.prototype.getResolvedPath = function () {
-		return this.oModel ? this.oModel.resolve(this.sPath, this.oContext) : undefined;
 	};
 
 	/**
@@ -739,7 +725,8 @@ sap.ui.define([
 	 * @private
 	 */
 	Binding.prototype.checkDataState = function(mPaths) {
-		this._checkDataState(this.getResolvedPath(), mPaths);
+		var sResolvedPath = this.oModel ? this.oModel.resolve(this.sPath, this.oContext) : null;
+		this._checkDataState(sResolvedPath, mPaths);
 	};
 
 	/**
@@ -779,18 +766,14 @@ sap.ui.define([
 	};
 
 	/**
-	 * Sets the given data state's model messages to the messages for the given resolved path in the
-	 * binding's model.
+	 * Check for Messages and set them to the DataState.
 	 *
-	 * @param {sap.ui.model.DataState} oDataState The binding's data state
-	 * @param {string} [sResolvedPath] The binding's resolved path
-	 * @private
+	 * @param {sap.ui.model.DataState} oDataState The DataState of the binding.
+	 * @param {string} sResolvedPath The resolved binding path.
 	 */
 	Binding.prototype._checkDataStateMessages = function(oDataState, sResolvedPath) {
 		if (sResolvedPath) {
 			oDataState.setModelMessages(this.oModel.getMessagesByPath(sResolvedPath));
-		} else {
-			oDataState.setModelMessages([]);
 		}
 	};
 

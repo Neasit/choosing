@@ -9,10 +9,17 @@ sap.ui.define(["sap/ui/util/_FeatureDetection"], function(_FeatureDetection) {
 	var fnDenormalize;
 
 	if (_FeatureDetection.initialScrollPositionIsZero()) {
-		//actual chrome/safari/ff
-		fnDenormalize = function(iNormalizedScrollLeft, oDomRef) {
-			return oDomRef.clientWidth + iNormalizedScrollLeft - oDomRef.scrollWidth;
-		};
+		if (_FeatureDetection.canScrollToNegative()) {
+			//actual chrome/safari
+			fnDenormalize = function(iNormalizedScrollLeft, oDomRef) {
+				return oDomRef.clientWidth + iNormalizedScrollLeft - oDomRef.scrollWidth;
+			};
+		} else {
+			//IE
+			fnDenormalize = function(iNormalizedScrollLeft, oDomRef) {
+				return oDomRef.scrollWidth - oDomRef.clientWidth - iNormalizedScrollLeft;
+			};
+		}
 	} else {
 		//legacy chrome
 		fnDenormalize = function(iNormalizedScrollLeft, oDomRef) {

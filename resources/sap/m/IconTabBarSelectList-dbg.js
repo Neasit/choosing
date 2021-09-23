@@ -6,22 +6,22 @@
 
 // Provides control sap.m.IconTabBarSelectList.
 sap.ui.define([
-	"./library",
-	"./IconTabBarDragAndDropUtil",
-	"./IconTabBarSelectListRenderer",
-	"sap/ui/core/Control",
-	"sap/ui/core/delegate/ItemNavigation",
-	"sap/ui/core/theming/Parameters",
-	"sap/ui/core/library",
+	'./library',
+	'sap/ui/core/Control',
+	"sap/ui/core/Core",
+	'sap/ui/core/delegate/ItemNavigation',
+	'./IconTabBarDragAndDropUtil',
+	'sap/ui/core/library',
+	'./IconTabBarSelectListRenderer',
 	"sap/ui/thirdparty/jquery"
 ], function(
 	library,
-	IconTabBarDragAndDropUtil,
-	IconTabBarSelectListRenderer,
 	Control,
+	Core,
 	ItemNavigation,
-	Parameters,
+	IconTabBarDragAndDropUtil,
 	coreLibrary,
+	IconTabBarSelectListRenderer,
 	jQuery
 ) {
 	"use strict";
@@ -40,7 +40,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @private
@@ -210,24 +210,6 @@ sap.ui.define([
 		return this._oIconTabHeader;
 	};
 
-	IconTabBarSelectList.prototype._getParams = function () {
-		var mParams = Object.assign({
-			"_sap_m_IconTabBar_SelectListItem_PaddingLeft": "0.5rem",
-			"_sap_m_IconTabBar_SelectListItem_PaddingLeftAdditional": "0"
-		}, Parameters.get({
-			name: [
-				"_sap_m_IconTabBar_SelectListItem_PaddingLeft",
-				"_sap_m_IconTabBar_SelectListItem_PaddingLeftAdditional"
-			],
-			callback: this.invalidate.bind(this)
-		}));
-
-		return {
-			fNestedItemPaddingLeft: Number.parseFloat(mParams["_sap_m_IconTabBar_SelectListItem_PaddingLeft"]),
-			fAdditionalPadding: Number.parseFloat(mParams["_sap_m_IconTabBar_SelectListItem_PaddingLeftAdditional"])
-		};
-	};
-
 	/**
 	 * Handles tap event.
 	 * @private
@@ -289,7 +271,7 @@ sap.ui.define([
 			oContext = oDroppedControl._getRealTab().getParent(),
 			allowedNestingLevel = this._oIconTabHeader.getMaxNestingLevel();
 
-		if (this._oTabFilter._isOverflow()) {
+		if (this._oTabFilter._bIsOverflow) {
 			oContext = this._oIconTabHeader;
 		}
 
@@ -336,7 +318,7 @@ sap.ui.define([
 			return;
 		}
 		oContext = oTabToBeMoved._getRealTab().getParent();
-		if (this._oTabFilter._isOverflow() && oTabToBeMoved._getRealTab()._getNestedLevel() === 1) {
+		if (this._oTabFilter._bIsOverflow && oTabToBeMoved._getRealTab()._getNestedLevel() === 1) {
 			this._oIconTabHeader._moveTab(oTabToBeMoved._getRealTab(), iKeyCode, this._oIconTabHeader.getItems().length - 1);
 		} else {
 			IconTabBarDragAndDropUtil.moveItem.call(oContext, oTabToBeMoved._getRealTab(), iKeyCode, oContext.getItems().length - 1);

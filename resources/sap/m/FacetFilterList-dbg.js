@@ -52,7 +52,7 @@ sap.ui.define([
 	 * be closed.
 	 *
 	 * @extends sap.m.List
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -543,7 +543,7 @@ sap.ui.define([
 	FacetFilterList.prototype._fireListCloseEvent = function() {
 		var aSelectedItems = this.getSelectedItems();
 		var oSelectedKeys = this.getSelectedKeys();
-		var bAllSelected = this.isAllSelectableSelected();
+		var bAllSelected = aSelectedItems.length === 0;
 
 		this._firstTime = true;
 

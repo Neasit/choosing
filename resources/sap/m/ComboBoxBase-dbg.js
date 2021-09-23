@@ -5,40 +5,44 @@
  */
 
 sap.ui.define([
+	'./Dialog',
 	'./ComboBoxTextField',
+	'./Input',
+	'./GroupHeaderListItem',
 	'./SuggestionsPopover',
-	'sap/ui/base/ManagedObjectObserver',
 	'sap/ui/core/SeparatorItem',
 	'sap/ui/core/InvisibleText',
-	'sap/ui/base/ManagedObject',
 	'sap/base/Log',
 	'./library',
 	'sap/ui/Device',
+	'sap/ui/core/library',
+	'./ComboBoxBaseRenderer',
 	"sap/ui/dom/containsOrEquals",
 	"sap/ui/events/KeyCodes",
 	"sap/ui/thirdparty/jquery",
 	"sap/base/security/encodeXML",
 	"sap/base/strings/escapeRegExp",
-	"sap/m/inputUtils/forwardItemProperties",
 	"sap/m/inputUtils/highlightDOMElements",
 	"sap/m/inputUtils/ListHelpers"
 ],
 	function(
+		Dialog,
 		ComboBoxTextField,
+		Input,
+		GroupHeaderListItem,
 		SuggestionsPopover,
-		ManagedObjectObserver,
 		SeparatorItem,
 		InvisibleText,
-		ManagedObject,
 		Log,
 		library,
 		Device,
+		coreLibrary,
+		ComboBoxBaseRenderer,
 		containsOrEquals,
 		KeyCodes,
 		jQuery,
 		encodeXML,
 		escapeRegExp,
-		forwardItemProperties,
 		highlightDOMElements,
 		ListHelpers
 	) {
@@ -62,7 +66,7 @@ sap.ui.define([
 		 * @abstract
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -85,17 +89,6 @@ sap.ui.define([
 						type: "boolean",
 						group: "Misc",
 						defaultValue: false
-					},
-
-					/**
-					 * Indicates whether the picker is opened.
-					 *
-					 * @private
-					 */
-					 open: {
-						type: "boolean",
-						defaultValue: false,
-						hidden: true
 					}
 				},
 				aggregations: {
@@ -152,9 +145,9 @@ sap.ui.define([
 		ComboBoxBase.prototype.oncompositionend = function (oEvent) {
 			ComboBoxTextField.prototype.oncompositionend.apply(this, arguments);
 
-			// In Firefox the events are fired correctly
+			// In Firefox and Edge the events are fired correctly
 			// http://blog.evanyou.me/2014/01/03/composition-event/
-			if (!Device.browser.firefox) {
+			if (!Device.browser.edge && !Device.browser.firefox) {
 				this.handleInputValidation(oEvent, this.isComposingCharacter());
 			}
 		};
@@ -178,12 +171,6 @@ sap.ui.define([
 			this.bItemsUpdated = true;
 
 			if (this.hasLoadItemsEventListeners()) {
-
-				if (this.isOpen()) {
-					ListHelpers.fillList(this.getItems(), this._getList(), this._mapItemToListItem.bind(this));
-					this.setRecreateItems(false);
-				}
-
 				this.onItemsLoaded();
 			}
 		};
@@ -482,68 +469,10 @@ sap.ui.define([
 				}
 			}, this);
 
-			this.getIcon().attachPress(this._handlePopupOpenAndItemsLoad.bind(this, true, this));
+			this.getIcon().attachPress(this._handlePopupOpenAndItemsLoad.bind(this, true));
 
 			// a method to define whether an item should be filtered in the picker
 			this.fnFilter = null;
-
-			var oItemsAggregationObserver = new ManagedObjectObserver(function(oChange) {
-				var sMutation = oChange.mutation;
-				var oItem = oChange.child;
-				var oEventMapping = {
-					"remove": "detachEvent",
-					"insert": "attachEvent"
-				};
-				var callbackMapping = {
-					"remove": "handleItemRemoval",
-					"insert": "handleItemInsertion"
-				};
-
-				if (!oItem[oEventMapping[sMutation]] || !this[callbackMapping[sMutation]]) {
-					return;
-				}
-
-				// attach / detach a _change event to items on insert / remove events
-				oItem[oEventMapping[sMutation]]("_change", this.onItemChange, this);
-
-				// mark the list items to be recreated
-				this.setRecreateItems(true);
-
-				// call handle Inserttion / Removal of items
-				this[callbackMapping[sMutation]](oItem);
-			}.bind(this));
-
-			oItemsAggregationObserver.observe(this, { aggregations: ["items"] });
-		};
-
-		/**
-		 * Fires when an object gets removed from the items aggregation
-		 *
-		 * @protected
-		 */
-		ComboBoxBase.prototype.handleItemRemoval = function (oItem) {};
-
-		/**
-		 * Fires when an object gets inserted in the items aggregation
-		 *
-		 * @protected
-		 */
-		ComboBoxBase.prototype.handleItemInsertion = function (oItem) {};
-
-		/**
-		 * Sets whether the list items should be recreated
-		 * @protected
-		 */
-		ComboBoxBase.prototype.setRecreateItems = function (bRecreate) {
-			this._bRecreateItems = bRecreate;
-		};
-
-		/**
-		 * Gets the flag indicating whether the list items should be recreated
-		 * @protected
-		 */
-		ComboBoxBase.prototype.getRecreateItems = function () {
-			return this._bRecreateItems;
 		};
 
 		ComboBoxBase.prototype.onBeforeRendering = function () {
@@ -563,7 +492,7 @@ sap.ui.define([
 			}
 		};
 
-		ComboBoxBase.prototype._handlePopupOpenAndItemsLoad = function (bOpenOnInteraction, oObjectToFocus) {
+		ComboBoxBase.prototype._handlePopupOpenAndItemsLoad = function (bOpenOnInteraction) {
 			var oPicker;
 
 			// in case of a non-editable or disabled combo box, the picker popup cannot be opened
@@ -598,11 +527,6 @@ sap.ui.define([
 				this.syncPickerContent();
 				oPicker = this.getPicker();
 				oPicker.setInitialFocus(oPicker);
-			}
-
-			if (oObjectToFocus) {
-				oPicker = this.getPicker();
-				oPicker && oPicker.setInitialFocus(oObjectToFocus);
 			}
 
 			this.open();
@@ -963,11 +887,10 @@ sap.ui.define([
 		ComboBoxBase.prototype._createSuggestionsPopover = function () {
 			var oSuggPopover = new SuggestionsPopover(this);
 
-			oSuggPopover.decorateParent(this);
 			// Creates the internal controls of the <code>SuggestionsPopover</code>
-			oSuggPopover.createSuggestionPopup(this, {showSelectedButton: this._hasShowSelectedButton()});
+			oSuggPopover.createSuggestionPopup({showSelectedButton: this._hasShowSelectedButton()});
 			this._decoratePopupInput(oSuggPopover.getInput());
-			oSuggPopover.initContent(this.getId());
+			oSuggPopover.initContent();
 			this.forwardEventHandlersToSuggPopover(oSuggPopover);
 
 			this._configureList(oSuggPopover.getItemsContainer());
@@ -1240,19 +1163,13 @@ sap.ui.define([
 
 		/**
 		 * Handles properties' changes of items in the aggregation named <code>items</code>.
+		 * To be overwritten by subclasses.
 		 *
-		 * @protected
+		 * @experimental
 		 * @param {sap.ui.base.Event} oControlEvent The change event
-		 * @param {boolean} bShowSecondaryValues Indicates whether second values should be shown
-		 * @since 1.90
+		 * @since 1.30
 		 */
-		ComboBoxBase.prototype.onItemChange = function(oControlEvent, bShowSecondaryValues) {
-			forwardItemProperties({
-				item: oControlEvent.getSource(),
-				propName: oControlEvent.getParameter("name"),
-				propValue: oControlEvent.getParameter("newValue")
-			}, bShowSecondaryValues);
-		};
+		ComboBoxBase.prototype.onItemChange = function(oControlEvent) {};
 
 		/**
 		 * Clears the selection.
@@ -1275,6 +1192,52 @@ sap.ui.define([
 		/* ----------------------------------------------------------- */
 		/* public methods                                              */
 		/* ----------------------------------------------------------- */
+
+		/**
+		 * Adds an item to the aggregation named <code>items</code>.
+		 *
+		 * @param {sap.ui.core.Item} oItem The item to be added; if empty, nothing is added.
+		 * @returns {this} <code>this</code> to allow method chaining.
+		 * @public
+		 */
+		ComboBoxBase.prototype.addItem = function(oItem) {
+			this.addAggregation("items", oItem);
+
+			if (oItem) {
+				oItem.attachEvent("_change", this.onItemChange, this);
+			}
+
+			if (this._getList()) {
+				this._getList().addItem(this._mapItemToListItem(oItem));
+			}
+
+			return this;
+		};
+
+		/**
+		 * Inserts an item into the aggregation named <code>items</code>.
+		 *
+		 * @param {sap.ui.core.Item} oItem The item to be inserted; if empty, nothing is inserted.
+		 * @param {int} iIndex The <code>0</code>-based index the item should be inserted at; for
+		 *             a negative value of <code>iIndex</code>, the item is inserted at position 0; for a value
+		 *             greater than the current size of the aggregation, the item is inserted at the last position.
+		 * @returns {this} <code>this</code> to allow method chaining.
+		 * @public
+		 */
+		ComboBoxBase.prototype.insertItem = function(oItem, iIndex) {
+			this.insertAggregation("items", oItem, iIndex, true);
+
+			if (oItem) {
+				oItem.attachEvent("_change", this.onItemChange, this);
+			}
+
+			if (this._getList()) {
+				this._getList().insertItem(this._mapItemToListItem(oItem), iIndex);
+			}
+
+			this._scheduleOnItemsLoadedOnce();
+			return this;
+		};
 
 		/**
 		 * Gets the item from the aggregation named <code>items</code> at the given 0-based index.
@@ -1344,9 +1307,7 @@ sap.ui.define([
 		 */
 		ComboBoxBase.prototype.addItemGroup = function(oGroup, oHeader, bSuppressInvalidate) {
 			oHeader = oHeader || new SeparatorItem({
-				// The SeparatorItem does not escape those settings, so we need to take care of that.
-				// This will ensure that values containing curly braces do not break the code.
-				text: ManagedObject.escapeSettingsValue(oGroup.text) || ManagedObject.escapeSettingsValue(oGroup.key)
+				text: oGroup.text || oGroup.key
 			});
 
 			this.addAggregation("items", oHeader, bSuppressInvalidate);
@@ -1393,6 +1354,35 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Item} The removed item or null.
 		 * @public
 		 */
+		ComboBoxBase.prototype.removeItem = function(vItem) {
+			vItem = this.removeAggregation("items", vItem);
+
+			if (vItem) {
+				vItem.detachEvent("_change", this.onItemChange, this);
+			}
+
+			return vItem;
+		};
+
+		/**
+		 * Removes all the controls in the aggregation named <code>items</code>.
+		 * Additionally unregisters them from the hosting UIArea and clears the selection.
+		 *
+		 * @returns {sap.ui.core.Item[]} An array of the removed items (might be empty).
+		 * @public
+		 */
+		ComboBoxBase.prototype.removeAllItems = function() {
+			var aItems = this.removeAllAggregation("items");
+
+			// clear the selection
+			this.clearSelection();
+
+			for (var i = 0; i < aItems.length; i++) {
+				aItems[i].detachEvent("_change", this.onItemChange, this);
+			}
+
+			return aItems;
+		};
 
 		/**
 		 * Finds the common items of two arrays
@@ -1434,7 +1424,7 @@ sap.ui.define([
 					});
 
 					this.applyShowItemsFilters(); // Apply control specific filtering
-					this._handlePopupOpenAndItemsLoad(false, this);
+					this._handlePopupOpenAndItemsLoad(false);
 					this.setFilterFunction(fnFilterStore); // Restore filtering function
 				}.bind(this);
 

@@ -41,7 +41,7 @@ sap.ui.define([
 	 * @extends sap.f.cards.BaseHeader
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -153,16 +153,12 @@ sap.ui.define([
 	 * @private
 	 */
 	NumericHeader.prototype.init = function () {
-		BaseHeader.prototype.init.apply(this, arguments);
-
 		this._oRb = Core.getLibraryResourceBundle("sap.f");
 
 		this.data("sap-ui-fastnavgroup", "true", true); // Define group for F6 handling
 	};
 
 	NumericHeader.prototype.exit = function () {
-		BaseHeader.prototype.exit.apply(this, arguments);
-
 		this._oRb = null;
 	};
 
@@ -411,17 +407,15 @@ sap.ui.define([
 	 * @returns {string} IDs of controls
 	 */
 	NumericHeader.prototype._getHeaderAccessibility = function () {
-		var sSubtitleId = this.getSubtitle() ? this._getSubtitle().getId() : "",
+		var sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
 			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
 			sUnitOfMeasureId = this._getUnitOfMeasurement() ? this._getUnitOfMeasurement().getId() : "",
-			sSideIndicatorsIds = this.getSideIndicators() ? this._getSideIndicatorIds() : "",
-			sDetailsId = this.getDetails() ? this._getDetails().getId() : "",
-			sMainIndicatorId = this.getNumber() || this.getScale() ? this._getMainIndicator().getId() : "",
-			sIds = sSubtitleId + " " + sStatusTextId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsIds + " " + sDetailsId;
+			sSideIndicatorsId = this.getSideIndicators() ? this._getSideIndicatorIds() : "",
+			sDetailsId = this._getDetails() ? this._getDetails().getId() : "",
+			sMainIndicatorId = this._getMainIndicator() ? this._getMainIndicator().getId() : "",
+			sIds = sSubtitleId + " " + sStatusTextId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsId + " " + sDetailsId;
 
-		// remove whitespace from both sides
-		// and merge the consecutive whitespaces into one
-		return sIds.replace(/ {2,}/g, ' ').trim();
+			return sIds.trim();
 	};
 
 	/**

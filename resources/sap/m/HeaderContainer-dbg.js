@@ -83,27 +83,26 @@ sap.ui.define([
 					}
 				}
 			},
-			renderer: {
-				apiVersion: 2,
-				render: function (oRM, oControl) {
-					var oInnerControl = oControl.getAggregation("item");
-					if (!oInnerControl || !oInnerControl.getVisible()) {
-						return;
-					}
-
-					oRM.openStart("div", oControl);
-					oRM.class("sapMHdrCntrItemCntr");
-					oRM.class("sapMHrdrCntrInner");
-					oRM.attr("aria-setsize", oControl.getSetSize());
-					oRM.attr("aria-posinset", oControl.getPosition());
-					oRM.attr("role", "listitem");
-					if (oControl.getAriaLabelledBy()) {
-						oRM.attr("aria-labelledby", oControl.getAriaLabelledBy());
-					}
-					oRM.openEnd();
-					oRM.renderControl(oInnerControl);
-					oRM.close("div");
+			renderer: function (oRM, oControl) {
+				var oInnerControl = oControl.getAggregation("item");
+				if (!oInnerControl || !oInnerControl.getVisible()) {
+					return;
 				}
+
+				oRM.write("<div");
+				oRM.writeControlData(oControl);
+				oRM.addClass("sapMHdrCntrItemCntr");
+				oRM.addClass("sapMHrdrCntrInner");
+				oRM.writeAttribute("aria-setsize", oControl.getSetSize());
+				oRM.writeAttribute("aria-posinset", oControl.getPosition());
+				oRM.writeAttribute("role", "listitem");
+				if (oControl.getAriaLabelledBy()) {
+					oRM.writeAttributeEscaped("aria-labelledby", oControl.getAriaLabelledBy());
+				}
+				oRM.writeClasses();
+				oRM.write(">");
+				oRM.renderControl(oInnerControl);
+				oRM.write("</div>");
 			}
 		});
 
@@ -122,7 +121,7 @@ sap.ui.define([
 		 * @since 1.44.0
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @public
 		 * @alias sap.m.HeaderContainer
@@ -343,9 +342,6 @@ sap.ui.define([
 		};
 
 		HeaderContainer.prototype.onBeforeRendering = function () {
-			var isHorizontal = this.getOrientation() === Orientation.Horizontal,
-				sIconPrev = isHorizontal ? "sap-icon://slim-arrow-left" : "sap-icon://slim-arrow-up",
-				sIconNext = isHorizontal ? "sap-icon://slim-arrow-right" : "sap-icon://slim-arrow-down";
 			if (!this.getHeight()) {
 				Log.warning("No height provided", this);
 			}
@@ -353,15 +349,12 @@ sap.ui.define([
 				Log.warning("No width provided", this);
 			}
 			if (Device.system.desktop) {
-				this._oArrowPrev.setProperty("icon", sIconPrev, true);
-				this._oArrowNext.setProperty("icon", sIconNext, true);
+				this._oArrowPrev.setIcon(this.getOrientation() === Orientation.Horizontal ? "sap-icon://slim-arrow-left" : "sap-icon://slim-arrow-up");
+				this._oArrowNext.setIcon(this.getOrientation() === Orientation.Horizontal ? "sap-icon://slim-arrow-right" : "sap-icon://slim-arrow-down");
 			} else if (Device.system.phone || Device.system.tablet) {
-				this._oArrowPrev.setProperty("src", sIconPrev, true);
-				this._oArrowNext.setProperty("src", sIconNext, true);
+				this._oArrowPrev.setSrc(this.getOrientation() === Orientation.Horizontal ? "sap-icon://slim-arrow-left" : "sap-icon://slim-arrow-up");
+				this._oArrowNext.setSrc(this.getOrientation() === Orientation.Horizontal ? "sap-icon://slim-arrow-right" : "sap-icon://slim-arrow-down");
 			}
-
-			// before rendering starts, content items need to be updated - see _callSuperMethod
-			this.getContent();
 		};
 
 		HeaderContainer.prototype.onAfterRendering = function () {
@@ -1023,13 +1016,10 @@ sap.ui.define([
 					for (var i = 0; i < aContent.length; i++) {
 						var oItem = aContent[i];
 						if (oItem.getItem().getVisible()) {
-							oItem.setVisible(true);
 							oItem.setPosition(iPosition);
 							oItem.setSetSize(iVisibleSize);
 							oItem.setAriaLabelledBy(aAriaLabelledBy[i]);
 							iPosition++;
-						} else {
-							oItem.setVisible(false);
 						}
 					}
 				}

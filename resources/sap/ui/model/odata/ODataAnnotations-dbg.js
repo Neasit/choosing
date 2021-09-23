@@ -9,12 +9,16 @@ sap.ui.define([
 	"./AnnotationParser",
 	"sap/base/assert",
 	"sap/base/Log",
-	"sap/base/util/extend",
 	"sap/base/util/isEmptyObject",
+	"sap/ui/Device",
 	"sap/ui/base/EventProvider",
 	"sap/ui/thirdparty/jquery"
-], function (AnnotationParser, assert, Log, extend, isEmptyObject, EventProvider, jQuery) {
+], function (AnnotationParser, assert, Log, isEmptyObject, Device, EventProvider, jQuery) {
 	"use strict";
+
+	/*global ActiveXObject */
+
+
 
 	/**
 	 * @param {string|string[]} aAnnotationURI The annotation-URL or an array of URLs that should be parsed and merged
@@ -25,7 +29,7 @@ sap.ui.define([
 	 *
 	 * @author SAP SE
 	 * @version
-	 * 1.92.0
+	 * 1.87.0
 	 *
 	 * @public
 	 * @deprecated As of version 1.66, please use {@link sap.ui.model.odata.v2.ODataAnnotations} instead.
@@ -59,7 +63,7 @@ sap.ui.define([
 			this.oRequestHandles = [];
 			this.oLoadEvent = null;
 			this.oFailedEvent = null;
-			this.mCustomHeaders = mOptions.headers ? extend({}, mOptions.headers) : {};
+			this.mCustomHeaders = mOptions.headers ? jQuery.extend({}, mOptions.headers) : {};
 
 			if (mOptions.urls) {
 				this.addUrl(mOptions.urls);
@@ -258,7 +262,7 @@ sap.ui.define([
 	 */
 	ODataAnnotations.prototype.setHeaders = function(mHeaders) {
 		// Copy headers (dont use reference to mHeaders map)
-		this.mCustomHeaders = extend({}, mHeaders);
+		this.mCustomHeaders = jQuery.extend({}, mHeaders);
 	};
 
 	/**
@@ -276,11 +280,31 @@ sap.ui.define([
 			vXML = null;
 		}
 
-		if (vXML) {
+		if (Device.browser.msie) {
+			// IE creates an XML Document, but we cannot use it since it does not support the
+			// evaluate-method. So we have to create a new document from the XML string every time.
+			// This also leads to using a difference XPath implementation @see getXPath
+			oXMLDoc = new ActiveXObject("Microsoft.XMLDOM"); // ??? "Msxml2.DOMDocument.6.0"
+			oXMLDoc.preserveWhiteSpace = true;
+
+			// The MSXML implementation does not parse documents with the technically correct "xmlns:xml"-attribute
+			// So if a document contains 'xmlns:xml="http://www.w3.org/XML/1998/namespace"', IE will stop working.
+			// This hack removes the XML namespace declaration which is then implicitly set to the default one.
+			if (sXMLContent.indexOf(" xmlns:xml=") > -1) {
+				sXMLContent = sXMLContent
+					.replace(' xmlns:xml="http://www.w3.org/XML/1998/namespace"', "")
+					.replace(" xmlns:xml='http://www.w3.org/XML/1998/namespace'", "");
+			}
+
+			oXMLDoc.loadXML(sXMLContent);
+		} else if (vXML) {
 			oXMLDoc = vXML;
-		} else {
+		} else if (window.DOMParser) {
 			oXMLDoc = new DOMParser().parseFromString(sXMLContent, 'application/xml');
+		} else {
+			Log.fatal("The browser does not support XML parsing. Annotations are not available.");
 		}
+
 
 		return oXMLDoc;
 	};
@@ -292,7 +316,12 @@ sap.ui.define([
 	 * @return {boolean} true if errors exist false otherwise
 	 */
 	ODataAnnotations.prototype._documentHasErrors = function(oXMLDoc) {
-		return oXMLDoc.getElementsByTagName("parsererror").length > 0;
+		return (
+			// All browsers including IE
+			oXMLDoc.getElementsByTagName("parsererror").length > 0
+			// IE 11 special case
+			|| (oXMLDoc.parseError && oXMLDoc.parseError.errorCode !== 0)
+		);
 	};
 
 	/**
@@ -342,7 +371,7 @@ sap.ui.define([
 			error:      function() {},
 			fireEvents: false
 		};
-		mOptions = extend({}, mDefaultOptions, mOptions);
+		mOptions = jQuery.extend({}, mDefaultOptions, mOptions);
 
 		var oXMLDoc = this._createXMLDocument(oXMLDocument, sXMLContent);
 
@@ -492,7 +521,7 @@ sap.ui.define([
 			var mAjaxOptions = {
 				url: sUrl,
 				async: that.bAsync,
-				headers: extend({}, that.mCustomHeaders, {
+				headers: jQuery.extend({}, that.mCustomHeaders, {
 					"Accept-Language": sap.ui.getCore().getConfiguration().getLanguageTag() // Always overwrite
 				})
 			};

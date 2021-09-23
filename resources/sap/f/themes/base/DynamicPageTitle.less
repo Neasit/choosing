@@ -205,6 +205,7 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 
 		.sapFDynamicPageTitleMainHeadingInner,
 		.sapFDynamicPageTitleMainHeadingSnappedExpandContent {
+			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 			box-sizing: border-box;
@@ -236,21 +237,13 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 	}
 
 	.sapFDynamicPageTitleMainContent {
-		min-width: 0.0625rem;
+		min-width: 0;
 		padding: 0 0 0 0.5rem;
-
-		&.sapFDynamicPageTitleMainContentHasContent {
-			min-width: 3rem;
-		}
 	}
 
 	.sapFDynamicPageTitleMainActions {
 		margin-left: auto;
-		min-width: 0.0625rem;
-
-		&.sapFDynamicPageTitleMainActionsHasContent {
-			min-width: 3rem;
-		}
+		min-width: 0;
 
 	.sapFDynamicPageTitleActionsBar .sapMLabel.sapMLabelMaxWidth,
 	.sapFDynamicPageTitleActionsBar .sapMLnk.sapMLnkMaxWidth {

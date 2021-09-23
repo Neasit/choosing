@@ -141,8 +141,8 @@ sap.ui.define([
 		 * </pre>
 		 *
 		 * Since the xmlTarget does not specify its viewType, XML is taken from the config object. The jsTarget is specifying it, so the viewType will be JS.
-		 * @param {object} [oConfig.bypassed] Since 1.28. Settings which are used when no route of the router is matched after a hash change.
-		 * @param {string|string[]} [oConfig.bypassed.target] Since 1.28. One or multiple names of targets that will be displayed, if no route of the router is matched.<br/>
+		 * @param {object} [oConfig.bypassed] @since 1.28. Settings which are used when no route of the router is matched after a hash change.
+		 * @param {string|string[]} [oConfig.bypassed.target] @since 1.28. One or multiple names of targets that will be displayed, if no route of the router is matched.<br/>
 		 * A typical use case is a not found page.<br/>
 		 * The current hash will be passed to the display event of the target.<br/>
 		 * <b>Example:</b>
@@ -170,12 +170,12 @@ sap.ui.define([
 		 *          }
 		 *     });
 		 * </pre>
-		 * @param {boolean} [oConfig.async=false] Since 1.34. Whether views are loaded asynchronously within this router instance.
-		 * As of 1.90 synchronous routing is deprecated. Therefore, you should explicitly set <code>oConfig.async</code> to <code>true</code>.
+		 * @param {boolean} [oConfig.async=false] @since 1.34. Whether the views which are loaded within this router instance asyncly
 		 * @param {sap.ui.core.UIComponent} [oOwner] the Component of all the views that will be created by this Router,<br/>
 		 * will get forwarded to the {@link sap.ui.core.routing.Views#constructor}.<br/>
 		 * If you are using the componentMetadata to define your routes you should skip this parameter.
-		 * @param {object} [oTargetsConfig] Since 1.28 the target configuration, see {@link sap.ui.core.routing.Targets#constructor} documentation (the options object).<br/>
+		 * @param {object} [oTargetsConfig]
+		 * available @since 1.28 the target configuration, see {@link sap.ui.core.routing.Targets#constructor} documentation (the options object).<br/>
 		 * You should use Targets to create and display views. Since 1.28 the route should only contain routing relevant properties.<br/>
 		 * <b>Example:</b>
 		 * <pre>
@@ -380,7 +380,7 @@ sap.ui.define([
 			 *
 			 * See {@link sap.ui.core.routing.HashChanger}.
 			 *
-			 * @param {boolean} [bIgnoreInitialHash=false] Since 1.48.0. Whether the current URL hash shouldn't be parsed after the router is initialized
+			 * @param {boolean} [bIgnoreInitialHash=false] @since 1.48.0 Whether the current URL hash shouldn't be parsed after the router is initialized
 			 * @public
 			 * @returns {this} this for chaining.
 			 */
@@ -545,6 +545,9 @@ sap.ui.define([
 				if (this.oHashChanger) {
 					Log.warning("The Router already has a HashChanger set and this call is ignored");
 				} else {
+					if (oHashChanger instanceof RouterHashChanger) {
+						oHashChanger.registerRouter(this);
+					}
 					this.oHashChanger = oHashChanger;
 				}
 
@@ -582,6 +585,10 @@ sap.ui.define([
 
 				if (this.fnHashReplaced) {
 					this.oHashChanger.detachEvent("hashReplaced", this.fnHashReplaced);
+				}
+
+				if (this.oHashChanger instanceof RouterHashChanger) {
+					this.oHashChanger.deregisterRouter(this);
 				}
 
 				//will remove all the signals attached to the routes - all the routes will not be useable anymore
@@ -729,7 +736,7 @@ sap.ui.define([
 					viewName: sViewName,
 					type: sViewType,
 					id: sViewId
-				}, true);
+				});
 
 				this.fireViewCreated({
 					view: oView,
@@ -749,7 +756,7 @@ sap.ui.define([
 			 * @param {sap.ui.core.mvc.View} oView The view instance
 			 * @since 1.22
 			 * @public
-			 * @returns {this} Since 1.28, the <code>this</code> pointer for chaining
+			 * @returns {this} @since 1.28 the this pointer for chaining
 			 */
 			setView : function (sViewName, oView) {
 				this._oViews.setView(sViewName, oView);
@@ -832,11 +839,6 @@ sap.ui.define([
 					bRouteSwitched = this._getLastMatchedRouteName() !== sName,
 					oRoute = this.getRoute(sName),
 					pComponentHashChange, sHash;
-
-				if (this.isStopped()){
-					Log.info("The router instance " + this._sId + " is stopped. No navigation can be performed.");
-					return this;
-				}
 
 				if (!oRoute) {
 					Log.warning("Route with name " + sName + " does not exist", this);
@@ -1521,7 +1523,7 @@ sap.ui.define([
 			 * Use {@link sap.ui.core.routing.Router.getRouter Router.getRouter()} to retrieve the instance.
 			 *
 			 * @param {string} sName Name of the router instance
-			 * @returns {this} The router instance
+			 * @returns {sap.ui.core.routing.Router} The router instance
 			 * @public
 			 */
 			register : function (sName) {

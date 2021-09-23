@@ -28,7 +28,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.odata.type.DateTimeBase
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @alias sap.ui.model.odata.type.DateTimeOffset
 	 * @param {object} [oFormatOptions]
@@ -152,8 +152,10 @@ sap.ui.define([
 		return DateTimeBase.prototype.formatValue.call(this, vValue, sTargetType);
 	};
 
-	// @override
-	// @see sap.ui.model.SimpleType#getConstraints
+	/**
+	 * @override
+	 * @see sap.ui.model.SimpleType#getConstraints
+	 */
 	DateTimeOffset.prototype.getConstraints = function () {
 		var oConstraints = DateTimeBase.prototype.getConstraints.call(this);
 

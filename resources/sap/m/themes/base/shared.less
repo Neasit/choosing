@@ -77,6 +77,7 @@
 .sapUiHyphenation {
 	-webkit-hyphens: auto;
 	-moz-hyphens: auto;
+	-ms-hyphens: auto;
 	hyphens: auto;
 }
 
@@ -255,10 +256,6 @@
 	content: attr(data-badge);
 }
 
-.sapMBadgeIndicator.sapMBadgeDefault[data-badge=""]:after {
-	display: none;
-}
-
 html[data-sap-ui-animation='on'] {
 	.sapMBadge.sapMBadgeAnimationTypeFull {
 		.sapMBadgeDefault.sapMBadgeAnimationAdd:after {
@@ -290,7 +287,6 @@ html[data-sap-ui-animation='off'] {
 	.sapMBadgeDefault.sapMBadgeAnimationRemove:after {
 		scale: 0;
 		opacity: 0;
-		display: none;
 	}
 }
 
@@ -300,7 +296,6 @@ html[data-sap-ui-animation='off'] {
 	.sapMBadgeDefault.sapMBadgeAnimationRemove:after {
 		scale: 0;
 		opacity: 0;
-		display: none;
 	}
 }
 

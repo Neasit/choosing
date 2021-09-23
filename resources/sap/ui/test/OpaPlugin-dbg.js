@@ -147,8 +147,7 @@ sap.ui.define([
 				var sViewName = oView.getViewName();
 				var sFragmentPrefix = oOptions.fragmentId ? oOptions.fragmentId + OpaPlugin.VIEW_ID_DELIMITER : "";
 
-				// first check for exact Ids, to skip searching through all the view's controls if possible
-				if (Array.isArray(oOptions.id)) {
+				if ($.isArray(oOptions.id)) {
 					var aControls = [];
 					var aUnmatchedIds = [];
 					oOptions.id.map(function (sId) {
@@ -162,39 +161,18 @@ sap.ui.define([
 						}
 					});
 
-					this._oLogger.debug("Found " + aControls.length + " controls with ID contained in " + oOptions.id + " in view '" + sViewName + "'" +
-						aUnmatchedIds.length ? ". Found no controls matching the subset of IDs " + aUnmatchedIds : "");
-
-					if (aControls.length && oOptions.controlType) {
-						var aControlsWithCorrectType = this._filterUniqueControlsByCondition(aControls, makeTypeFilterFn(oOptions.controlType));
-						this._oLogger.debug("Found " + (aControlsWithCorrectType.length ? aControlsWithCorrectType.length : "no") + " controls in view '" + sViewName +
-							"' with control type matching '" + oOptions.sOriginalControlType + "' and ID contained in " + oOptions.id);
-						if (aControlsWithCorrectType.length !== aControls.length) {
-							this._oLogger.error("Some results don't match the desired controlType '" + oOptions.sOriginalControlType +
-								"'. Please double check the expected controlType - this might lead to unexpected test results!");
-						}
-					}
+					var sUnmatchedLog = aUnmatchedIds.length ? ". Found no controls matching the subset of IDs " + aUnmatchedIds : "";
+					this._oLogger.debug("Found " + aControls.length + " controls with ID contained in " + oOptions.id + " in view '" + sViewName + "'" + sUnmatchedLog);
 					return aControls;
 				}
 
 				if (bSearchForSingleControl) {
 					var sId = sFragmentPrefix + oOptions.id;
 					var oControl = oView.byId(sId) || null;
-					if (oControl) {
-						if (makeTypeFilterFn(oOptions.controlType)(oControl)) {
-							this._oLogger.debug("Found control with ID '" + sId + "' and controlType '" + oOptions.sOriginalControlType + "' in view '" + sViewName + "'");
-						} else {
-							this._oLogger.error("Found control with ID '" + sId + "' in view '" + sViewName + "' but it does not have required controlType '" +
-								oOptions.sOriginalControlType + "'. Please double check the expected controlType - this might lead to unexpected test results!");
-						}
-						return oControl;
-					} else {
-						this._oLogger.debug("Found no control with ID '" + sId + "' in view '" + sViewName + "'");
-						return oControl;
-					}
+					this._oLogger.debug("Found " + (oControl ? "" : "no ") + "control with ID '" + sId + "' in view '" + sViewName + "'");
+					return oControl;
 				}
 
-				// if not exact Id is given, start a thorough search
 				var aAllControlsOfTheView = this.getAllControlsWithTheParent(oView, oOptions.controlType, oOptions.sOriginalControlType);
 				var bMatchById = this._isRegExp(oOptions.id);
 
@@ -254,7 +232,7 @@ sap.ui.define([
 						if (this._isRegExp(oOptions.id)) {
 							bIdMatches = oOptions.id.test(sUnprefixedControlId);
 						}
-						if (Array.isArray(oOptions.id)) {
+						if ($.isArray(oOptions.id)) {
 							bIdMatches = oOptions.id.filter(function (sId) {
 								return sId === sUnprefixedControlId;
 							}).length > 0;
@@ -270,7 +248,8 @@ sap.ui.define([
 				if (vControls.length && oOptions.controlType) {
 					var hasExpectedType = makeTypeFilterFn(oOptions.controlType);
 					vControls = this._filterUniqueControlsByCondition(vControls, hasExpectedType);
-					this._oLogger.debug("Found " + (vControls.length ? vControls.length : "no") + " controls in the static area with control type matching '" + oOptions.sOriginalControlType + "'");
+
+					this._oLogger.debug("Found " + (vControls.length ? vControls.length : "no") + " controls in the static area with control type matching '" + oOptions.controlType + "'");
 				}
 
 				if (oOptions.id && typeof oOptions.id === "string") {
@@ -395,7 +374,7 @@ sap.ui.define([
 				// all controls are filtered out
 				if (!vPipelineResult) {
 					// backwards compatible - return empty array in this case
-					if (Array.isArray(vResult)) {
+					if ($.isArray(vResult)) {
 						return [];
 					}
 					// Single control - return null
@@ -445,8 +424,8 @@ sap.ui.define([
 				var aControlsNotFoundConditions = [
 					typeof oOptions.id === "string" && !vControl, // search for single control by string ID
 					this._isRegExp(oOptions.id) && !vControl.length, // search by regex ID
-					Array.isArray(oOptions.id) && (!vControl || vControl.length !== oOptions.id.length), // search by array of IDs
-					oOptions.controlType && Array.isArray(vControl) && !vControl.length, // search by control type globally
+					$.isArray(oOptions.id) && (!vControl || vControl.length !== oOptions.id.length), // search by array of IDs
+					oOptions.controlType && $.isArray(vControl) && !vControl.length, // search by control type globally
 					!oOptions.id && (oOptions.viewName || oOptions.viewId || oOptions.searchOpenDialogs) && !vControl.length // search by control type in view or staic area
 				];
 
@@ -484,7 +463,7 @@ sap.ui.define([
 			},
 
 			/**
-			 * Find a control by its global ID.
+			 * Find a control by its global ID
 			 *
 			 * @param {object} oOptions a map of match conditions. Must contain an id property
 			 * @param {string|string[]} [oOptions.id] required - ID to match. Can be string, regex or array
@@ -494,6 +473,9 @@ sap.ui.define([
 			 *     <li>if a oOptions.id is a string, will return the single matching control or null if no controls match</li>
 			 *     <li>otherwise, will return an array of matching controls, or an empty array, if no controls match</li>
 			 * </ul>
+			 *
+			 * @param oOptions must contain ID property of type string, regex or array of strings; optionally it can contain a controlType property.
+			 * @returns {sap.ui.core.Element|sap.ui.core.Element[]|null} all controls matched by the regex or the control matched by the string or null
 			 * @public
 			 */
 			getControlByGlobalId : function (oOptions) {
@@ -523,7 +505,7 @@ sap.ui.define([
 							aMatchIds.push(sId);
 						}
 					});
-				} else if (Array.isArray(oOptions.id)) {
+				} else if ($.isArray(oOptions.id)) {
 					aMatchIds = oOptions.id;
 				}
 

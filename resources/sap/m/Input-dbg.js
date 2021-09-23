@@ -33,11 +33,7 @@ sap.ui.define([
 	"sap/ui/events/KeyCodes",
 	"sap/m/inputUtils/filterItems",
 	"sap/m/inputUtils/ListHelpers",
-	"sap/m/inputUtils/calculateSelectionStart",
-	"sap/m/inputUtils/selectionRange",
 	"./InputRenderer",
-	"sap/ui/base/ManagedObject",
-	"sap/ui/base/ManagedObjectObserver",
 	"sap/ui/thirdparty/jquery",
 	// jQuery Plugin "selectText"
 	"sap/ui/dom/jquery/selectText"
@@ -70,11 +66,7 @@ function(
 	KeyCodes,
 	filterItems,
 	ListHelpers,
-	calculateSelectionStart,
-	selectionRange,
 	InputRenderer,
-	ManagedObject,
-	ManagedObjectObserver,
 	jQuery
 ) {
 	"use strict";
@@ -143,7 +135,7 @@ function(
 	 * <b>When not to use:</b>
 	 * Don't use the control for long texts, dates, designated search fields, fields for multiple selection.
 	 *
-	 * <h3>Known Restrictions</h3>
+	 * <h3>Known Limitations</h3>
 	 *
 	 * If <code>showValueHelp</code> or if <code>showSuggestion</code> is <code>true</code>, the native browser autofill will not fire a change event.
 	 *
@@ -159,7 +151,7 @@ function(
 	 *
 	 * @extends sap.m.InputBase
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -299,17 +291,6 @@ function(
 			enableSuggestionsHighlighting: {type: "boolean", group: "Behavior", defaultValue: true},
 
 			/**
-			 * Enables the <code>autoPopinMode</code> of <code>sap.m.Table</code>, when the input has tabular suggestions.
-			 * <b>Note:</b> The <code>autoPopinMode</code> overwrites the <code>demandPopin</code> and the
-			 * <code>minScreenWidth</code> properties of the <code>sap.m.Column</code>.
-			 * When setting, <code>enableTableAutoPopinMode</code>, from true to false,
-			 * the application must reconfigure the <code>demandPopin</code> and
-			 * <code>minScreenWidth</code> properties of the <code>sap.m.Column</code> control by itself.
-			 * @since 1.89
-			 */
-			 enableTableAutoPopinMode: {type: "boolean", group: "Behavior", defaultValue: false},
-
-			/**
 			 * Specifies whether autocomplete is enabled.
 			 * Works only if "showSuggestion" property is set to true.
 			 * <b>Note:</b> The autocomplete feature is disabled on Android devices due to a OS specific issue.
@@ -338,7 +319,6 @@ function(
 			 *
 			 * <b>Note:</b> Disabled items are not visualized in the list with the suggestions,
 			 * however they can still be accessed through the aggregation.
-			 * <b>Note:</b> If <code>suggestionItems</code> & <code>suggestionRows</code> are set in parallel, the last aggeragtion to come would overwrite the previous ones.
 			 *
 			 * @since 1.16.1
 			 */
@@ -353,7 +333,7 @@ function(
 			/**
 			 * The suggestionColumns and suggestionRows are for tabular input suggestions. This aggregation allows for binding the table cells.
 			 * The items of this aggregation are to be bound directly or to set in the suggest event method.
-			 * <b>Note:</b> If <code>suggestionItems</code> & <code>suggestionRows</code> are set in parallel, the last aggeragtion to come would overwrite the previous ones.
+			 * <b>Note:</b> If this aggregation is filled, the aggregation suggestionItems will be ignored.
 			 * @since 1.21.1
 			 */
 			suggestionRows : {type : "sap.m.ColumnListItem", altTypes: ["sap.m.GroupHeaderListItem"], multiple : true, singularName : "suggestionRow", bindable : "bindable", forwarding: {getter: "_getSuggestionsTable", aggregation: "items"}},
@@ -525,11 +505,6 @@ function(
 	 * @returns {string} The value to be displayed in the input field.
 	 */
 	Input._DEFAULTRESULT_TABULAR = function (oColumnListItem) {
-		// If there are groups, the GroupHeaderListItems are also passed but they should be skipped by this function
-		if (!oColumnListItem || oColumnListItem.isA("sap.m.GroupHeaderListItem")) {
-			return "";
-		}
-
 		var aCells = oColumnListItem.getCells(),
 			i = 0;
 
@@ -549,6 +524,7 @@ function(
 	 */
 	Input.prototype.init = function() {
 		InputBase.prototype.init.call(this);
+		this._fnFilter = inputsDefaultFilter;
 
 		// Counter for concurrent issues with setValue:
 		this._iSetCount = 0;
@@ -557,17 +533,6 @@ function(
 		this._sProposedItemText = null;
 
 		this._oRb = sap.ui.getCore().getLibraryResourceBundle("sap.m");
-
-		// Instantiate the SuggestionsPopover only for the main input.
-		// If there's a Dialog where the Input gets duplicated, we should not recreate the Popover.
-		if (this.getId().indexOf("popup-input") === -1) {
-			this._createSuggestionsPopover();
-		}
-
-		// We need to set this to empty string as we are comparing it with sValue in the before rendering
-		// phase of the life cycle. Without this line, initially the condition fails and fires liveChange event
-		// even though there is no user input (check Input.prototype.onsapright).
-		this._setTypedInValue("");
 	};
 
 	/**
@@ -589,9 +554,12 @@ function(
 			this._iRefreshListTimeout = null;
 		}
 
-		this._destroySuggestionsTable();
+		if (this._oSuggestionsTable) {
+			this._oSuggestionsTable.destroy();
+			this._oSuggestionsTable = null;
+		}
 
-		if (this._getSuggestionsPopover()) {
+		if (this._isSuggestionsPopoverInitiated()) {
 			this._oSuggestionPopup = null;
 			this._oSuggPopover.destroy();
 			this._oSuggPopover = null;
@@ -612,7 +580,7 @@ function(
 			aEndIcons = this.getAggregation("_endIcon") || [],
 
 			oIcon = aEndIcons[0],
-			oSuggestionsPopover = this._getSuggestionsPopover(),
+			oSuggestionsPopover = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover(),
 			bSuggestionsPopoverIsOpen = oSuggestionsPopover && this._isSuggestionsPopoverOpen(),
 			oPopupInput = oSuggestionsPopover && oSuggestionsPopover.getInput(),
 			sValueStateHeaderText = bSuggestionsPopoverIsOpen ?  oSuggestionsPopover._getValueStateHeader().getText() : null,
@@ -652,10 +620,7 @@ function(
 			this.setProperty("width", "100%", true);
 		}
 
-		if (this._hasTabularSuggestions()) {
-			this._getSuggestionsTable().setAutoPopinMode(this.getEnableTableAutoPopinMode());
-			this._getSuggestionsTable().setContextualWidth(this.getEnableTableAutoPopinMode() ? "Auto" : "Inherit");
-		}
+		this._resetTypeAhead();
 
 		if (bSuggestionsPopoverIsOpen && ((this.getValueStateText() && sValueStateHeaderText !== this.getValueStateText()) ||
 			(this.getValueState() !== sValueStateHeaderValueState) ||
@@ -711,8 +676,7 @@ function(
 
 		var sKey = this.getSelectedKey(),
 			bHasSelectedItem,
-			oSuggestionsPopover = this._getSuggestionsPopover(),
-			oList = oSuggestionsPopover && oSuggestionsPopover.getItemsContainer();
+			oList = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover().getItemsContainer();
 
 		if (sKey === '') {
 			return;
@@ -790,7 +754,6 @@ function(
 		}
 
 		this._bSelectingItem = false;
-		this._resetTypeAhead();
 	};
 
 
@@ -805,10 +768,9 @@ function(
 	 */
 	Input.prototype.addSuggestionRowGroup = function(oGroup, oHeader, bSuppressInvalidate) {
 		oHeader = oHeader || new GroupHeaderListItem({
-			title: ManagedObject.escapeSettingsValue(oGroup.text) || ManagedObject.escapeSettingsValue(oGroup.key)
+			title: oGroup.text || oGroup.key
 		});
 
-		this._createSuggestionPopupContent(true);
 		this.addAggregation("suggestionRows", oHeader, bSuppressInvalidate);
 		return oHeader;
 	};
@@ -825,10 +787,9 @@ function(
 	 */
 	Input.prototype.addSuggestionItemGroup = function(oGroup, oHeader, bSuppressInvalidate) {
 		oHeader = oHeader || new SeparatorItem({
-			text: ManagedObject.escapeSettingsValue(oGroup.text) || ManagedObject.escapeSettingsValue(oGroup.key)
+			text: oGroup.text || oGroup.key
 		});
 
-		this._createSuggestionPopupContent(false);
 		this.addAggregation("suggestionItems", oHeader, bSuppressInvalidate);
 		return oHeader;
 	};
@@ -988,7 +949,7 @@ function(
 			if (oItem) {
 				sNewValue = this._getDisplayText(oItem);
 			} else {
-				sNewValue = this._getRowResultFunction()(oListItem);
+				sNewValue = this._fnRowResultFilter ? this._fnRowResultFilter(oListItem) : Input._DEFAULTRESULT_TABULAR(oListItem);
 			}
 		}
 
@@ -1096,8 +1057,8 @@ function(
 		// The goal is to provide a value in the value help event, which can be used to filter the opened Value Help Dialog.
 		var sTypedInValue = "";
 
-		if (this.getShowSuggestion() && !this.isMobileDevice()) {
-			sTypedInValue = this._getTypedInValue() || "";
+		if (this.getShowSuggestion() && this._isSuggestionsPopoverInitiated() && !this.isMobileDevice()) {
+			sTypedInValue = this._sTypedInValue || "";
 		} else {
 			sTypedInValue = this.getDOMValue();
 		}
@@ -1140,7 +1101,8 @@ function(
 			 && this.getEditable()
 			 && this.getEnabled()
 			 && this.getShowSuggestion()
-			 && oEvent.target.id !== this.getId() + "-vhi") {
+			 && this._isSuggestionsPopoverInitiated()
+			 && oEvent.target.id != this.getId() + "-vhi") {
 				this._openSuggestionsPopover();
 		}
 	};
@@ -1164,24 +1126,6 @@ function(
 		assert(typeof (fnFilter) === "function", "Input.setFilterFunction: first argument fnFilter must be a function on " + this);
 		this._fnFilter = fnFilter;
 		return this;
-	};
-
-	/**
-	 * Returns a custom or default filter function for list or tabular suggestions.
-	 *
-	 * If no custom filter is set, default filtering is set depending on the type of the suggestions.
-	 *
-	 * @private
-	 * @param {boolean} bForceDefaultFiltering Whether or not to apply the default filter even if custom one is set
-	 *
-	 * @returns {function} The default filter function depending on the type of the suggestions.
-	 */
-	Input.prototype._getFilterFunction = function(bForceDefaultFiltering) {
-		if (typeof this._fnFilter === "function" && !bForceDefaultFiltering) {
-			return this._fnFilter;
-		}
-
-		return !this._hasTabularSuggestions() ? inputsDefaultFilter : Input._DEFAULTFILTER_TABULAR;
 	};
 
 	/**
@@ -1211,25 +1155,6 @@ function(
 		}
 
 		return this;
-	};
-
-	/**
-	 * Returns a custom or default filter function for tabular suggestions to select the text that is passed to the input field.
-	 *
-	 * If no custom filter is set or default filtering is forced, this function will apply the default filter to the column item.
-	 *
-	 * @private
-	 * @param {sap.m.ColumnListItem} oColumnListItem The sap.m.ColumnListItem that is selected
-	 * @param {boolean} bForceDefaultFiltering Whether or not to apply the default filter even if custom one is set
-	 *
-	 * @returns {function} The row filtering function(s) to execute on the selected row item.
-	 */
-	Input.prototype._getRowResultFunction = function(bForceDefaultFiltering) {
-		if (typeof this._fnRowResultFilter === "function" && !bForceDefaultFiltering) {
-			return this._fnRowResultFilter;
-		}
-
-		return Input._DEFAULTRESULT_TABULAR;
 	};
 
 	/**
@@ -1294,8 +1219,8 @@ function(
 			this._closeSuggestionPopup();
 
 			// restore the initial value that was there before suggestion dialog
-			if (this._getTypedInValue() !== this.getValue()) {
-				this.setValue(this._getTypedInValue());
+			if (this.getBeforeSuggestValue() !== this.getValue()) {
+				this.setValue(this.getBeforeSuggestValue());
 			}
 			return; // override InputBase.onsapescape()
 		}
@@ -1317,37 +1242,21 @@ function(
 	 * @param {jQuery.Event} oEvent Keyboard event.
 	 */
 	Input.prototype.onsapenter = function(oEvent) {
-		var bPopupOpened = this._isSuggestionsPopoverOpen(),
-			bFocusInPopup = !this.hasStyleClass("sapMFocus") && bPopupOpened,
-			aItems = this._hasTabularSuggestions() ? this.getSuggestionRows() : this.getSuggestionItems(),
-			iValueLength, oSelectedItem;
-
+		var iValueLength;
 		// when enter is pressed before the timeout of suggestion delay, suggest event is cancelled
 		this.cancelPendingSuggest();
 
-		bFocusInPopup && this.setSelectionUpdatedFromList(true);
-
-		// The logic here works solely for suggestionItems. Once we move the whole dependent logic to coreItems
-		// it should work for suggetionRows as well.
-		if (this.getShowSuggestion() && this._bDoTypeAhead && bPopupOpened && !this._hasTabularSuggestions()) {
-			oSelectedItem = this._getSuggestionsPopover().getItemsContainer().getSelectedItem();
-			oSelectedItem && this.setSelectionItem(ListHelpers.getItemByListItem(aItems, oSelectedItem), true);
-		}
-
-		if (bPopupOpened && !this.isComposingCharacter()) {
+		if (this._isSuggestionsPopoverOpen() && !this.isComposingCharacter()) {
+			this.setSelectionUpdatedFromList(true);
 			this._closeSuggestionPopup();
 			iValueLength = this.getDOMValue() ? this.getDOMValue().length : null;
 			this.selectText(iValueLength, iValueLength); // Remove text selection
+		} else {
+			InputBase.prototype.onsapenter.apply(this, arguments);
 		}
-
-		!bFocusInPopup && InputBase.prototype.onsapenter.apply(this, arguments);
 
 		if (this.getEnabled() && this.getEditable() && !(this.getValueHelpOnly() && this.getShowValueHelp())) {
 			this.fireSubmit({value: this.getValue()});
-		}
-
-		if (!this.isMobileDevice()) {
-			this._resetTypeAhead();
 		}
 	};
 
@@ -1358,16 +1267,15 @@ function(
 	 * @param {jQuery.Event} oEvent Keyboard event.
 	 */
 	Input.prototype.onsapfocusleave = function(oEvent) {
-		var oSuggPopover = this._getSuggestionsPopover(),
+		var oSuggPopover = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover(),
 			oPopup = oSuggPopover && oSuggPopover.getPopover(),
-			bIsPopover = oPopup && oPopup.isA("sap.m.Popover"),
 			oFocusedControl = oEvent.relatedControlId && sap.ui.getCore().byId(oEvent.relatedControlId),
 			oFocusDomRef = oFocusedControl && oFocusedControl.getFocusDomRef(),
 			bFocusInPopup = oPopup
 				&& oFocusDomRef
 				&& containsOrEquals(oPopup.getDomRef(), oFocusDomRef);
 
-		if (bIsPopover) {
+		if (oPopup instanceof Popover) {
 			if (bFocusInPopup && !oSuggPopover.getValueStateActiveState()) {
 				// set the flag that the focus is currently in the Popup
 				this._bPopupHasFocus = true;
@@ -1385,18 +1293,6 @@ function(
 			}
 		}
 
-		// Inform InputBase to fire the change event on Input only when focus doesn't go into the suggestion popup
-		if (!bFocusInPopup) {
-			InputBase.prototype.onsapfocusleave.apply(this, arguments);
-		}
-
-		this.bValueHelpRequested = false;
-	};
-
-	Input.prototype.onsaptabnext = function () {
-		// There's no typeahead for mobile devices.
-		// If the popup has been focused, then the list would take care of that functionality.
-		// There should be a matching item (proposed text in order to continue)
 		if (!this.isMobileDevice() && this._sProposedItemText) {
 			// Update selections for poweruser
 			var oSelectedItem = this.getSuggestionItems()
@@ -1409,8 +1305,14 @@ function(
 				this.selectText(0, 0);
 			}
 		}
-	};
 
+		// Inform InputBase to fire the change event on Input only when focus doesn't go into the suggestion popup
+		if (!bFocusInPopup) {
+			InputBase.prototype.onsapfocusleave.apply(this, arguments);
+		}
+
+		this.bValueHelpRequested = false;
+	};
 	/**
 	 * Keyboard handler for the onMouseDown event.
 	 *
@@ -1437,7 +1339,7 @@ function(
 			}
 
 			if (this.getShowSuggestion()){
-				this._getSuggestionsPopover().handleListNavigation(this, oEvent);
+				this._getSuggestionsPopover().handleListNavigation(oEvent);
 
 				if (this._isIncrementalType()) {
 					oEvent.setMarked();
@@ -1495,7 +1397,7 @@ function(
 	Input.prototype._deregisterEvents = function() {
 		this._deregisterPopupResize();
 
-		if (this.isMobileDevice() && this._getSuggestionsPopover() && this._getSuggestionsPopover().getPopover()) {
+		if (this.isMobileDevice() && this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover().getPopover()) {
 			this.$().off("click");
 		}
 	};
@@ -1593,221 +1495,279 @@ function(
 		}
 	};
 
-	/**
-	 * Checks if suggestions should be triggered.
-	 *
-	 * @private
-	 * @returns {boolean} Determines if suggestions should be triggered.
-	 */
-	Input.prototype._shouldTriggerSuggest = function () {
-		return !this._bPopupHasFocus && !this.getStartSuggestion() && !this.getValue() && this.getShowSuggestion();
-	};
+	(function(){
+		/**
+		 * Shows suggestions.
+		 *
+		 * @public
+		 * @param {boolean} bValue Show suggestions.
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.setShowSuggestion = function(bValue){
+			var oSuggestionsPopover;
+			this.setProperty("showSuggestion", bValue, true);
+			if (bValue) {
+				oSuggestionsPopover = this._getSuggestionsPopover();
+				this._oSuggPopover = oSuggestionsPopover;
 
-	/**
-	 * Shows value help suggestions in table.
-	 *
-	 * @public
-	 * @param {boolean} bValue Show suggestions.
-	 * @return {this} this Input instance for chaining.
-	 */
-	Input.prototype.setShowTableSuggestionValueHelp = function (bValue) {
-		var oSuggestionsPopover = this._getSuggestionsPopover();
-		this.setProperty("showTableSuggestionValueHelp", bValue, true);
+				if (!oSuggestionsPopover.getPopover()) {
+					this._createSuggestionsPopoverPopup();
+					this._synchronizeSuggestions();
+					this._createSuggestionPopupContent();
+				}
+			} else {
+				if (this._isSuggestionsPopoverInitiated()) {
+					oSuggestionsPopover = this._getSuggestionsPopover();
+					oSuggestionsPopover._destroySuggestionPopup();
+				}
+			}
 
-		if (!oSuggestionsPopover.getPopover()) {
 			return this;
-		}
+		};
 
-		if (bValue) {
-			this._addShowMoreButton();
-		} else {
-			this._removeShowMoreButton();
-		}
-		return this;
-	};
+		/**
+		 * Checks if suggest should be triggered.
+		 *
+		 * @private
+		 * @returns {boolean} Determines if suggest should be triggered.
+		 */
+		Input.prototype._shouldTriggerSuggest = function() {
+			return !this._bPopupHasFocus && !this.getStartSuggestion() && !this.getValue() && this.getShowSuggestion();
+		};
 
-	/**
-	 * Event handler for browsers' <code>change</code> event.
-	 *
-	 * @since 1.73
-	 * @public
-	 * @param {jQuery.Event} oEvent The event.
-	 */
-	Input.prototype.onchange = function (oEvent) {
-		if (this.getShowValueHelp() || this.getShowSuggestion()) {
-			// can not handle browser change if value help or suggestions is enabled
-			// because change is fired before the value help is opened or when a link in suggestions is clicked
-			return;
-		}
+		/**
+		 * Shows value help suggestions in table.
+		 *
+		 * @public
+		 * @param {boolean} bValue Show suggestions.
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.setShowTableSuggestionValueHelp = function(bValue) {
+			this.setProperty("showTableSuggestionValueHelp", bValue, true);
 
-		this.onChange(oEvent);
-	};
-
-	/**
-	 * Event handler for user input.
-	 *
-	 * @public
-	 * @param {jQuery.Event} oEvent User input.
-	 */
-	Input.prototype.oninput = function (oEvent) {
-		InputBase.prototype.oninput.call(this, oEvent);
-		if (oEvent.isMarked("invalid")) {
-			return;
-		}
-
-		var sValue = this.getDOMValue(),
-			oSuggestionsPopover,
-			oList,
-			oSelectedItem;
-
-		if (this.getValueLiveUpdate()) {
-			this.setProperty("value", sValue, true);
-			this._onValueUpdated(sValue);
-		}
-
-		this.fireLiveChange({
-			value: sValue,
-			// backwards compatibility
-			newValue: sValue
-		});
-
-		// always focus input field when typing in it
-		this.addStyleClass("sapMFocus");
-
-		// No need to fire suggest event when suggestion feature isn't enabled or runs on the phone.
-		// Because suggest event should only be fired by the input in dialog when runs on the phone.
-		if (this.getShowSuggestion() && !this.isMobileDevice()) {
-			oSuggestionsPopover = this._getSuggestionsPopover();
-			oList = oSuggestionsPopover.getItemsContainer();
-			this._triggerSuggest(sValue);
-
-			// If the visual focus is on a selected item, or if it is on a value state containing a link
-			if (oList && !oSuggestionsPopover.getValueStateActiveState()) {
-				oSelectedItem = oList && oList.getSelectedItem();
-				oList.removeStyleClass("sapMListFocus");
-				oSelectedItem && oSelectedItem.removeStyleClass("sapMLIBFocused");
-			} else if (oSuggestionsPopover.getValueStateActiveState() && document.activeElement.tagName !== "A") {
-				oSuggestionsPopover._getValueStateHeader().removeStyleClass("sapMPseudoFocus");
+			if (!(this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover().getPopover())) {
+				return this;
 			}
-		}
 
-		this._handleTypeAhead(this);
-	};
-
-	Input.prototype.onkeydown = function (oEvent) {
-		// disable the typeahead feature for android devices due to an issue on android soft keyboard, which always returns keyCode 229
-		this._bDoTypeAhead = !Device.os.android && this.getAutocomplete() && (oEvent.which !== KeyCodes.BACKSPACE) && (oEvent.which !== KeyCodes.DELETE);
-	};
-
-	/**
-	 * Gets the input value.
-	 *
-	 * @public
-	 * @returns {string} Value of the input.
-	 */
-	Input.prototype.getValue = function () {
-		return this.getDomRef("inner") && this._$input ? this.getDOMValue() : this.getProperty("value");
-	};
-
-	/**
-	 * Refreshes delayed items.
-	 *
-	 * @private
-	 */
-	Input.prototype._refreshItemsDelayed = function () {
-		clearTimeout(this._iRefreshListTimeout);
-
-		this._iRefreshListTimeout = setTimeout(this._refreshListItems.bind(this), 0);
-	};
-
-	/**
-	 * Clears the items from the <code>SuggestionsPopover</code>.
-	 * For List items destroys, and for tabular ones removes the items.
-	 *
-	 * @private
-	 */
-	Input.prototype._clearSuggestionPopupItems = function () {
-		var oList = this._getSuggestionsPopover().getItemsContainer();
-		if (!oList) {
-			return;
-		}
-
-		// only destroy items in simple suggestion mode
-		if (oList instanceof Table) {
-			oList.removeSelections(true);
-		} else {
-			// TODO: avoid flickering when !bFilter
-			oList.destroyItems();
-		}
-	};
-
-	/**
-	 * Hides the <code>SuggestionsPopover</code> and adjusts the corresponding acc
-	 * @private
-	 */
-	Input.prototype._hideSuggestionPopup = function () {
-		var oSuggestionsPopover = this._getSuggestionsPopover(),
-			oPopup = oSuggestionsPopover.getPopover(),
-			oList = oSuggestionsPopover.getItemsContainer();
-
-		// when the input has no value, close the Popup when not runs on the phone because the opened dialog on phone shouldn't be closed.
-		if (!this.isMobileDevice()) {
-			if (this._isSuggestionsPopoverOpen()) {
-				this._sCloseTimer = setTimeout(function () {
-					this.cancelPendingSuggest();
-					if (this._getTypedInValue()) {
-						this.setDOMValue(this._getTypedInValue());
-					}
-					oPopup.close();
-				}.bind(this), 0);
+			if (bValue) {
+				this._addShowMoreButton();
+			} else {
+				this._removeShowMoreButton();
 			}
-		} else if (this._hasTabularSuggestions() && oList) { // hide table on phone when there are no items to display
-			oList.addStyleClass("sapMInputSuggestionTableHidden");
-		}
+			return this;
+		};
 
-		this.$("SuggDescr").text(""); // clear suggestion text
-		this.$("inner").removeAttr("aria-activedescendant");
-	};
-
-	/**
-	 * Opens the <code>SuggestionsPopover</code> and adjusts the corresponding acc
-	 *
-	 * @param {Boolean} bOpenCondition Additional open condition
-	 * @private
-	 */
-	Input.prototype._openSuggestionPopup = function (bOpenCondition) {
-		if (!this.isMobileDevice()) {
-			if (this._sCloseTimer) {
-				clearTimeout(this._sCloseTimer);
-				this._sCloseTimer = null;
+		/**
+		 * Event handler for browsers' <code>change</code> event.
+		 *
+		 * @since 1.73
+		 * @public
+		 * @param {jQuery.Event} oEvent The event.
+		 */
+		Input.prototype.onchange = function(oEvent) {
+			if (this.getShowValueHelp() || this.getShowSuggestion()) {
+				// can not handle browser change if value help or suggestions is enabled
+				// because change is fired before the value help is opened or when a link in suggestions is clicked
+				return;
 			}
-			if (!this._isSuggestionsPopoverOpen() && !this._sOpenTimer && bOpenCondition !== false && this.getShowSuggestion()) {
-				this._sOpenTimer = setTimeout(function () {
-					this._sOpenTimer = null;
-					this._getSuggestionsPopover() && this._openSuggestionsPopover();
-				}.bind(this), 0);
+
+			this.onChange(oEvent);
+		};
+
+		/**
+		 * Event handler for user input.
+		 *
+		 * @public
+		 * @param {jQuery.Event} oEvent User input.
+		 */
+		Input.prototype.oninput = function(oEvent) {
+			InputBase.prototype.oninput.call(this, oEvent);
+			if (oEvent.isMarked("invalid")) {
+				return;
 			}
-		}
-	};
 
-	/**
-	 * Applies Suggestion Accessibility
-	 *
-	 * Adds the aria-desribedby text with the number of available suggestions.
-	 *
-	 * @param {Integer} iNumItems
-	 * @private
-	 */
-	Input.prototype._applySuggestionAcc = function(iNumItems) {
-		var sAriaText = "",
-			oRb = this._oRb;
+			var sValue = this.getDOMValue(),
+				oSuggestionsPopover,
+				oList,
+				oSelectedItem;
 
-		// Timeout is used because sometimes when we have suggestions
-		// that are fetched from the backend and filtered with a delay this function
-		// could be called twice - the first time with no available results.
-		// In that case the second DOM update of the invisible text element
-		// do not occur if it is synchronous. BCP #2070466087
-		setTimeout(function () {
+			if (this.getValueLiveUpdate()) {
+				this.setProperty("value", sValue, true);
+				this._onValueUpdated(sValue);
+			}
+
+			this.fireLiveChange({
+				value: sValue,
+				// backwards compatibility
+				newValue: sValue
+			});
+
+			// always focus input field when typing in it
+			this.addStyleClass("sapMFocus");
+
+			// No need to fire suggest event when suggestion feature isn't enabled or runs on the phone.
+			// Because suggest event should only be fired by the input in dialog when runs on the phone.
+			if (this.getShowSuggestion() && !this.isMobileDevice()) {
+				oSuggestionsPopover = this._getSuggestionsPopover();
+				oList = oSuggestionsPopover.getItemsContainer();
+				this._triggerSuggest(sValue);
+
+				// If the visual focus is on a selected item, or if it is on a value state containing a link
+				if (oList && !oSuggestionsPopover.getValueStateActiveState()) {
+					oSelectedItem = oList && oList.getSelectedItem();
+					oList.removeStyleClass("sapMListFocus");
+					oSelectedItem && oSelectedItem.removeStyleClass("sapMLIBFocused");
+				} else if (oSuggestionsPopover.getValueStateActiveState() && document.activeElement.tagName !== "A") {
+					oSuggestionsPopover._getValueStateHeader().removeStyleClass("sapMPseudoFocus");
+				}
+			}
+
+			this._handleTypeAhead(this);
+		};
+
+		Input.prototype.onkeydown = function (oEvent) {
+			// disable the typeahead feature for android devices due to an issue on android soft keyboard, which always returns keyCode 229
+			this._bDoTypeAhead = !Device.os.android && this.getAutocomplete() && (oEvent.which !== KeyCodes.BACKSPACE) && (oEvent.which !== KeyCodes.DELETE);
+		};
+
+		/**
+		 * Gets the input value.
+		 *
+		 * @public
+		 * @returns {string} Value of the input.
+		 */
+		Input.prototype.getValue = function(){
+			return this.getDomRef("inner") && this._$input ? this.getDOMValue() : this.getProperty("value");
+		};
+
+		/**
+		 * Refreshes delayed items.
+		 *
+		 * @public
+		 */
+		Input.prototype._refreshItemsDelayed = function() {
+			clearTimeout(this._iRefreshListTimeout);
+
+			this._iRefreshListTimeout = setTimeout(function () {
+				if (this._isSuggestionsPopoverInitiated()) {
+					this._refreshListItems();
+				}
+			}.bind(this), 0);
+		};
+
+		/**
+		 * Clears the items from the <code>SuggestionsPopover</code>.
+		 * For List items destroys, and for tabular ones removes the items.
+		 *
+		 * @private
+		 */
+		Input.prototype._clearSuggestionPopupItems = function () {
+			var oList = this._getSuggestionsPopover().getItemsContainer();
+			if (!oList) {
+				return;
+			}
+
+			// only destroy items in simple suggestion mode
+			if (oList instanceof Table) {
+				oList.removeSelections(true);
+			} else {
+				// TODO: avoid flickering when !bFilter
+				oList.destroyItems();
+			}
+		};
+
+		/**
+		 * Hides the <code>SuggestionsPopover</code> and adjusts the corresponding acc
+		 * @private
+		 */
+		Input.prototype._hideSuggestionPopup = function () {
+			var oSuggestionsPopover = this._getSuggestionsPopover(),
+				oPopup = oSuggestionsPopover.getPopover(),
+				oList = oSuggestionsPopover.getItemsContainer();
+
+			// The IE moves the cursor position at the beginning when there is a binding and delay from the back-end
+			// The workaround is to save the focus info which includes position and reset it after updating the DOM
+			function _setDomValue(sValue) {
+				var oFocusInfo = this.getFocusInfo();
+				this.setDOMValue(sValue);
+
+				if (Device.browser.internet_explorer) {
+					this.applyFocusInfo(oFocusInfo);
+				}
+			}
+
+			// when the input has no value, close the Popup when not runs on the phone because the opened dialog on phone shouldn't be closed.
+			if (!this.isMobileDevice()) {
+				if (this._isSuggestionsPopoverOpen()) {
+					this._sCloseTimer = setTimeout(function () {
+						this.cancelPendingSuggest();
+						if (this._sTypedInValue) {
+							_setDomValue.call(this, this._sTypedInValue);
+						}
+						oPopup.close();
+					}.bind(this), 0);
+				}
+			} else if (this._hasTabularSuggestions() && oList) { // hide table on phone when there are no items to display
+				oList.addStyleClass("sapMInputSuggestionTableHidden");
+			}
+
+			this.$("SuggDescr").text(""); // clear suggestion text
+			this.$("inner").removeAttr("aria-activedescendant");
+		};
+
+		/**
+		 * Opens the <code>SuggestionsPopover</code> and adjusts the corresponding acc
+		 *
+		 * @param {Boolean} bOpenCondition Additional open condition
+		 * @private
+		 */
+		Input.prototype._openSuggestionPopup = function (bOpenCondition) {
+			if (!this.isMobileDevice()) {
+				if (this._sCloseTimer) {
+					clearTimeout(this._sCloseTimer);
+					this._sCloseTimer = null;
+				}
+				if (!this._isSuggestionsPopoverOpen() && !this._sOpenTimer && bOpenCondition !== false) {
+					this._sOpenTimer = setTimeout(function () {
+						this._sOpenTimer = null;
+						this._isSuggestionsPopoverInitiated() && this._openSuggestionsPopover();
+					}.bind(this), 0);
+				}
+			}
+		};
+
+		/**
+		 * Adds List items to the <code>SuggestionsPopover</code>.
+		 * Tabular items would be ignored.
+		 *
+		 * @param oFilterResults
+		 * @returns {number} Number of suggestions
+		 * @private
+		 */
+		Input.prototype.getSuggestionsCount = function (oFilterResults) {
+			// The number of all items, including group headers
+			var aHitItems = oFilterResults.items,
+				aGroups = oFilterResults.groups,
+				iItemsLength = aHitItems.length +  aGroups.length,
+				iSuggestionsLength = iItemsLength;
+
+			if (!this._hasTabularSuggestions()) {
+				iSuggestionsLength -= aGroups.length;
+			}
+
+			return iSuggestionsLength;
+		};
+
+		/**
+		 * Applies Suggestion Acc
+		 *
+		 * @param {Integer} iNumItems
+		 * @private
+		 */
+		Input.prototype._applySuggestionAcc = function (iNumItems) {
+			var sAriaText = "",
+				oRb = this._oRb;
+
 			// add items to list
 			if (iNumItems === 1) {
 				sAriaText = oRb.getText("INPUT_SUGGESTIONS_ONE_HIT");
@@ -1819,185 +1779,264 @@ function(
 
 			// update Accessibility text for suggestion
 			this.$("SuggDescr").text(sAriaText);
-		}.bind(this), 0);
-	};
+		};
 
-	/**
-	 * Helper function that refreshes list all items.
-	 */
-	Input.prototype._refreshListItems = function () {
-		var bShowSuggestion = this.getShowSuggestion(),
-			sTypedChars = this._bDoTypeAhead ? this._getTypedInValue() : (this.getDOMValue() || ""),
-			oFilterResults,
-			iSuggestionsLength;
+		/**
+		 * Helper function that refreshes list all items.
+		 */
+		Input.prototype._refreshListItems = function () {
+			var bShowSuggestion = this.getShowSuggestion(),
+				sTypedChars = this._bDoTypeAhead ? this._sTypedInValue : (this.getDOMValue() || ""),
+				oFilterResults,
+				iSuggestionsLength;
 
-		if (!bShowSuggestion ||
-			!this._bShouldRefreshListItems ||
-			!this.getDomRef() ||
-			(!this.isMobileDevice() && !this.$().hasClass("sapMInputFocused"))) {
+			if (!bShowSuggestion ||
+				!this._bShouldRefreshListItems ||
+				!this.getDomRef() ||
+				(!this.isMobileDevice() && !this.$().hasClass("sapMInputFocused"))) {
 
-			return null;
-		}
+				return null;
+			}
 
-		this._clearSuggestionPopupItems();
+			this._clearSuggestionPopupItems();
 
-		// hide suggestions list/table if the number of characters is smaller than limit
-		if (sTypedChars.length < this.getStartSuggestion()) {
-			this._hideSuggestionPopup();
-			return false;
-		}
+			// hide suggestions list/table if the number of characters is smaller than limit
+			if (sTypedChars.length < this.getStartSuggestion()) {
+				this._hideSuggestionPopup();
+				return false;
+			}
 
-		oFilterResults = this._getFilteredSuggestionItems(sTypedChars);
-		iSuggestionsLength = oFilterResults.items.length;
+			oFilterResults = this._getFilteredSuggestionItems(sTypedChars);
+			iSuggestionsLength = this.getSuggestionsCount(oFilterResults);
 
-		if (iSuggestionsLength > 0) {
-			this._openSuggestionPopup(this.getValue().length >= this.getStartSuggestion());
-		} else {
-			this._hideSuggestionPopup();
-		}
+			if (iSuggestionsLength > 0) {
+				this._openSuggestionPopup(this.getValue().length >= this.getStartSuggestion());
+			} else {
+				this._hideSuggestionPopup();
+			}
 
-		this._applySuggestionAcc(iSuggestionsLength);
-	};
+			this._applySuggestionAcc(iSuggestionsLength);
+		};
 
-	/**
-	 * Adds suggestion item.
-	 *
-	 * @public
-	 * @param {sap.ui.core.Item} oItem Suggestion item.
-	 * @return {this} this Input instance for chaining.
-	 */
-	Input.prototype.addSuggestionItem = function (oItem) {
-		this.addAggregation("suggestionItems", oItem, true);
+		/**
+		 * Adds suggestion item.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion item.
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.addSuggestionItem = function(oItem) {
+			this.addAggregation("suggestionItems", oItem, true);
 
-		this._synchronizeSuggestions();
-		this._createSuggestionPopupContent();
+			if (!this._isSuggestionsPopoverInitiated()) {
+				this._getSuggestionsPopover();
+			}
 
-		return this;
-	};
+			this._synchronizeSuggestions();
+			this._createSuggestionPopupContent();
 
-	/**
-	 * Inserts suggestion item.
-	 *
-	 * @public
-	 * @param {sap.ui.core.Item} oItem Suggestion item.
-	 * @param {int} iIndex Index to be inserted.
-	 * @returns {this} this Input instance for chaining.
-	 */
-	Input.prototype.insertSuggestionItem = function (oItem, iIndex) {
-		this.insertAggregation("suggestionItems", iIndex, oItem, true);
+			return this;
+		};
 
-		this._synchronizeSuggestions();
-		this._createSuggestionPopupContent();
+		/**
+		 * Inserts suggestion item.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion item.
+		 * @param {int} iIndex Index to be inserted.
+		 * @returns {this} this Input instance for chaining.
+		 */
+		Input.prototype.insertSuggestionItem = function(oItem, iIndex) {
+			this.insertAggregation("suggestionItems", iIndex, oItem, true);
 
-		return this;
-	};
+			if (!this._isSuggestionsPopoverInitiated()) {
+				this._getSuggestionsPopover();
+			}
 
-	/**
-	 * Removes suggestion item.
-	 *
-	 * @public
-	 * @param {sap.ui.core.Item} oItem Suggestion item.
-	 * @returns {boolean} Determines whether the suggestion item has been removed.
-	 */
-	Input.prototype.removeSuggestionItem = function (oItem) {
-		var res = this.removeAggregation("suggestionItems", oItem, true);
-		this._synchronizeSuggestions();
-		return res;
-	};
+			this._synchronizeSuggestions();
+			this._createSuggestionPopupContent();
 
-	/**
-	 * Removes all suggestion items.
-	 *
-	 * @public
-	 * @returns {boolean} Determines whether the suggestion items are removed.
-	 */
-	Input.prototype.removeAllSuggestionItems = function () {
-		var res = this.removeAllAggregation("suggestionItems", true);
-		this._synchronizeSuggestions();
-		return res;
-	};
+			return this;
+		};
 
-	/**
-	 * Destroys suggestion items.
-	 *
-	 * @public
-	 * @return {this} this Input instance for chaining.
-	 */
-	Input.prototype.destroySuggestionItems = function () {
-		this.destroyAggregation("suggestionItems", true);
-		this._synchronizeSuggestions();
-		return this;
-	};
+		/**
+		 * Removes suggestion item.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion item.
+		 * @returns {boolean} Determines whether the suggestion item has been removed.
+		 */
+		Input.prototype.removeSuggestionItem = function(oItem) {
+			var res = this.removeAggregation("suggestionItems", oItem, true);
+			this._synchronizeSuggestions();
+			return res;
+		};
 
-	Input.prototype.bindAggregation = function () {
-		if (arguments[0] === "suggestionRows" || arguments[0] === "suggestionColumns" || arguments[0] === "suggestionItems") {
-			this._createSuggestionPopupContent(arguments[0] === "suggestionRows" || arguments[0] === "suggestionColumns");
-			this._bBindingUpdated = true;
-		}
-		return InputBase.prototype.bindAggregation.apply(this, arguments);
-	};
+		/**
+		 * Removes all suggestion items.
+		 *
+		 * @public
+		 * @returns {boolean} Determines whether the suggestion items are removed.
+		 */
+		Input.prototype.removeAllSuggestionItems = function() {
+			var res = this.removeAllAggregation("suggestionItems", true);
+			this._synchronizeSuggestions();
+			return res;
+		};
 
-	/**
-	 * Closes suggestion popup.
-	 *
-	 * @private
-	 */
-	Input.prototype._closeSuggestionPopup = function () {
+		/**
+		 * Destroys suggestion items.
+		 *
+		 * @public
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.destroySuggestionItems = function() {
+			this.destroyAggregation("suggestionItems", true);
+			this._synchronizeSuggestions();
+			return this;
+		};
 
-		this._bShouldRefreshListItems = false;
-		this.cancelPendingSuggest();
-		this._isSuggestionsPopoverOpen() && this._getSuggestionsPopover().getPopover().close();
+		/**
+		 * Adds suggestion row.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion item.
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.addSuggestionRow = function(oItem) {
+			oItem.setType(ListType.Active);
+			this.addAggregation("suggestionRows", oItem);
+			this._synchronizeSuggestions();
+			this._createSuggestionPopupContent(true);
+			return this;
+		};
 
-		// Ensure the valueStateMessage is opened after the suggestion popup is closed.
-		// Only do this for desktop (not required for mobile) when the focus is on the input.
-		if (!this.isMobileDevice() && this.$().hasClass("sapMInputFocused")) {
-			this.openValueStateMessage();
-		}
-		this.$("SuggDescr").text(""); // initialize suggestion ARIA text
-		this.$("inner").removeAttr("aria-activedescendant");
+		/**
+		 * Inserts suggestion row.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion row
+		 * @param {int} iIndex Row index.
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.insertSuggestionRow = function(oItem, iIndex) {
+			oItem.setType(ListType.Active);
+			this.insertAggregation("suggestionRows", oItem, iIndex);
+			this._synchronizeSuggestions();
+			this._createSuggestionPopupContent(true);
+			return this;
+		};
 
-		this._sPrevSuggValue = null;
-	};
+		/**
+		 * Removes suggestion row.
+		 *
+		 * @public
+		 * @param {sap.ui.core.Item} oItem Suggestion row.
+		 * @returns {boolean} Determines whether the suggestion row is removed.
+		 */
+		Input.prototype.removeSuggestionRow = function(oItem) {
+			var res = this.removeAggregation("suggestionRows", oItem);
+			this._synchronizeSuggestions();
+			return res;
+		};
 
-	/**
-	 * Synchronize the displayed suggestion items and sets the correct selectedItem/selectedRow
-	 * @private
-	 */
-	Input.prototype._synchronizeSuggestions = function () {
-		var oSuggestionsPopover = this._getSuggestionsPopover(),
-			oPopupInput = oSuggestionsPopover && oSuggestionsPopover.getInput(),
-			oPopupInputDomRef = oPopupInput && oPopupInput.getFocusDomRef();
+		/**
+		 * Removes all suggestion rows.
+		 *
+		 * @public
+		 * @returns {boolean} Determines whether the suggestion rows are removed.
+		 */
+		Input.prototype.removeAllSuggestionRows = function() {
+			var res = this.removeAllAggregation("suggestionRows");
+			this._synchronizeSuggestions();
+			return res;
+		};
 
-		// Trigger the ListItems refresh only when the focus is on the input field or the device is phone.
-		// In all other cases this instantiates list population and it might not be needed at all.
-		if (document.activeElement === this.getFocusDomRef() || document.activeElement === oPopupInputDomRef) {
-			this._bShouldRefreshListItems = true;
-			this._refreshItemsDelayed();
-		}
+		/**
+		 * Destroys all suggestion rows.
+		 *
+		 * @public
+		 * @return {this} this Input instance for chaining.
+		 */
+		Input.prototype.destroySuggestionRows = function() {
+			this.destroyAggregation("suggestionRows");
+			this._synchronizeSuggestions();
+			return this;
+		};
 
-		if (!this.getDomRef() || this._isSuggestionsPopoverOpen()) {
-			return;
-		}
+		Input.prototype.bindAggregation = function() {
+			if (arguments[0] === "suggestionRows" || arguments[0] === "suggestionColumns" || arguments[0] === "suggestionItems") {
+				this._createSuggestionPopupContent(arguments[0] === "suggestionRows" || arguments[0] === "suggestionColumns");
+				this._bBindingUpdated = true;
+			}
+			return InputBase.prototype.bindAggregation.apply(this, arguments);
+		};
 
-		this._synchronizeSelection();
-	};
+		/**
+		 * Closes suggestion popup.
+		 *
+		 * @private
+		 */
+		Input.prototype._closeSuggestionPopup = function() {
 
-	/**
-	 * Synchronizes the selectedItem/selectedRow, depending on the selectedKey
-	 * @private
-	 */
-	Input.prototype._synchronizeSelection = function () {
-		var sSelectedKey = this.getSelectedKey();
-		if (!sSelectedKey) {
-			return;
-		}
+			if (this._isSuggestionsPopoverInitiated()) {
+				this._bShouldRefreshListItems = false;
+				this.cancelPendingSuggest();
+				this._isSuggestionsPopoverOpen() && this._getSuggestionsPopover().getPopover().close();
 
-		if (this.getValue() && !this.getSelectedItem() && !this.getSelectedRow()) {
-			return;
-		}
+				// Ensure the valueStateMessage is opened after the suggestion popup is closed.
+				// Only do this for desktop (not required for mobile) when the focus is on the input.
+				if (!this.isMobileDevice() && this.$().hasClass("sapMInputFocused")) {
+					this.openValueStateMessage();
+				}
+				this.$("SuggDescr").text(""); // initialize suggestion ARIA text
+				this.$("inner").removeAttr("aria-activedescendant");
 
-		this.setSelectedKey(sSelectedKey);
-	};
+				this._sPrevSuggValue = null;
+			}
+
+		};
+
+		/**
+		 * Synchronize the displayed suggestion items and sets the correct selectedItem/selectedRow
+		 * @private
+		 */
+		Input.prototype._synchronizeSuggestions = function() {
+			var oSuggestionsPopover = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover(),
+				oPopupInput = oSuggestionsPopover && oSuggestionsPopover.getInput(),
+				oPopupInputDomRef = oPopupInput && oPopupInput.getFocusDomRef();
+
+			// Trigger the ListItems refresh only when the focus is on the input field or the device is phone.
+			// In all other cases this instantiates list population and it might not be needed at all.
+			if (document.activeElement === this.getFocusDomRef() || document.activeElement === oPopupInputDomRef) {
+				this._bShouldRefreshListItems = true;
+				this._refreshItemsDelayed();
+			}
+
+			if (!this.getDomRef() || this._isSuggestionsPopoverOpen()) {
+				return;
+			}
+
+			this._synchronizeSelection();
+		};
+
+		/**
+		 * Synchronizes the selectedItem/selectedRow, depending on the selectedKey
+		 * @private
+		 */
+		Input.prototype._synchronizeSelection = function() {
+			var sSelectedKey = this.getSelectedKey();
+			if (!sSelectedKey) {
+				return;
+			}
+
+			if (this.getValue() && !this.getSelectedItem() && !this.getSelectedRow()) {
+				return;
+			}
+
+			this.setSelectedKey(sSelectedKey);
+		};
+	})();
 
 	/**
 	 * Event handler for the onFocusIn event.
@@ -2033,7 +2072,7 @@ function(
 	Input.prototype.oncompositionend = function (oEvent) {
 		InputBase.prototype.oncompositionend.apply(this, arguments);
 
-		if (!Device.browser.firefox) {
+		if (!Device.browser.edge && !Device.browser.firefox) {
 			this._handleTypeAhead(this);
 		}
 	};
@@ -2047,7 +2086,7 @@ function(
 	Input.prototype._handleTypeAhead = function (oInput) {
 		var sValue = this.getValue();
 
-		this._setTypedInValue(sValue);
+		this._sTypedInValue = sValue;
 		oInput._sProposedItemText = null;
 
 		if (!this._bDoTypeAhead || sValue === "" ||
@@ -2062,7 +2101,7 @@ function(
 				if (!oItem) {
 					return "";
 				}
-				return bHasTabularSuggestions ? oInput._getRowResultFunction()(oItem) : oItem.getText();
+				return bHasTabularSuggestions ? oInput._fnRowResultFilter(oItem) : oItem.getText();
 			};
 
 		var aItemsToSelect = typeAhead(sValue, this, aItems, function (oItem) {
@@ -2082,7 +2121,7 @@ function(
 		oInput = oInput || this;
 
 		oInput._sProposedItemText = null;
-		this._setTypedInValue('');
+		this._sTypedInValue = '';
 	};
 
 	/**
@@ -2098,8 +2137,8 @@ function(
 			return;
 		}
 
-		if (this._getTypedInValue() !== sValue) {
-			this._setTypedInValue(sValue);
+		if (this._sTypedInValue !== sValue) {
+			this._sTypedInValue = sValue;
 
 			this.fireLiveChange({
 				value: sValue,
@@ -2120,9 +2159,8 @@ function(
 	 * @returns {string} The new formatted value.
 	 */
 	Input.prototype._formatTypedAheadValue = function (sNewValue) {
-		var sTypedInValue = this._getTypedInValue();
-		if (sNewValue.toLowerCase().indexOf(sTypedInValue.toLowerCase()) === 0) {
-			return sTypedInValue.concat(sNewValue.substring(sTypedInValue.length, sNewValue.length));
+		if (sNewValue.toLowerCase().indexOf(this._sTypedInValue.toLowerCase()) === 0) {
+			return this._sTypedInValue.concat(sNewValue.substring(this._sTypedInValue.length, sNewValue.length));
 		} else {
 			return sNewValue;
 		}
@@ -2200,13 +2238,6 @@ function(
 		return this._oSuggestionsTable;
 	};
 
-	Input.prototype._destroySuggestionsTable = function () {
-		if (this._oSuggestionsTable) {
-			this._oSuggestionsTable.destroy();
-			this._oSuggestionsTable = null;
-		}
-	};
-
 	/**
 	 * Creates the suggestions table
 	 *
@@ -2214,7 +2245,6 @@ function(
 	 * @returns {sap.m.Table} The newly created suggestions table.
 	 */
 	Input.prototype._createSuggestionsTable = function () {
-		var oTableObserver;
 		var oSuggestionsTable = new Table(this.getId() + "-popup-table", {
 			mode: ListMode.SingleSelectMaster,
 			showNoData: false,
@@ -2242,7 +2272,7 @@ function(
 
 				aTableCellsDomRef = oSuggestionsTable.$().find('tbody .sapMLabel');
 
-				highlightDOMElements(aTableCellsDomRef, this._getTypedInValue());
+				highlightDOMElements(aTableCellsDomRef, this._sTypedInValue);
 			}
 		}, this);
 
@@ -2257,35 +2287,9 @@ function(
 			return this;
 		};
 
-		oTableObserver = new ManagedObjectObserver(function (oChange) {
-			var sMutation = oChange.mutation;
-			var vItem = oChange.child;
-			var bSuggestionRow = oChange.name === "items";
-
-			switch (sMutation) {
-				case "insert":
-					if (bSuggestionRow) {
-						vItem.setType(ListType.Active);
-						this._createSuggestionPopupContent(true);
-						this._synchronizeSuggestions();
-					}
-					break;
-				case "remove":
-					if (bSuggestionRow) {
-						this._synchronizeSuggestions();
-					}
-					break;
-				default:
-					break;
-			}
-		}.bind(this));
-
-		oTableObserver.observe(oSuggestionsTable, {
-			aggregations: ["items", "columns"]
-		});
-
 		return oSuggestionsTable;
 	};
+
 
 	/**
 	 * Clones input.
@@ -2322,7 +2326,6 @@ function(
 		this._iSetCount++;
 		InputBase.prototype.setValue.call(this, sValue);
 		this._onValueUpdated(sValue);
-		this._setTypedInValue("");
 		return this;
 	};
 
@@ -2344,24 +2347,6 @@ function(
 	 */
 	Input.prototype.getDOMValue = function() {
 		return this._$input.val();
-	};
-
-	Input.prototype._getInputValue = function() {
-		var sValue = InputBase.prototype._getInputValue.apply(this, arguments);
-
-		if (this.getMaxLength() > 0) {
-			sValue = sValue.substring(0, this.getMaxLength());
-		}
-
-		return sValue;
-	};
-
-	Input.prototype.setMaxLength = function (iLength) {
-		iLength = this.validateProperty("maxLength", iLength);
-		this.setProperty("maxLength", iLength);
-		this.updateDomValue(this.getProperty("value"));
-
-		return this;
 	};
 
 	/**
@@ -2475,19 +2460,18 @@ function(
 	 * @private
 	 */
 	Input.prototype._getShowMoreButtonPress = function() {
-		var sTempTypedInValue,
-			sTypedInValue = this._getTypedInValue();
+		var sTypedInValue;
 
 		if (this.getShowTableSuggestionValueHelp()) {
 
 			// request for value help interrupts autocomplete
-			if (sTypedInValue) {
-				sTempTypedInValue = sTypedInValue;
-				this.updateDomValue(sTempTypedInValue);
+			if (this._sTypedInValue) {
+				sTypedInValue = this._sTypedInValue;
+				this.updateDomValue(sTypedInValue);
 				this._resetTypeAhead();
 				// Resetting the Suggestions popover clears the typed in value.
 				// However, we need to keep it in this case as the fireValueHelpRequest will need to pass this information.
-				this._setTypedInValue(sTempTypedInValue);
+				this._sTypedInValue =  sTypedInValue;
 			}
 
 			this._fireValueHelpRequest(true);
@@ -2502,7 +2486,7 @@ function(
 	 * @param{boolean} [bTabular] optional parameter to force override the tabular suggestions check
 	 */
 	Input.prototype._addShowMoreButton = function() {
-		var oSuggestionsPopover = this._getSuggestionsPopover();
+		var oSuggestionsPopover = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover();
 		var oPopup = oSuggestionsPopover && oSuggestionsPopover.getPopover();
 
 		if (!oPopup || !this._hasTabularSuggestions() || this._getShowMoreButton()) {
@@ -2529,7 +2513,7 @@ function(
 	 * @private
 	 */
 	Input.prototype._removeShowMoreButton = function() {
-		var oSuggestionsPopover = this._getSuggestionsPopover();
+		var oSuggestionsPopover = this._isSuggestionsPopoverInitiated() && this._getSuggestionsPopover();
 		var oPopup = oSuggestionsPopover && oSuggestionsPopover.getPopover();
 
 		if (oPopup && this._hasTabularSuggestions() && this._getShowMoreButton()) {
@@ -2545,29 +2529,17 @@ function(
 	 * @param {boolean} bTabular Determines whether the popup content is a table or a list.
 	 * @private
 	 */
-	Input.prototype._createSuggestionPopupContent = function (bTabular) {
+	Input.prototype._createSuggestionPopupContent = function(bTabular) {
 		var oSuggestionsPopover = this._getSuggestionsPopover();
-		var oItemsContainer = oSuggestionsPopover.getItemsContainer();
-
-		// After rebinding where the ListItems are replaced with Table rows and vice versa,
-		// it's mandatory to destroy the underlying container and rebuild it anew.
-		if (oItemsContainer &&
-			((oItemsContainer.isA("sap.m.Table") && !bTabular) || (oItemsContainer.isA("sap.m.List") && bTabular))) {
-
-			oItemsContainer.destroy();
-			oItemsContainer = null;
-			this._destroySuggestionsTable();
-		}
-
 		// only initialize the content once
-		if (this._bIsBeingDestroyed || !oSuggestionsPopover || oItemsContainer) {
+		if (this._bIsBeingDestroyed || !oSuggestionsPopover || oSuggestionsPopover.getItemsContainer()) {
 			return;
 		}
 
-		oSuggestionsPopover.initContent(this.getId(), bTabular ? this._getSuggestionsTable() : null);
+		this._getSuggestionsPopover().initContent(bTabular ? this._getSuggestionsTable() : null);
 
 		if (!this._hasTabularSuggestions() && !bTabular) {
-			this._decorateSuggestionsPopoverList(oSuggestionsPopover.getItemsContainer());
+			this._decorateSuggestionsPopoverList(this._getSuggestionsPopover().getItemsContainer());
 		} else {
 			this._decorateSuggestionsPopoverTable();
 		}
@@ -2592,7 +2564,7 @@ function(
 				}
 
 				aListItemsDomRef = oList.$().find('.sapMSLIInfo, .sapMSLITitleOnly');
-				sInputValue = this._bDoTypeAhead ? this._getTypedInValue() : this.getValue();
+				sInputValue = this._bDoTypeAhead ? this._sTypedInValue : this.getValue();
 				sInputValue = (sInputValue || "").toLowerCase();
 
 				highlightDOMElements(aListItemsDomRef, sInputValue);
@@ -2617,6 +2589,16 @@ function(
 	 * @private
 	 */
 	Input.prototype._decorateSuggestionsPopoverTable = function () {
+		// tabular suggestions
+		// if no custom filter is set we replace the default filter function here
+		if (this._fnFilter === inputsDefaultFilter) {
+			this._fnFilter = Input._DEFAULTFILTER_TABULAR;
+		}
+
+		// if not custom row result function is set we set the default one
+		if (!this._fnRowResultFilter) {
+			this._fnRowResultFilter = Input._DEFAULTRESULT_TABULAR;
+		}
 
 		if (this.getShowTableSuggestionValueHelp()) {
 			this._addShowMoreButton();
@@ -2692,65 +2674,33 @@ function(
 	 * @private
 	 */
 	Input.prototype._getSuggestionsPopover = function () {
-		return this._oSuggPopover;
-	};
+		if (!this._isSuggestionsPopoverInitiated()) {
+			var oSuggPopover = this._oSuggPopover = new SuggestionsPopover(this);
 
-	Input.prototype._createSuggestionsPopover = function () {
-		var oSuggPopover = this._oSuggPopover = new SuggestionsPopover(this);
+			oSuggPopover.setInputLabels(this.getLabels.bind(this));
+			this._createSuggestionsPopoverPopup();
 
-		oSuggPopover.decorateParent(this);
-		oSuggPopover.setInputLabels(this.getLabels.bind(this));
-		this._createSuggestionsPopoverPopup();
+			this.forwardEventHandlersToSuggPopover(oSuggPopover);
 
-		this.forwardEventHandlersToSuggPopover(oSuggPopover);
+			oSuggPopover.attachEvent(SuggestionsPopover.M_EVENTS.SELECTION_CHANGE, function (oEvent) {
+				var sNewValue = oEvent.getParameter("newValue");
+				var bPreventSelection = oEvent.getParameter("preventSelection");
 
-		oSuggPopover.attachEvent(SuggestionsPopover.M_EVENTS.SELECTION_CHANGE, function (oEvent) {
-			var oItem = oEvent.getParameter("newItem"),
-				sNewValue = this.calculateNewValue(oItem),
-				bFocusedGroupHeader = oItem && oItem.isA("sap.m.GroupHeaderListItem"),
-				oFocusDomRef = this.getFocusDomRef(),
-				sTypedValue = oFocusDomRef && oFocusDomRef.value.substring(0, oFocusDomRef.selectionStart),
-				oPreviousItem = oEvent.getParameter("previousItem"),
-				bPreviosFocusOnGroup = oPreviousItem && oPreviousItem.isA("sap.m.GroupHeaderListItem"),
-				iSelectionStart = calculateSelectionStart(selectionRange(oFocusDomRef, bPreviosFocusOnGroup), sNewValue, sTypedValue, bPreviosFocusOnGroup);
+				// setValue isn't used because here is too early to modify the lastValue of input
+				this.setDOMValue(sNewValue);
 
-			// setValue isn't used because here is too early to modify the lastValue of input
-			this.setDOMValue(bFocusedGroupHeader ? sTypedValue : sNewValue);
+				// memorize the value set by calling jQuery.val, because browser doesn't fire a change event when the value is set programmatically.
+				this._sSelectedSuggViaKeyboard = sNewValue;
 
-			// memorize the value set by calling jQuery.val, because browser doesn't fire a change event when the value is set programmatically.
-			this._sSelectedSuggViaKeyboard = sNewValue;
+				!bPreventSelection && this._doSelect();
+			}, this);
 
-			if (!bFocusedGroupHeader) {
-				this._doSelect(iSelectionStart);
+			if (this.getShowTableSuggestionValueHelp()) {
+				this._addShowMoreButton();
 			}
-		}, this);
-
-		if (this.getShowTableSuggestionValueHelp()) {
-			this._addShowMoreButton();
 		}
 
 		return this._oSuggPopover;
-	};
-
-	/**
-	 * Calculates the correct input value to be applied, depending on the newly selected suggestion.
-	 *
-	 * @param {sap.m.GroupHeaderListItem | sap.m.StandardListItem | sap.m.ColumnListItem} oListItem The selected item
-	 * @returns {string} The input value to be applied
-	 * @private
-	 */
-	Input.prototype.calculateNewValue = function (oListItem) {
-		if (!oListItem || (oListItem && oListItem.isA("sap.m.GroupHeaderListItem"))) {
-			return "";
-		}
-
-		if (oListItem.isA("sap.m.ColumnListItem")) {
-			return this._getInputValue(this._getRowResultFunction()(oListItem));
-		}
-
-		if (oListItem.isA("sap.m.StandardListItem")) {
-			return this._getInputValue(oListItem.getTitle());
-		}
 	};
 
 	/**
@@ -2759,9 +2709,13 @@ function(
 	 * @private
 	 */
 	Input.prototype._createSuggestionsPopoverPopup = function () {
+		if (!this._isSuggestionsPopoverInitiated()) {
+			return;
+		}
+
 		var oSuggPopover = this._getSuggestionsPopover();
 		var oPopover;
-		oSuggPopover.createSuggestionPopup(this, { showSelectedButton: this._hasShowSelectedButton() });
+		oSuggPopover.createSuggestionPopup({ showSelectedButton: this._hasShowSelectedButton() });
 		this._decoratePopupInput(oSuggPopover.getInput());
 
 		oPopover = oSuggPopover.getPopover();
@@ -2833,6 +2787,7 @@ function(
 				.attachBeforeOpen(function () {
 					oSuggPopover._sPopoverContentWidth = this.getMaxSuggestionWidth();
 
+					this.setBeforeSuggestValue(this._sTypedInValue || this.getValue());
 					oSuggPopover.resizePopup(this);
 					this._registerPopupResize();
 				}, this);
@@ -2845,13 +2800,37 @@ function(
 	};
 
 	/**
+	 * Sets the input value before the suggest.
+	 *
+	 * @param {string} sValue The value to be set
+	 * @private
+	 */
+	Input.prototype.setBeforeSuggestValue = function (sValue) {
+		this._sBeforeSuggest = sValue;
+	};
+
+	/**
+	 * Gets the input value before the suggest.
+	 *
+	 * @returns {string} The string value before the sugger
+	 * @private
+	 */
+	Input.prototype.getBeforeSuggestValue = function () {
+		return this._sBeforeSuggest;
+	};
+
+	/**
 	 * Registers Popover resize handler
 	 *
 	 * @private
 	 */
 	Input.prototype._registerPopupResize = function () {
-		var oSuggestionsPopover = this._getSuggestionsPopover();
-		this._sPopupResizeHandler = ResizeHandler.register(this, oSuggestionsPopover.resizePopup.bind(oSuggestionsPopover, this));
+		var oSuggestionsPopover;
+
+		if (this._isSuggestionsPopoverInitiated()) {
+			oSuggestionsPopover = this._getSuggestionsPopover();
+			this._sPopupResizeHandler = ResizeHandler.register(this, oSuggestionsPopover.resizePopup.bind(oSuggestionsPopover, this));
+		}
 	};
 
 	/**
@@ -2877,7 +2856,7 @@ function(
 	 */
 	Input.prototype.showItems = function (fnFilter) {
 		var oFilterResults, iSuggestionsLength,
-			fnFilterStore = this._getFilterFunction();
+			fnFilterStore = this._fnFilter;
 
 		// in case of a non-editable or disabled, the popup cannot be opened
 		if (!this.getEnabled() || !this.getEditable()) {
@@ -2892,7 +2871,7 @@ function(
 		this._clearSuggestionPopupItems();
 
 		oFilterResults = this._getFilteredSuggestionItems(this.getDOMValue());
-		iSuggestionsLength = oFilterResults.items.length;
+		iSuggestionsLength = this.getSuggestionsCount(oFilterResults);
 
 		if (iSuggestionsLength > 0) {
 			this._openSuggestionPopup();
@@ -2922,8 +2901,17 @@ function(
 	 * @private
 	 */
 	Input.prototype._isSuggestionsPopoverOpen = function () {
-		return this._getSuggestionsPopover() &&
+		return this._isSuggestionsPopoverInitiated() &&
 			this._getSuggestionsPopover().isOpen();
+	};
+
+	/**
+	 * Checks whether the SuggestionsPopover is initiated;
+	 * @returns {boolean}
+	 * @private
+	 */
+	Input.prototype._isSuggestionsPopoverInitiated = function() {
+		return !!this._oSuggPopover;
 	};
 
 	/**
@@ -2941,7 +2929,7 @@ function(
 	 *
 	 * @private
 	 */
-	Input.prototype._openSuggestionsPopover = function () {
+	Input.prototype._openSuggestionsPopover = function() {
 		this.closeValueStateMessage();
 		this._updateSuggestionsPopoverValueState();
 		this._getSuggestionsPopover().getPopover().open();
@@ -2978,7 +2966,7 @@ function(
 	};
 
 	Input.prototype.setShowValueHelp = function (bShowValueHelp) {
-		var oSuggestionsPopoverInput = this._getSuggestionsPopover() &&
+		var oSuggestionsPopoverInput = this._isSuggestionsPopoverInitiated() &&
 			this._getSuggestionsPopover().getInput();
 
 		this.setProperty("showValueHelp", bShowValueHelp);
@@ -3015,6 +3003,8 @@ function(
 	 */
 	Input.prototype._getFilteredSuggestionItems = function (sValue) {
 		var oFilterResults,
+			aItems = this.getSuggestionItems(),
+			aTabularRows = this.getSuggestionRows(),
 			oList = this._getSuggestionsPopover().getItemsContainer();
 
 		if (this._hasTabularSuggestions()) {
@@ -3023,15 +3013,15 @@ function(
 				oList.removeStyleClass("sapMInputSuggestionTableHidden");
 			}
 
-			oFilterResults = this.filterTabularItems(this.getSuggestionRows(), sValue);
+			oFilterResults = this.filterTabularItems(aTabularRows, sValue);
 		} else {
 			oFilterResults = filterItems(
 				this, // control instance
-				this.getSuggestionItems(), // array of items to be filtered
+				aItems, // array of items to be filtered
 				sValue, // the value, to be used as a filter
 				this.getFilterSuggests(), // boolean that determines if the suggestions should be filtered
 				true, // filter also by secondary values
-				this._getFilterFunction() // the filter function
+				this._fnFilter // the filter function
 			);
 			this._mapItems(oFilterResults);
 		}
@@ -3051,8 +3041,7 @@ function(
 			bFilter = this.getFilterSuggests(),
 			aFilteredItems = [],
 			aGroups = [],
-			bIsAnySuggestionAlreadySelected = false,
-			fnFilter = this._getFilterFunction();
+			bIsAnySuggestionAlreadySelected = false;
 
 		// filter tabular items
 		aTabularRows.forEach(function(oTabularRow) {
@@ -3062,12 +3051,12 @@ function(
 					visible: false
 				});
 			} else {
-				bShowItem = !bFilter || fnFilter(sValue, oTabularRow);
+				bShowItem = !bFilter || this._fnFilter(sValue, oTabularRow);
 
 				oTabularRow.setVisible(bShowItem);
 				bShowItem && aFilteredItems.push(oTabularRow);
 
-				if (!bIsAnySuggestionAlreadySelected && bShowItem && this._sProposedItemText === this._getRowResultFunction()(oTabularRow)) {
+				if (!bIsAnySuggestionAlreadySelected && bShowItem && this._sProposedItemText === this._fnRowResultFilter(oTabularRow)) {
 					oTabularRow.setSelected(true);
 					bIsAnySuggestionAlreadySelected = true;
 				}
@@ -3132,28 +3121,6 @@ function(
 					oListItem && oListItem.setVisible(aGroups[iGroupItemIndex].visible);
 				}
 			});
-	};
-
-	/**
-	 * Setter for the _sTypedInValue property representing the user's input.
-	 *
-	 * @private
-	 * @param {string} sValue The new value for the property.
-	 * @returns {this} <code>this</code> to allow method chaining.
-	 */
-	Input.prototype._setTypedInValue = function (sValue) {
-		this._sTypedInValue = sValue;
-		return this;
-	};
-
-	/**
-	 * Getter for the _sTypedInValue property representing the user's input.
-	 *
-	 * @private
-	 * @returns {string} The user's input.
-	 */
-	Input.prototype._getTypedInValue = function () {
-		return this._sTypedInValue;
 	};
 
 	return Input;

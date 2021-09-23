@@ -136,7 +136,7 @@ sap.ui.define(["sap/ui/core/library", "sap/ui/core/InvisibleRenderer", "sap/ui/c
 				oRM.accessibilityState(oButton, {
 					role : "option",
 					roledescription: oResourceBundle.getText("SEGMENTEDBUTTON_BUTTONS_NAME"),
-					label: sButtonText ? "" : sButtonTooltip,
+					label: sIconAriaLabel,
 					posinset: iVisibleButtonPos,
 					setsize: aVisibleButtons.length,
 					selected: sSelectedButton === oButton.getId()

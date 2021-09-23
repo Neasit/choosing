@@ -105,7 +105,6 @@
 					if (typeof URI !== "undefined") {
 						sScript += "\n//# sourceURL=" + URI(sFullUrl).absoluteTo(sDocumentLocation);
 					}
-					// eslint-disable-next-line no-eval
 					window.eval(sScript);
 				}
 			};

@@ -33,7 +33,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -47,7 +47,6 @@ sap.ui.define([
 	var SplitContainer = Control.extend("sap.ui.unified.SplitContainer", /** @lends sap.ui.unified.SplitContainer.prototype */ { metadata : {
 
 		library : "sap.ui.unified",
-		deprecated : true,
 		properties : {
 
 			/**

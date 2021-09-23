@@ -32,7 +32,7 @@ sap.ui.define([
 	 * @extends sap.m.Button
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -122,7 +122,7 @@ sap.ui.define([
 
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
-	 * @returns {object} Current accessibility state of the control.
+	 * @returns {Object} Current accessibility state of the control.
 	 * @protected
 	 */
 	ToggleButton.prototype.getAccessibilityInfo = function() {

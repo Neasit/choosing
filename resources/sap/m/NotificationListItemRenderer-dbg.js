@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(["sap/ui/core/library", "sap/ui/core/InvisibleRenderer"], function(coreLibrary, InvisibleRenderer) {
+sap.ui.define(["sap/ui/core/library", "sap/ui/core/InvisibleRenderer", "sap/ui/Device"], function(coreLibrary, InvisibleRenderer, Device) {
 	'use strict';
 
 	// shortcut for sap.ui.core.Priority
@@ -69,7 +69,7 @@ sap.ui.define(["sap/ui/core/library", "sap/ui/core/InvisibleRenderer"], function
 
 		// ARIA
 		rm.accessibilityState(control, {
-			role: "listitem",
+			role: "option",
 			labelledby: {
 				value: sAriaLabelledBy
 			}

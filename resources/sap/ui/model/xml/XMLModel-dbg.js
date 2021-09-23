@@ -45,7 +45,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.ClientModel
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @param {object} oData either the URL where to load the XML from or an XML
 	 * @public
@@ -339,7 +339,16 @@ sap.ui.define([
 		}
 		var sNameSpace = this._getNameSpace(sName),
 			sLocalName = this._getLocalName(sName);
-		return oNode.getAttributeNS(sNameSpace, sLocalName);
+		if (oNode.getAttributeNS) {
+			return oNode.getAttributeNS(sNameSpace, sLocalName);
+		} else { // IE8
+			if (!this.oDocNSPrefixes) {
+				this.oDocNSPrefixes = this._getDocNSPrefixes();
+			}
+			var sPrefix = this.oDocNSPrefixes[sNameSpace];
+			sName = (sPrefix ? sPrefix + ":" : "") + sLocalName;
+			return oNode.getAttribute(sName);
+		}
 	};
 
 	/**

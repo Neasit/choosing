@@ -55,7 +55,7 @@ sap.ui.define([
 		 * With this plugIn the performance measurements are displayed
 		 *
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @private
 		 * @alias sap.ui.core.support.plugins.Performance
 		 */
@@ -329,7 +329,6 @@ sap.ui.define([
 		}
 
 		function _getUID() {
-			// eslint-disable-next-line no-return-assign
 			return 'uID-' + (_getUID.id !== undefined ? ++_getUID.id : _getUID.id = 0);
 		}
 

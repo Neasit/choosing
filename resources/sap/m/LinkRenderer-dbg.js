@@ -7,11 +7,9 @@
  sap.ui.define([
 	 "sap/ui/core/Renderer",
 	 "sap/ui/core/library",
-	 "sap/ui/util/defaultLinkTypes",
-	 './library',
-	 'sap/ui/core/Core'
+	 "sap/ui/util/defaultLinkTypes"
 	],
-	function(Renderer, coreLibrary, defaultLinkTypes, mobileLibrary, Core) {
+	function(Renderer, coreLibrary, defaultLinkTypes) {
 	"use strict";
 
 	// shortcut for sap.ui.core.TextDirection
@@ -27,12 +25,6 @@
 	var LinkRenderer = {
 			apiVersion: 2
 	};
-
-	// shortcut for sap.m.EmptyIndicator
-	var EmptyIndicatorMode = mobileLibrary.EmptyIndicatorMode;
-
-	// shortcut for library resource bundle
-	var oRb = Core.getLibraryResourceBundle("sap.m");
 
 
 	/**
@@ -143,41 +135,7 @@
 	 * @param {sap.m.Link} oControl An object representation of the control that should be rendered.
 	 */
 	LinkRenderer.renderText = function(oRm, oControl) {
-		var sText = oControl.getText();
-
-		if (oControl.getEmptyIndicatorMode() !== EmptyIndicatorMode.Off && !oControl.getText()) {
-			this.renderEmptyIndicator(oRm, oControl);
-		} else {
-			oRm.text(sText);
-		}
-	};
-
-	/**
-	 * Renders the empty text indicator.
-	 *
-	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
-	 * @param {sap.m.Link} oLink An object representation of the control that should be rendered.
-	 */
-	LinkRenderer.renderEmptyIndicator = function(oRm, oLink) {
-		oRm.openStart("span");
-			oRm.class("sapMEmptyIndicator");
-			oRm.class("sapMLnkDsbl");
-			if (oLink.getEmptyIndicatorMode() === EmptyIndicatorMode.Auto) {
-				oRm.class("sapMEmptyIndicatorAuto");
-			}
-			oRm.openEnd();
-			oRm.openStart("span");
-			oRm.attr("aria-hidden", true);
-			oRm.openEnd();
-				oRm.text(oRb.getText("EMPTY_INDICATOR"));
-			oRm.close("span");
-			//Empty space text to be announced by screen readers
-			oRm.openStart("span");
-			oRm.class("sapUiPseudoInvisibleText");
-			oRm.openEnd();
-				oRm.text(oRb.getText("EMPTY_INDICATOR_TEXT"));
-			oRm.close("span");
-		oRm.close("span");
+		oRm.text(oControl.getText());
 	};
 
 	return LinkRenderer;

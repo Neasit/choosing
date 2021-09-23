@@ -56,7 +56,7 @@ sap.ui.define([
 		 *
 		 * @protected
 		 * @alias sap.ui.core.delegate.ScrollEnablement
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @author SAP SE
 		 */
 		var ScrollEnablement = BaseObject.extend("sap.ui.core.delegate.ScrollEnablement", /** @lends sap.ui.core.delegate.ScrollEnablement.prototype */ {
@@ -213,17 +213,7 @@ sap.ui.define([
 				this._fnScrollStartCallback = jQuery.proxy(fnScrollStartCallback, oIconTabBar);
 				return this;
 			},
-			/**
-			 * Scrolls to a specific position in scroll container.
-			 * @param {int} iHorizontalPosition Horizontal position of the scrollbar
-			 * @param {int} iVerticalPosition Vertical position of the scrollbar
-			 * @param {int} [iTime=0]
-			 *           The duration of animated scrolling in milliseconds. To scroll immediately without animation,
-			 *           give 0 as value.
-			 * @param {function} fnCallback
-			 * @returns {this}
-			 * @public
-			 */
+
 			scrollTo : function(x, y, time, fnScrollEndCallback) {
 				this._scrollX = x; // remember for later rendering
 				this._scrollY = y;
@@ -344,7 +334,7 @@ sap.ui.define([
 					}
 				}
 
-				if (oEvent.ctrlKey && !oEvent.altKey) {
+				if (oEvent.ctrlKey) {
 					switch (oEvent.keyCode) {
 						case KeyCodes.ARROW_UP:
 							// [CTRL]+[UP] - 1 page up
@@ -486,7 +476,8 @@ sap.ui.define([
 				}
 
 				if (!(this._oPullDown && this._oPullDown._bTouchMode)
-					&& !this._fnScrollLoadCallback) {
+					&& !this._fnScrollLoadCallback
+					&& !Device.browser.msie) {
 					// for IE the resize listener must remain in place for the case when navigating away and coming back.
 					// For the other browsers it seems to work fine without.
 					ResizeHandler.deregister(this._sResizeListenerId);
@@ -702,6 +693,7 @@ sap.ui.define([
 				this._refresh();
 
 				if (!bElementVisible
+					|| Device.browser.msie
 					|| this._oPullDown
 					|| this._fnScrollLoadCallback) {
 
@@ -807,6 +799,9 @@ sap.ui.define([
 					}
 					if (sap.ui.getCore().getConfiguration().getRTL()) {
 						this._scrollX = 9999; // in RTL case initially scroll to the very right
+						if (Device.browser.msie || Device.browser.edge) {
+							this._bFlipX = true; // in IE and Edge RTL, scrollLeft goes opposite direction
+						}
 					}
 				},
 				_exit : function() {

@@ -60,17 +60,26 @@ sap.ui.define([
 	 * @alias sap.m.SuggestionsPopover
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var SuggestionsPopover = EventProvider.extend("sap.m.SuggestionsPopover", /** @lends sap.m.SuggestionsPopover.prototype */ {
 
-		constructor: function () {
+		constructor: function (oInput) {
 			EventProvider.apply(this, arguments);
+
+			// stores a reference to the input control that instantiates the popover
+			this._oInput = oInput;
 
 			// specifies the width of the suggestion list
 			this._sPopoverContentWidth = null;
 
 			this._sOldValueState = ValueState.None;
+
+			// adds event delegate for the arrow keys
+			this._oInput.addEventDelegate({
+				onsaptabnext: this._handleValueStateLinkNav,
+				onsaptabprevious: this._handleValueStateLinkNav
+			}, this);
 
 			// Apply Mixin depending on the Device
 			if (Device.system.phone) {
@@ -134,16 +143,16 @@ sap.ui.define([
 	/**
 	 * Helper function that creates suggestion popup.
 	 *
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 * @param mOptions {object} Settings for the Popover
 	 * @public
 	 */
-	SuggestionsPopover.prototype.createSuggestionPopup = function (oParent, mOptions) {
+	SuggestionsPopover.prototype.createSuggestionPopup = function (mOptions) {
 		var oPopover,
+			oInput = this._oInput,
 			oList = this.getItemsContainer();
 
 		mOptions = mOptions || [];
-		oPopover = this.createPopover(oParent, mOptions);
+		oPopover = this.createPopover(oInput, mOptions);
 
 		this.setPopover(oPopover);
 		oPopover.addStyleClass(CSS_CLASS_SUGGESTIONS_POPOVER);
@@ -158,12 +167,12 @@ sap.ui.define([
 	/**
 	 * Helper function that creates  (List/Table) for the suggestion popup.
 	 *
-	 * @param {string} sParent The input control that instantiates this suggestions popover
 	 * @param {sap.ui.core.Control} oContent Typically a List or a Table which would be Popover's content
 	 * @public
 	 */
-	SuggestionsPopover.prototype.initContent = function (sParentId, oContent) {
+	SuggestionsPopover.prototype.initContent = function (oContent) {
 		var oList = oContent,
+			oInput = this._oInput,
 			oPopover = this.getPopover();
 
 		if (!oPopover) {
@@ -171,7 +180,7 @@ sap.ui.define([
 		}
 
 		if (!oList) {
-			oList = new List(sParentId + "-popup-list", {
+			oList = new List(oInput.getId() + "-popup-list", {
 				showNoData : false,
 				mode : ListMode.SingleSelectMaster,
 				rememberSelections : false,
@@ -181,7 +190,20 @@ sap.ui.define([
 			});
 		}
 
-		this.addContent(oList);
+		if (Device.system.phone) {
+			// oList needs to be manually rendered otherwise it triggers a rerendering of the whole
+			// dialog and may close the opened on screen keyboard
+			oPopover.addAggregation("content", oList, true);
+			var oRenderTarget = oPopover.$("scrollCont")[0];
+			if (oRenderTarget) {
+				var rm = sap.ui.getCore().createRenderManager();
+				rm.renderControl(oList);
+				rm.flush(oRenderTarget);
+				rm.destroy();
+			}
+		} else {
+			this.addContent(oList);
+		}
 	};
 
 	/**
@@ -227,16 +249,16 @@ sap.ui.define([
 	 *
 	 * @private
 	 * @param {jQuery.Event} oEvent Arrow key event.
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 */
-	SuggestionsPopover.prototype.handleListNavigation = function(oParent, oEvent) {
-		var	oPopover = this.getPopover();
+	SuggestionsPopover.prototype.handleListNavigation = function(oEvent) {
+		var oInput = this._oInput,
+			oPopover = this.getPopover();
 
 		if (oEvent.isMarked()) {
 			return;
 		}
 
-		if (!oParent.getEnabled() || !oParent.getEditable()) {
+		if (!oInput.getEnabled() || !oInput.getEditable()) {
 			return;
 		}
 
@@ -250,7 +272,7 @@ sap.ui.define([
 		var oList = this.getItemsContainer(),
 			oValueStateHeader = this._getValueStateHeader(),
 			bHasValueStateHeader = oValueStateHeader && oValueStateHeader.getVisible(),
-			bFocusInInput = oParent.hasStyleClass("sapMFocus"),
+			bFocusInInput = oInput.hasStyleClass("sapMFocus"),
 			aSelectableItems = oList && oList.getItems().filter(function (oItem) {
 				return oItem.getVisible && oItem.getVisible();
 			}),
@@ -278,16 +300,16 @@ sap.ui.define([
 				break;
 		}
 
-		this.updateFocus(oParent, oNewItem);
+		this.updateFocus(oNewItem);
 
 		// The ComboBox updates the selected item and key, while navigating
-		if (oParent.handleSelectionFromList) {
-			oParent.handleSelectionFromList(oNewItem);
+		if (oInput.handleSelectionFromList) {
+			oInput.handleSelectionFromList(oNewItem);
 		} else {
 			this.handleSelectionFromList(oNewItem);
 		}
 
-		this.updateAriaActiveDescendant(oParent, oNewItem);
+		this.updateAriaActiveDescendant(oNewItem);
 
 		if (Device.system.desktop && oNewItem) {
 			scrollToItem(oNewItem, this.getPopover());
@@ -424,11 +446,11 @@ sap.ui.define([
 	 * Updates the pseudo focused element.
 	 *
 	 * @private
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 * @param {sap.m.GroupHeaderListItem | sap.m.StandardListItem} oItem The list item to be focused
 	 */
-	SuggestionsPopover.prototype.updateFocus = function(oParent, oItem) {
-		var oList = this.getItemsContainer(),
+	SuggestionsPopover.prototype.updateFocus = function(oItem) {
+		var oInput = this._oInput,
+			oList = this.getItemsContainer(),
 			oPreviousFocusedItem = this.getFocusedListItem(),
 			oValueStateHeader = this._getValueStateHeader(),
 			bHasValueStateHeader = oValueStateHeader && oValueStateHeader.getVisible();
@@ -436,7 +458,7 @@ sap.ui.define([
 		// remove focus from everywhere
 		oList && oList.removeStyleClass("sapMListFocus");
 		oPreviousFocusedItem && oPreviousFocusedItem.removeStyleClass("sapMLIBFocused");
-		oParent.hasStyleClass("sapMFocus") && oParent.removeStyleClass("sapMFocus");
+		oInput.hasStyleClass("sapMFocus") && oInput.removeStyleClass("sapMFocus");
 		bHasValueStateHeader && oValueStateHeader.removeStyleClass("sapMPseudoFocus");
 
 		// add it only where necessary
@@ -446,7 +468,7 @@ sap.ui.define([
 		} else if (this.getValueStateActiveState()) {
 			oValueStateHeader.addStyleClass("sapMPseudoFocus");
 		} else {
-			oParent.addStyleClass("sapMFocus");
+			oInput.addStyleClass("sapMFocus");
 		}
 	};
 
@@ -454,40 +476,51 @@ sap.ui.define([
 	 * Handles the navigation inside the list.
 	 *
 	 * @private
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 * @param {sap.m.GroupHeaderListItem | sap.m.StandardListItem | sap.m.ColumnListItem} oItem The item to be selected.
 	 */
 	SuggestionsPopover.prototype.handleSelectionFromList = function(oItem) {
-		var oList = this.getItemsContainer(),
-			oPreviousFocusedItem = this.getFocusedListItem(),
-			bItemGroupHeader = oItem && oItem.isA("sap.m.GroupHeaderListItem");
+		var oInput = this._oInput,
+			oList = this.getItemsContainer(),
+			bPreventSelection = false,
+			sNewValue;
 
-		if (!oItem || bItemGroupHeader) {
+		if (!oItem || oItem.isA("sap.m.GroupHeaderListItem")) {
 			oList.removeSelections(true);
 		} else {
 			oList.setSelectedItem(oItem, true);
+			this._bSuggestionItemChanged = true;
 		}
 
-		this.fireEvent(SuggestionsPopover.M_EVENTS.SELECTION_CHANGE, {
-			previousItem: oPreviousFocusedItem,
-			newItem: oItem
-		});
+		if (!oItem || oItem.isA("sap.m.GroupHeaderListItem")) {
+			sNewValue = "";
+		} else if (oItem.isA("sap.m.ColumnListItem")) {
+			sNewValue = oInput._getInputValue(oInput._fnRowResultFilter(oItem));
+		} else {
+			sNewValue = oInput._getInputValue(oItem.getTitle());
+		}
+
+		if (!oItem && oInput.isA("sap.m.Input")) {
+			sNewValue = oInput._sTypedInValue;
+			bPreventSelection = true;
+		}
+
+		this.fireEvent(SuggestionsPopover.M_EVENTS.SELECTION_CHANGE, {newValue: sNewValue, preventSelection: bPreventSelection});
 	};
 
 	/**
 	 * Updates the aria-activedescendant, depending on the selected item
 	 *
 	 * @private
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 * @param {sap.m.GroupHeaderListItem | sap.m.StandardListItem | sap.m.ColumnListItem} oItem The selected item
 	 */
-	SuggestionsPopover.prototype.updateAriaActiveDescendant = function (oParent, oItem) {
-		var	oInputDomRef = oParent.getFocusDomRef(),
+	SuggestionsPopover.prototype.updateAriaActiveDescendant = function (oItem) {
+		var oInput = this._oInput,
+			oInputDomRef = oInput.getFocusDomRef(),
 			oValueStateHeader = this._getValueStateHeader(),
 			oFormattedText = oValueStateHeader && oValueStateHeader.getFormattedText(),
 			sValueStateId;
 
-		if (oParent.hasStyleClass("sapMFocus")) {
+		if (oInput.hasStyleClass("sapMFocus")) {
 			oInputDomRef.removeAttribute("aria-activedescendant");
 			return;
 		}
@@ -521,6 +554,31 @@ sap.ui.define([
 
 
 	/* =================== Value State Header =================== */
+
+	/**
+	 * Gets the Value State Header instance.
+	 *
+	 * @public
+	 */
+	SuggestionsPopover.prototype._getValueStateHeader = function () {
+		var oPopover;
+		if (!this._oValueStateHeader) {
+			this._oValueStateHeader = new ValueStateHeader();
+			oPopover = this.getPopover();
+
+			if (oPopover.isA("sap.m.Popover")) {
+				// when we are using the Popover the value state header is shown in the header of the Popover
+				oPopover.setCustomHeader(this._oValueStateHeader);
+			} else {
+				// on mobile the content is used and sticky position is set on the header
+				oPopover.insertContent(this._oValueStateHeader, 0);
+			}
+
+			this._oValueStateHeader.setPopup(oPopover);
+		}
+
+		return this._oValueStateHeader;
+	};
 
 	/**
 	 * Sets the Value State Header active state.
@@ -562,20 +620,18 @@ sap.ui.define([
 			this.getInput().setValueState(sValueState);
 		}
 
-		var oValueStateHeader = this._getValueStateHeader();
-
-		oValueStateHeader.setValueState(sValueState);
+		this._getValueStateHeader().setValueState(sValueState);
 
 		// Set the value state text
-		if (oValueStateHeader && typeof vValueStateText === "string") {
-			oValueStateHeader.setText(vValueStateText);
-		} else if (oValueStateHeader && typeof vValueStateText === "object") {
-			oValueStateHeader.setFormattedText(vValueStateText);
+		if (this._oValueStateHeader && typeof vValueStateText === "string") {
+			this._oValueStateHeader.setText(vValueStateText);
+		} else if (this._oValueStateHeader && typeof vValueStateText === "object") {
+			this._oValueStateHeader.setFormattedText(vValueStateText);
 		}
 
 		// adjust ValueStateHeader visibility
-		if (oValueStateHeader) {
-			oValueStateHeader.setVisible(bShow);
+		if (this._oValueStateHeader) {
+			this._oValueStateHeader.setVisible(bShow);
 		}
 
 		this._alignValueStateStyles(sValueState);
@@ -586,11 +642,10 @@ sap.ui.define([
 	/**
 	 * Handles value state link navigation
 	 *
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
 	 * @param {jQuery.Event} oEvent The event object
 	 * @private
 	 */
-	SuggestionsPopover.prototype._handleValueStateLinkNav = function(oParent, oEvent) {
+	SuggestionsPopover.prototype._handleValueStateLinkNav = function(oEvent) {
 		if (!this.getValueStateActiveState() || (this.getValueStateActiveState() && document.activeElement.tagName === "A")) {
 			return;
 		}
@@ -609,12 +664,12 @@ sap.ui.define([
 		aValueStateLinks.forEach(function(oLink) {
 			oLink.addDelegate({
 				onsapup: function(oEvent) {
-					oParent.getFocusDomRef().focus();
-					this.handleListNavigation(oParent, oEvent);
+					this._oInput.getFocusDomRef().focus();
+					this.handleListNavigation(oEvent);
 				},
 				onsapdown: function(oEvent) {
-					oParent.getFocusDomRef().focus();
-					this.handleListNavigation(oParent, oEvent);
+					this._oInput.getFocusDomRef().focus();
+					this.handleListNavigation(oEvent);
 				}
 			}, this);
 		}, this);
@@ -623,24 +678,24 @@ sap.ui.define([
 		oLastValueStateLink.addDelegate({
 			onsaptabnext: function(oEvent) {
 				this.setValueStateActiveState(false);
-				oParent.onsapfocusleave(oEvent);
+				this._oInput.onsapfocusleave(oEvent);
 				this.getPopover().close();
 
 				/* By default the value state message popup is opened when the suggestion popover
 				is closed. We don't want that in this case because the focus will move on to the next object.
 				The popup must be closed with setTimeout() because it is opened with one. */
 				setTimeout(function() {
-					oParent.closeValueStateMessage();
-				}, 0);
+					this._oInput.closeValueStateMessage();
+				}.bind(this), 0);
 			}
 		}, this);
 		// If saptabprevious is fired on the first link move real focus on the input and the visual one back to the value state header
 		aValueStateLinks[0].addDelegate({
 			onsaptabprevious: function(oEvent) {
 				oEvent.preventDefault();
-				oParent.getFocusDomRef().focus();
+				this._oInput.getFocusDomRef().focus();
 				this._getValueStateHeader().addStyleClass("sapMPseudoFocus");
-				oParent.removeStyleClass("sapMFocus");
+				this._oInput.removeStyleClass("sapMFocus");
 			}
 		}, this);
 	};
@@ -676,20 +731,6 @@ sap.ui.define([
 
 		this._sOldValueState = sValueState;
 	};
-
-	/**
-	 * Decorates parent with necessary event delegates.
-	 *
-	 * @param {sap.ui.core.Control} oParent The input control that instantiates this suggestions popover
-	 * @public
-	 */
-	SuggestionsPopover.prototype.decorateParent = function(oParent) {
-		oParent.addEventDelegate({
-			onsaptabnext: this._handleValueStateLinkNav.bind(this, oParent),
-			onsaptabprevious: this._handleValueStateLinkNav.bind(this, oParent)
-		}, this);
-	};
-
 
 	/**
 	 * =================== Interfaces ===================
@@ -761,15 +802,6 @@ sap.ui.define([
 
 	SuggestionsPopover.prototype.resizePopup = function () {
 	};
-
-	SuggestionsPopover.prototype._getValueStateHeader = function () {
-		return null;
-	};
-
-	SuggestionsPopover.prototype._createValueStateHeader = function () {
-		return null;
-	};
-
 
 	return SuggestionsPopover;
 });

@@ -50,7 +50,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -185,7 +185,7 @@ sap.ui.define([
 		 * @private
 		 */
 		TimePickerSliders.prototype.exit = function () {
-			this.$().off(Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", this._onmousewheel);
+			this.$().off(!!Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", this._onmousewheel);
 			Device.resize.detachHandler(this._fnOrientationChanged);
 		};
 
@@ -194,8 +194,8 @@ sap.ui.define([
 		 * @private
 		 */
 		TimePickerSliders.prototype.onAfterRendering = function() {
-			this.$().off(Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", this._onmousewheel);
-			this.$().on(Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", jQuery.proxy(this._onmousewheel, this));
+			this.$().off(!!Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", this._onmousewheel);
+			this.$().on(!!Device.browser.firefox ? "DOMMouseScroll" : "mousewheel", jQuery.proxy(this._onmousewheel, this));
 
 			this.$().on('selectstart', fnFalse);
 
@@ -344,7 +344,7 @@ sap.ui.define([
 		/**
 		 * Gets the time values from the sliders, as a date object.
 		 *
-		 * @returns {Date} A JavaScript date object
+		 * @returns {Object} A JavaScript date object
 		 * @public
 		 */
 		TimePickerSliders.prototype.getTimeValues = function () {

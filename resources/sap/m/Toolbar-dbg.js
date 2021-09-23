@@ -72,7 +72,7 @@ function(
 	 * @implements sap.ui.core.Toolbar,sap.m.IBar
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -476,7 +476,7 @@ function(
 	/**
 	 * Returns the first sap.m.Title control id inside the toolbar for the accessibility
 	 *
-	 * @returns {sap.ui.core.ID} The <code>sap.m.Title</code> ID
+	 * @returns {String} The <code>sap.m.Title</code> ID
 	 * @since 1.28
 	 * @protected
 	 */

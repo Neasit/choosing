@@ -39,7 +39,7 @@ sap.ui.define(['./SimpleType'],
 	 *   <code>true</code>.
 	 * @extends sap.ui.model.SimpleType
 	 * @public
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var CompositeType = SimpleType.extend("sap.ui.model.CompositeType", /** @lends sap.ui.model.CompositeType.prototype */ {
 
@@ -88,9 +88,8 @@ sap.ui.define(['./SimpleType'],
 	 * @param {array} [aCurrentValues]
 	 *   The current values of all binding parts; required if {@link #getParseWithValues} returns
 	 *   <code>true</code>
-	 * @return {any[]|any}
-	 *   An array of raw values or the raw value returned by the type's conversion object in case it
-	 *   exists, see {@link sap.ui.model.SimpleType#getModelFormat SimpleType#getModelFormat}
+	 * @return {any[]}
+	 *   An array of raw values
 	 * @throws {sap.ui.model.ParseException}
 	 *   If parsing to the model type is not possible; the message of the exception is language
 	 *   dependent as it may be displayed on the UI

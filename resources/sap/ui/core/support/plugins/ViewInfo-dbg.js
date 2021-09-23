@@ -15,12 +15,14 @@ sap.ui.define([
 ], function(Plugin, TreeViewer, ObjectViewer, Device, Log, encodeXML) {
 	"use strict";
 
+	/*global Blob, Uint8Array, alert */
+
 		var $ = jQuery;
 		/**
 		 * Creates an instance of sap.ui.core.support.plugins.ViewInfo.
 		 * @class This class represents the ViewInfo plugin for the support tool functionality of UI5. This class is internal and all its functions must not be used by an application.
 		 * @extends sap.ui.core.support.Plugin
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 * @private
 		 * @alias sap.ui.core.support.plugins.ViewInfo
 		 */

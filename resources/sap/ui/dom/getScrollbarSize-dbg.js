@@ -57,8 +57,7 @@ sap.ui.define(['sap/ui/thirdparty/jquery'], function(jQuery) {
 
 		$Area.prependTo(document.body);
 
-		var $Dummy = jQuery("<div></div>");
-		$Dummy[0].style = "visibility:visible;position:absolute;height:100px;width:100px;overflow:scroll;opacity:0;";
+		var $Dummy = jQuery("<div style=\"visibility:visible;position:absolute;height:100px;width:100px;overflow:scroll;opacity:0;\"></div>");
 		$Area.append($Dummy);
 
 		var oDomRef = $Dummy.get(0);

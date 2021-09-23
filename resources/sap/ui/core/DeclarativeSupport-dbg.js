@@ -40,7 +40,7 @@ sap.ui.define([
 	 * @class Static class for enabling declarative UI support.
 	 *
 	 * @author Peter Muessig, Tino Butz
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.7.0
 	 * @public
 	 * @alias sap.ui.core.DeclarativeSupport
@@ -203,7 +203,7 @@ sap.ui.define([
 			var oControl;
 			if (View.prototype.isPrototypeOf(fnClass.prototype) && typeof fnClass._sType === "string") {
 				// for views having a factory function defined we use the factory function!
-				oControl = View._create(mSettings, undefined, fnClass._sType);
+				oControl = View._legacyCreate(mSettings, undefined, fnClass._sType);
 			} else {
 				oControl = new fnClass(mSettings);
 			}

@@ -11,7 +11,7 @@ sap.ui.define(['sap/ui/fl/changeHandler/JsControlTreeModifier', "sap/base/Log"],
 	 * Change handler for hiding of a control.
 	 * @alias sap.ui.fl.changeHandler.HideControl
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @experimental Since 1.27.0
 	 */
 	var HideForm = { };
@@ -196,12 +196,11 @@ sap.ui.define(['sap/ui/fl/changeHandler/JsControlTreeModifier', "sap/base/Log"],
 	HideForm.getChangeVisualizationInfo = function(oChange, oAppComponent) {
 		var oSelector = oChange.getDefinition().content.elementSelector;
 		var oElement = JsControlTreeModifier.bySelector(oSelector, oAppComponent);
-		var oDisplaySelector = oChange.getChangeType() === "removeSimpleFormGroup"
+		var oAffectedControlSelector = oChange.getChangeType() === "removeSimpleFormGroup"
 			? oElement.getParent().getId()
 			: oElement.getParent().getParent().getId();
 		return {
-			affectedControls: [oSelector],
-			displayControls: [oDisplaySelector]
+			affectedControls: [oAffectedControlSelector]
 		};
 	};
 

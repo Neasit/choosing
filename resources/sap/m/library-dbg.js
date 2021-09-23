@@ -27,7 +27,6 @@ sap.ui.define([
 	"./AvatarType",
 	"./AvatarColor",
 	"./AvatarImageFitType",
-	"./upload/UploaderHttpRequestMethod",
 	// referenced here to enable the Support feature
 	"./Support"
 ],
@@ -49,8 +48,7 @@ sap.ui.define([
 	AvatarSize,
 	AvatarType,
 	AvatarColor,
-	AvatarImageFitType,
-	UploaderHttpRequestMethod
+	AvatarImageFitType
 ) {
 
 	"use strict";
@@ -59,7 +57,7 @@ sap.ui.define([
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.m",
-		version: "1.92.0",
+		version: "1.87.0",
 		dependencies : ["sap.ui.core"],
 		designtime: "sap/m/designtime/library.designtime",
 		types: [
@@ -136,7 +134,6 @@ sap.ui.define([
 			"sap.m.SelectType",
 			"sap.m.Size",
 			"sap.m.SplitAppMode",
-			"sap.m.StandardDynamicDateRangeKeys",
 			"sap.m.StandardTileType",
 			"sap.m.StepInputStepModeType",
 			"sap.m.StepInputValidationMode",
@@ -144,7 +141,6 @@ sap.ui.define([
 			"sap.m.StringFilterOperator",
 			"sap.m.SwipeDirection",
 			"sap.m.SwitchType",
-			"sap.m.TabsOverflowMode",
 			"sap.m.TileSizeBehavior",
 			"sap.m.TimePickerMaskMode",
 			"sap.m.TitleAlignment",
@@ -157,8 +153,7 @@ sap.ui.define([
 			"sap.m.VerticalPlacementType",
 			"sap.m.WrappingType",
 			"sap.m.WizardRenderMode",
-			"sap.m.semantic.SemanticRuleSetType",
-			"sap.m.upload.UploaderHttpRequestMethod"
+			"sap.m.semantic.SemanticRuleSetType"
 		],
 		interfaces: [
 			"sap.m.IBar",
@@ -205,7 +200,6 @@ sap.ui.define([
 			"sap.m.Dialog",
 			"sap.m.DisplayListItem",
 			"sap.m.DraftIndicator",
-			"sap.m.DynamicDateRange",
 			"sap.m.ExpandableText",
 			"sap.m.FacetFilter",
 			"sap.m.FacetFilterItem",
@@ -249,7 +243,6 @@ sap.ui.define([
 			"sap.m.NavContainer",
 			"sap.m.NewsContent",
 			"sap.m.NumericContent",
-			"sap.m.NotificationList",
 			"sap.m.NotificationListBase",
 			"sap.m.NotificationListItem",
 			"sap.m.NotificationListGroup",
@@ -325,9 +318,6 @@ sap.ui.define([
 			"sap.m.TileContainer",
 			"sap.m.TileContent",
 			"sap.m.TimePicker",
-			"sap.m.TimePickerInputs",
-			"sap.m.TimePickerClock",
-			"sap.m.TimePickerClocks",
 			"sap.m.TimePickerSliders",
 			"sap.m.Title",
 			"sap.m.ToggleButton",
@@ -360,9 +350,6 @@ sap.ui.define([
 			"sap.m.ColumnPopoverCustomItem",
 			"sap.m.ColumnPopoverItem",
 			"sap.m.ColumnPopoverSortItem",
-			"sap.m.CustomDynamicDateOption",
-			"sap.m.DynamicDateOption",
-			"sap.m.DynamicDateValueHelpUIType",
 			"sap.m.FlexItemData",
 			"sap.m.FeedListItemAction",
 			"sap.m.IconTabFilter",
@@ -393,7 +380,6 @@ sap.ui.define([
 			"sap.m.SinglePlanningCalendarWeekView",
 			"sap.m.SinglePlanningCalendarWorkWeekView",
 			"sap.m.SinglePlanningCalendarView",
-			"sap.m.StandardDynamicDateOption",
 			"sap.m.SuggestionItem",
 			"sap.m.TabContainerItem",
 			"sap.m.TabStripItem",
@@ -408,7 +394,6 @@ sap.ui.define([
 			"sap.m.ViewSettingsItem",
 			"sap.m.plugins.ColumnResizer",
 			"sap.m.plugins.DataStateIndicator",
-			"sap.m.plugins.PasteProvider",
 			"sap.m.plugins.PluginBase",
 			"sap.m.semantic.AddAction",
 			"sap.m.semantic.CancelAction",
@@ -569,13 +554,10 @@ sap.ui.define([
 	 * @namespace
 	 * @alias sap.m
 	 * @author SAP SE
-	 * @version 1.92.0
-	 * @since 1.4
+	 * @version 1.87.0
 	 * @public
 	 */
 	var thisLib = sap.m;
-	thisLib.upload.UploaderHttpRequestMethod = UploaderHttpRequestMethod;
-
 	/* eslint-disable no-undef */
 
 
@@ -1446,6 +1428,7 @@ sap.ui.define([
 
 		/**
 		 * Flex items are evenly distributed in the line, with half-size spaces on either end.
+		 * <b>Note:</b> This value behaves like SpaceBetween in Internet Explorer 10.
 		 * @public
 		 */
 		SpaceAround : "SpaceAround",
@@ -1491,6 +1474,9 @@ sap.ui.define([
 
 	/**
 	 * Available options for the layout of container lines along the cross axis of the flexbox layout.
+	 *
+	 * <b>Note:</b> This property has no effect in Internet Explorer 10.
+	 *
 	 * @enum {string}
 	 * @public
 	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
@@ -1523,6 +1509,7 @@ sap.ui.define([
 
 		/**
 		 * Lines are evenly distributed in the line, with half-size spaces on either end.
+		 * <b>Note:</b> This value behaves like SpaceBetween in Internet Explorer 10.
 		 * @public
 		 */
 		SpaceAround : "SpaceAround",
@@ -1802,26 +1789,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Specifies <code>IconTabBar</code> tab overflow mode.
-	 * @enum {string}
- 	 * @since 1.90.0
-	 * @public
-	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
-	 */
-	thisLib.TabsOverflowMode = {
-		/**
-		 * Default behavior: One overflow tab at the end of the header.
-		 * @public
-		 */
-		End: "End",
-		/**
-		 * Two overflow tabs at both ends of the header to keep tabs order intact.
-		 * @public
-		 */
-		StartAndEnd: "StartAndEnd"
-	};
-
-	/**
 	 * Describes the behavior of tiles when displayed on a small-screened phone (374px wide and lower).
 	 *
 	 * @enum {string}
@@ -1962,9 +1929,7 @@ sap.ui.define([
 	 * regardless of the value this method returns. The start and the end tickmark are taken into account
 	 * for the later calculations.
 	 *
-	 * @param {float} fSize - Size of the scale. This is the distance between the start and end point i.e. 0..100
-	 * @param {float} fStep - The step walking from start to end.
-	 * @param {int} iTickmarksThreshold - Limits the number of tickmarks.
+	 * @param {object} mOptions The option array
 	 * @returns {int} The number of tickmarks
 	 *
 	 * @function
@@ -3281,57 +3246,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * The option keys of all the standard options of a DynamicDateRange control.
-	 *
-	 * @public
-	 * @ui5-metamodel This array also will be described in the UI5 (legacy) designtime metamodel
-	 * @experimental Since 1.92. These keys are experimental. The API might be changed in future.
-	 */
-	thisLib.StandardDynamicDateRangeKeys = [
-		"DATE",
-		"TODAY",
-		"YESTERDAY",
-		"TOMORROW",
-
-		"DATERANGE",
-		"FROM",
-		"TO",
-		"YEARTODATE",
-		"LASTDAYS",
-		"LASTWEEKS",
-		"LASTMONTHS",
-		"LASTQUARTERS",
-		"LASTYEARS",
-		"NEXTDAYS",
-		"NEXTWEEKS",
-		"NEXTMONTHS",
-		"NEXTQUARTERS",
-		"NEXTYEARS",
-		"TODAYFROMTO",
-
-		"THISWEEK",
-		"LASTWEEK",
-		"NEXTWEEK",
-
-		"SPECIFICMONTH",
-		"THISMONTH",
-		"LASTMONTH",
-		"NEXTMONTH",
-
-		"THISQUARTER",
-		"LASTQUARTER",
-		"NEXTQUARTER",
-		"QUARTER1",
-		"QUARTER2",
-		"QUARTER3",
-		"QUARTER4",
-
-		"THISYEAR",
-		"LASTYEAR",
-		"NEXTYEAR"
-	];
-
-	/**
 	 * QuickViewGroupElement is a combination of one label and another control (Link or Text) associated to this label.
 	 *
 	 * @enum {string}
@@ -4341,34 +4255,6 @@ sap.ui.define([
 			Page: "Page"
 		};
 
-	/**
-	 * Enumeration of the <code>ResetAllMode>/code> that can be used in a <code>TablePersoController</code>.
-	 * @enum {string}
-	 * @public
-	 */
-	thisLib.ResetAllMode = {
-
-		/**
-		 * Default behavior of the <code>TablePersoDialog</code> Reset All button.
-		 * @public
-		 */
-		Default: "Default",
-
-		/**
-		 * Resets the table to the default of the attached <code>PersoService</code>.
-		 * @public
-		 */
-		ServiceDefault: "ServiceDefault",
-
-		/**
-		 * Resets the table to the result of <code>getResetPersData</code> of the attached <code>PersoService</code>.
-		 * @public
-		 */
-		ServiceReset: "ServiceReset"
-	};
-
-	sap.ui.lazyRequire("sap.m.DynamicDate");
-
 		//lazy imports for MessageToast
 	sap.ui.lazyRequire("sap.m.MessageToast", "show");
 
@@ -4671,13 +4557,13 @@ sap.ui.define([
 	 * <ul>
 	 * <li>Some browsers do not let you pass more than 2022 characters in the URL</li>
 	 * <li>MAPI (Outlook) limit is 2083, max. path under Internet Explorer is 2048</li>
-	 * <li>Different Internet Explorer versions have a different URL length limits (IE9 approximately 1000 characters)</li>
+	 * <li>Different Internet Explorer versions have a different limitation (IE9 approximately 1000 characters)</li>
 	 * <li>MS mail app under Windows 8 cuts mail links after approximately 100 characters</li>
 	 * <li>Safari gets a confirmation from user before opening a native application and can block other triggers if the user cancels it</li>
 	 * <li>Some mail applications(Outlook) do not respect all encodings (e.g. Cyrillic texts are not encoded correctly)</li>
 	 * </ul>
 	 *
-	 * <b>Note:</b> all the given maximum lengths are for URL encoded text (e.g a space character will be encoded as "%20").
+	 * <b>Note:</b> all the given limitation lengths are for URL encoded text (e.g a space character will be encoded as "%20").
 	 *
 	 * It has been reported by some users that the content send through the <code>URLHelper</code> is not correctly displayed by the native applications (e.g. a native mail application).
 	 *
@@ -4848,12 +4734,10 @@ sap.ui.define([
 			 * @param {string} [sBody] Default message text
 			 * @param {string} [sCC] Carbon Copy email address
 			 * @param {string} [sBCC] Blind carbon copy email address
-			 * @param {boolean} [bNewWindow] Opens email template in a new browser window or tab.
 			 * @public
 			 */
-			triggerEmail: function(sEmail, sSubject, sBody, sCC, sBCC, bNewWindow) {
-				var bNewWindow = bNewWindow || false;
-				this.redirect(this.normalizeEmail.apply(0, [sEmail, sSubject, sBody, sCC, sBCC]), bNewWindow);
+			triggerEmail: function(sEmail, sSubject, sBody, sCC, sBCC) {
+				this.redirect(this.normalizeEmail.apply(0, arguments));
 			},
 
 			toString : function() {
@@ -4874,7 +4758,7 @@ sap.ui.define([
 	thisLib.BackgroundHelper = {
 		/**
 		 * Adds CSS classes and styles to the given RenderManager, depending on the given configuration for background color and background image.
-		 * To be called by control renderers supporting the global themable background image within their root tag, before they call openEnd, voidEnd, writeClasses() and writeStyles().
+		 * To be called by control renderers supporting the global themable background image within their root tag, before they call writeClasses() and writeStyles().
 		 *
 		 * @param {sap.ui.core.RenderManager} rm The RenderManager
 		 * @param {sap.ui.core.CSSColor} [sBgColor] A configured custom background color for the control, if any

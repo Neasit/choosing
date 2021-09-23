@@ -113,7 +113,7 @@ sap.ui.define([
 	 * @param {object} [mSettings] initial settings for the new control
 	 * @class The ConditionPanel Control will be used to implement the Sorting, Filtering and Grouping panel of the new Personalization dialog.
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @constructor
 	 * @public
 	 * @since 1.26.0
@@ -827,7 +827,7 @@ sap.ui.define([
 
 		this._oRemoveAllButton = new Button({
 			text: this._oRb.getText("CONDITIONPANEL_REMOVE_ALL"), // "Remove All",
-			//icon: sap.ui.core.IconPool.getIconURI("decline"),
+			//icon: sap.ui.core.IconPool.getIconURI("sys-cancel"),
 			//tooltip: "Remove All",
 			visible: true,
 			press: function(oEvent) {
@@ -1718,12 +1718,15 @@ sap.ui.define([
 									}
 								}
 
-								var oConditionsSettings = {
-									"oOperation" : oOperation.getSelectedKey(),
-									"oKeyField": oKeyField.key,
-									"oPastedValue": oPastedValue
-								},
-								oCondition = that._getConditions(oConditionsSettings);
+								var oCondition = {
+									"index": that._iConditions,
+									"key": that._createConditionKey(),
+									"exclude": that.getExclude(),
+									"operation": oOperation.getSelectedKey(),
+									"keyField": oKeyField.key,
+									"value1":  oPastedValue,
+									"value2": null
+								};
 								that._addCondition2Map(oCondition);
 
 								that.fireDataChange({
@@ -1756,18 +1759,6 @@ sap.ui.define([
 		}
 
 		return oControl;
-	};
-
-	P13nConditionPanel.prototype._getConditions = function(oConditionsSettings) {
-		return {
-			"index": this._iConditions,
-			"key": this._createConditionKey(),
-			"exclude": this.getExclude(),
-			"operation":oConditionsSettings.oOperation,
-			"keyField": oConditionsSettings.oKeyField,
-			"value1":  oConditionsSettings.oPastedValue,
-			"value2": null
-		};
 	};
 
 	/**
@@ -2949,7 +2940,7 @@ sap.ui.define([
 		// create "Remove button"
 		var oRemoveControl = new Button({
 			type: ButtonType.Transparent,
-			icon: IconPool.getIconURI("decline"),
+			icon: IconPool.getIconURI("sys-cancel"),
 			tooltip: this._oRb.getText("CONDITIONPANEL_REMOVE" + (this._sAddRemoveIconTooltipKey ? "_" + this._sAddRemoveIconTooltipKey : "") + "_TOOLTIP"),
 			press: function() {
 				that._handleRemoveCondition(this.oTargetGrid, oConditionGrid);

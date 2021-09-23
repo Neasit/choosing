@@ -148,7 +148,7 @@ sap.ui.define([
 		};
 
 		/**
-		 * @see sap.ui.model.ListBinding#getLength
+		 * @override
 		 */
 		TreeBindingAdapter.prototype.getLength = function() {
 			if (!this._oRootNode) {
@@ -159,6 +159,9 @@ sap.ui.define([
 			return this._oRootNode.magnitude;
 		};
 
+		/**
+		 * @override
+		 */
 		TreeBindingAdapter.prototype.getContextByIndex = function (iIndex) {
 			//step out if the binding is initial (as long as the metadata is not yet loaded)
 			if (this.isInitial()) {
@@ -169,6 +172,9 @@ sap.ui.define([
 			return oNode ? oNode.context : undefined;
 		};
 
+		/**
+		 * @override
+		 */
 		TreeBindingAdapter.prototype.getNodeByIndex = function(iIndex) {
 			//step out if the binding is initial (as long as the metadata is not yet loaded)
 			if (this.isInitial()) {
@@ -429,7 +435,9 @@ sap.ui.define([
 		 */
 		TreeBindingAdapter.prototype._getContextsOrNodes = function (bReturnNodes, iStartIndex,
 				iLength, iThreshold) {
-			if (!this.isResolved() || this.isInitial()) {
+
+			//step out if the binding is initial (as long as the metadata is not yet loaded)
+			if (this.isInitial()) {
 				return [];
 			}
 
@@ -578,11 +586,6 @@ sap.ui.define([
 			return aNodes;
 		};
 
-		/**
-		 * Builds the tree from start index with the specified number of nodes
-		 * @param {int} iStartIndex Index from which the tree shall be built
-		 * @param {int} iLength Number of Nodes
-		 */
 		TreeBindingAdapter.prototype._buildTree = function(iStartIndex, iLength) {
 			//throw away our tree
 			this._oRootNode = undefined;
@@ -991,10 +994,6 @@ sap.ui.define([
 				}
 			});
 
-			if (this.bCollapseRecursive) {
-				this.setNumberOfExpandedLevels(iLevel);
-			}
-
 			this._fireChange({reason: ChangeReason.Collapse});
 		};
 
@@ -1090,6 +1089,7 @@ sap.ui.define([
 
 		/**
 		 * A group ID starts and ends with a "/".
+		 * @override
 		 */
 		TreeBindingAdapter.prototype._getGroupIdLevel = function (sGroupID) {
 			if (sGroupID == null) {
@@ -1101,6 +1101,7 @@ sap.ui.define([
 
 		/**
 		 * Determines the size of a group
+		 * @override
 		 */
 		TreeBindingAdapter.prototype._getGroupSize = function (oNode) {
 			return this.getChildCount(oNode.context);

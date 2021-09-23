@@ -78,7 +78,7 @@ sap.ui.define([
 		 * @extends sap.m.ListItemBase
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -254,7 +254,7 @@ sap.ui.define([
 		/* Clones the NotificationListBase.
 		 *
 		 * @public
-		 * @returns {this} The cloned NotificationListBase.
+		 * @returns {sap.m.NotificationListBase} The cloned NotificationListBase.
 		 */
 		NotificationListBase.prototype.clone = function () {
 			var clonedObject = ListItemBase.prototype.clone.apply(this, arguments);

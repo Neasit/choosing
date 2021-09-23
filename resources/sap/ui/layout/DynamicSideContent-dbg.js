@@ -94,7 +94,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -384,10 +384,9 @@ sap.ui.define([
 
 		/**
 		 * Returns the breakpoint for the current state of the control.
-		 *
-		 * If the control is not rendered yet, this method will return <code>undefined</code>,
+		 * If the control is not rendered yet this method will return <code>undefined</code>,
 		 * as current break point calculation is based on the parent container width.
-		 * @returns {string} currentBreakpoint
+		 * @returns {String} currentBreakpoint
 		 * @public
 		 */
 		DynamicSideContent.prototype.getCurrentBreakpoint = function () {
@@ -527,6 +526,7 @@ sap.ui.define([
 				sMainContentId = sControlId + "-" + MC_GRID_CELL_SELECTOR;
 
 			if (!this._oSCScroller && !this._oMCScroller) {
+				var ScrollEnablement = sap.ui.requireSync("sap/ui/core/delegate/ScrollEnablement");
 				this._oSCScroller = new ScrollEnablement(this, null, {
 					scrollContainerId: sSideContentId,
 					horizontal: false,

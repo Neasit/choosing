@@ -320,11 +320,11 @@ sap.ui.define([
 					}
 
 					return oModel.fetchObject(aMatches[1]).then(function (sPathValue) {
-						var bIsAnnotationPath = aMatches[2] === "$AnnotationPath",
+						var i,
+							bIsAnnotationPath = aMatches[2] === "$AnnotationPath",
 							sPrefix = bIsAnnotationPath
 								? sPathValue.split("@")[0]
-								: sPathValue,
-							i;
+								: sPathValue;
 
 						if (!bIsAnnotationPath && aMatches[3]) {
 							sPrefix = sPrefix + "/";

@@ -17,7 +17,7 @@ sap.ui.define(["sap/ui/support/library", "sap/ui/core/mvc/View", "sap/ui/core/mv
 	var aObsoleteFunctionNames = ["jQuery.sap.require", "$.sap.require", "sap.ui.requireSync", "jQuery.sap.sjax"];
 
 	// avoid spoiling the globalAPIRule by using Object.getOwnPropertyDescriptor
-	if (jQuery && jQuery.sap && Object.getOwnPropertyDescriptor(jQuery.sap, "sjax").value) {
+	if (jQuery && jQuery.sap && !!Object.getOwnPropertyDescriptor(jQuery.sap, "sjax").value) {
 		aObsoleteFunctionNames.push("jQuery.sap.syncHead",
 			"jQuery.sap.syncGet",
 			"jQuery.sap.syncPost",
@@ -250,36 +250,6 @@ sap.ui.define(["sap/ui/support/library", "sap/ui/core/mvc/View", "sap/ui/core/mv
 	};
 
 	/**
-	 * Check if deprecated sap.ui.core.mvc.JSView is used.
-	 */
-	 var oJSViewRule = {
-		id: "deprecatedJSViewUsage",
-		audiences: [Audiences.Internal],
-		categories: [Categories.Modularization],
-		enabled: true,
-		minversion: "1.90",
-		title: "Usage of deprecated JSView",
-		description: "Usage of deprecated JSView",
-		resolution: "Avoid using sap.ui.core.mvc.JSView. Instead use Typed Views by defining the view class with 'sap.ui.core.mvc.View.extend' and creating the view instances with 'sap.ui.core.mvc.View.create'.",
-		resolutionurls: [{
-			text: 'Documentation: Typed Views',
-			href: 'https://openui5.hana.ondemand.com/#/topic/e6bb33d076dc4f23be50c082c271b9f0'
-		}],
-		check: function(oIssueManager, oCoreFacade, oScope) {
-			var oLoggedObjects = oScope.getLoggedObjects("sap.ui.core.mvc.JSView");
-			oLoggedObjects.forEach(function(oLoggedObject) {
-				oIssueManager.addIssue({
-					severity: Severity.High,
-					details: oLoggedObject.message,
-					context: {
-						id: "WEBPAGE"
-					}
-				});
-			});
-		}
-	};
-
-	/**
 	 * Check for avoidable synchronous XHRs.
 	 */
 	var oGlobalSyncXhrRule = {
@@ -409,35 +379,5 @@ sap.ui.define(["sap/ui/support/library", "sap/ui/core/mvc/View", "sap/ui/core/mv
 		}
 	};
 
-	/**
-	 * Checks for missing super init() calls on sap.ui.core.UIComponents.
-	 */
-	 var oMissingSuperInitRule = {
-		id: "missingInitInUIComponent",
-		audiences: [Audiences.Application, Audiences.Control, Audiences.Internal],
-		categories: [Categories.Functionality],
-		enabled: true,
-		minversion: "1.89",
-		title: "Missing super init() call in sap.ui.core.UIComponent",
-		description: "A sub-class of sap.ui.core.UIComponent which overrides the init() function must apply the super init() function as well.",
-		resolution: "A bound call to sap.ui.core.UIComponent.prototype.init must be introduced in the sub-class.",
-		resolutionurls: [{
-			text: "API Documentation: sap.ui.core.UIComponent#init",
-			href: "https://openui5.hana.ondemand.com/api/sap.ui.core.UIComponent#methods/init"
-		}],
-		check: function(oIssueManager, oCoreFacade, oScope) {
-			var oLoggedObjects = oScope.getLoggedObjects("missingInitInUIComponent");
-			oLoggedObjects.forEach(function(oLoggedObject) {
-				oIssueManager.addIssue({
-					severity: Severity.High,
-					details: oLoggedObject.message,
-					context: {
-						id: "WEBPAGE"
-					}
-				});
-			});
-		}
-	};
-
-	return [oControllerSyncCodeCheckRule, oGlobalAPIRule, oJquerySapRule, oSyncFactoryLoadingRule, oGlobalSyncXhrRule, oDeprecatedAPIRule, oControllerExtensionRule, oJQueryThreeDeprecationRule, oMissingSuperInitRule, oJSViewRule];
+	return [oControllerSyncCodeCheckRule, oGlobalAPIRule, oJquerySapRule, oSyncFactoryLoadingRule, oGlobalSyncXhrRule, oDeprecatedAPIRule, oControllerExtensionRule, oJQueryThreeDeprecationRule];
 }, true);

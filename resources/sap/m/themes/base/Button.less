@@ -51,6 +51,7 @@
 	-webkit-appearance: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;
+	-ms-user-select: none;
 	-webkit-background-clip: padding-box;
 	background-clip: padding-box;
 	box-sizing: border-box;
@@ -70,6 +71,13 @@
 	border-radius:    0.2rem;
 	color:            @sapUiButtonTextColor;
 	text-shadow:      @sapUiShadowText;
+}
+
+html[data-sap-ui-browser*='ie'] .sapMBtnInner {
+	/* Buttons without inline content require
+		more vertical space than needed in IE */
+	display: flex;
+	width: 100%;
 }
 
 .sapMBtnInner::-moz-focus-inner {
@@ -130,6 +138,13 @@ html[data-sap-ui-os^="iOS"] .sapMBtnBase:not(.sapMBtn) .sapMBtnContent {
 
 .sapMIBar .sapMBtnInner {
 	vertical-align:   top;
+}
+
+.sapMIBar .sapMBtnInner.sapMIE {
+	/* This is for IE9 - if a button overflows inside of a bar,
+		ellipsis will be shown and it will hide completely
+		if there is no position relative set.*/
+	position: relative;
 }
 
 /* ------------------------------------------------ */
@@ -230,7 +245,7 @@ html[data-sap-ui-os^="iOS"] .sapMBtnBase:not(.sapMBtn) .sapMBtnContent {
 	border-color: @sapUiButtonHoverBorderColor;
 }
 
-.sapMBtn:hover:not(.sapMBtnDisabled):not(.sapMSBActive) > .sapMBtnHoverable:not(.sapMBtnDisabled):not(.sapMBtnActive):not(.sapMToggleBtnPressed):not(.sapMBtnTransparent) {
+.sapMBtn:hover:not(.sapMBtnDisabled) > .sapMBtnHoverable:not(.sapMBtnDisabled):not(.sapMBtnActive):not(.sapMToggleBtnPressed):not(.sapMBtnTransparent) {
 	&.sapMBtnDefault,
 	&.sapMBtnBack,
 	&.sapMBtnGhost {
@@ -531,21 +546,6 @@ span.sapMBtnInner.sapMBtnEmphasized {
 }
 
 /* ---------------------------------------------------------------------*/
-/* Styles for buttons in Toolbar of type Info.                          */
-/* ---------------------------------------------------------------------*/
-
-.sapMTB-Info-CTX .sapMBtnInner,
-.sapMTB-Info-CTX .sapMBtnInner:hover {
-	color:@sapUiContentContrastIconColor;
-	text-shadow: none;
-}
-
-.sapMTB-Info-CTX .sapMBtn:hover > .sapMBtnTransparent.sapMBtnHoverable:not(.sapMBtnActive):not(.sapMToggleBtnPressed) bdi, .sapMIBar-CTX .sapMBtn:hover > .sapMBtnTransparent.sapMBtnHoverable:not(.sapMBtnActive):not(.sapMToggleBtnPressed) bdi,
-.sapMTB-Info-CTX .sapMBtn:hover:not(.sapMBtnDisabled) > .sapMBtnTransparent.sapMBtnHoverable:not(.sapMBtnActive):not(.sapMToggleBtnPressed):not(.sapMBtnEmphasized) .sapUiIcon {
-	color: @sapUiContentContrastIconColor;
-}
-
-/* ---------------------------------------------------------------------*/
 /* Transparent buttons looks like normal one in a header/footer.        */
 /* The following rules are overridden in a bar below:                   */
 /* ---------------------------------------------------------------------*/
@@ -632,8 +632,8 @@ span.sapMBtnInner.sapMBtnEmphasized {
 		border-color: @sapUiNegativeElement;
 	}
 	&.sapMBtnNeutral{
-		background: @sapButton_Neutral_Background;
-		border-color: @sapButton_Neutral_BorderColor;
+		background: @sapUiNeutralElement;
+		border-color: @sapUiNeutralElement;
 	}
 	&.sapMBtnSuccess{
 		background: @sapUiPositiveElement;
@@ -721,8 +721,8 @@ span.sapMBtnInner.sapMBtnEmphasized {
 }
 
 .sapMIBar-CTX .sapMBtn:hover > .sapMBtnHoverable.sapMBtnNeutral:not(.sapMBtnActive) {
-	background-color: @sapButton_Neutral_Hover_Background;
-	border-color: @sapButton_Neutral_Hover_BorderColor;
+	background-color: darken(@sapUiNeutralElement, 7);
+	border-color: darken(@sapUiNeutralElement, 7);
 }
 
 .sapMIBar-CTX .sapMBtn:hover > .sapMBtnHoverable.sapMBtnCritical.sapMBtnActive {
@@ -741,8 +741,8 @@ span.sapMBtnInner.sapMBtnEmphasized {
 }
 
 .sapMIBar-CTX .sapMBtn:hover > .sapMBtnHoverable.sapMBtnNeutral.sapMBtnActive {
-	background-color: @sapButton_Neutral_Active_Background;
-	border-color: @sapButton_Neutral_Active_BorderColor;
+	background-color: darken(@sapUiNeutralElement, 10);
+	border-color: darken(@sapUiNeutralElement, 10);
 }
 
 /* Separators between buttons in a footer */
@@ -882,7 +882,9 @@ html.sap-desktop .sapMFooter-CTX .sapMBtnInner :not(.sapMBtnDisabled) {
 				top: 0.25rem;
 				right: -0.25rem;
 				padding-right: 0.0625rem;
-
+				&.sapMBadgeAnimationRemove {
+					display: none;
+				}
 			}
 		}
 	}

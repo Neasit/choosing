@@ -146,8 +146,9 @@ sap.ui.define(['sap/base/Log', 'sap/ui/thirdparty/URI', 'sap/base/util/now'
 				fnStart = this.start;
 
 				// wrap and instrument XHR
-				/* eslint-disable-next-line no-global-assign */
+				/* eslint-disable no-native-reassign, no-undef*/
 				XMLHttpRequest = function() {
+				/* eslint-enable no-native-reassign, no-undef*/
 					var oXHR = new fnXHR(),
 						fnOpen = oXHR.open,
 						sMeasureId;
@@ -163,8 +164,9 @@ sap.ui.define(['sap/base/Log', 'sap/ui/thirdparty/URI', 'sap/base/util/now'
 					return oXHR;
 				};
 			} else {
-				/* eslint-disable-next-line no-global-assign */
+				/* eslint-disable no-native-reassign, no-undef*/
 				XMLHttpRequest = fnXHR;
+				/* eslint-enable no-native-reassign, no-undef*/
 			}
 
 			return bActive;

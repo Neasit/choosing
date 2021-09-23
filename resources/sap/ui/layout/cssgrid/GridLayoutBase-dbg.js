@@ -6,8 +6,9 @@
 
 sap.ui.define([
 	"sap/ui/base/ManagedObject",
-	"./GridItemLayoutData"
-], function (ManagedObject, GridItemLayoutData) {
+	"./GridItemLayoutData",
+	"sap/ui/Device"
+], function (ManagedObject, GridItemLayoutData, Device) {
 	"use strict";
 
 	var mGridProperties = {
@@ -36,7 +37,7 @@ sap.ui.define([
 	 * Applies a sap.ui.layout.cssgrid.GridSettings to a provided DOM element or Control.
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @extends sap.ui.base.ManagedObject
 	 *
@@ -118,38 +119,29 @@ sap.ui.define([
 	};
 
 	/**
-	 * Apply styles to the provided array of HTML elements or controls based on the currently active GridSettings
+	 * Apply display:grid styles to the provided array of HTML elements or controls based on the currently active GridSettings
 	 *
 	 * @public
 	 * @param {sap.ui.core.Control[]|HTMLElement[]} aElements The elements or controls on which to apply the display:grid styles
 	 */
 	GridLayoutBase.prototype.applyGridLayout = function (aElements) {
-		if (!aElements) {
-			return;
-		}
-
+		if (!aElements) { return; }
 		aElements.forEach(this._applySingleGridLayout, this);
 	};
 
 	/**
-	 * Apply styles to the provided HTML element or control based on the currently active GridSettings
+	 * Apply display:grid styles to the provided HTML element or control based on the currently active GridSettings
 	 *
-	 * @private
+	 * @protected
 	 * @param {sap.ui.core.Control|HTMLElement} oElement The element or control on which to apply the display:grid styles
 	 */
 	GridLayoutBase.prototype._applySingleGridLayout = function (oElement) {
-		if (!oElement) {
-			return;
-		}
-
+		if (!oElement) { return; }
 		oElement = oElement instanceof window.HTMLElement ? oElement : oElement.getDomRef();
 
 		var oGridSettings = this.getActiveGridSettings();
 
-		// check if the style is not already added by RenderManager or something else
-		if (oElement.style.getPropertyValue("display") !== "grid") {
-			oElement.style.setProperty("display", "grid");
-		}
+		oElement.style.setProperty("display", "grid");
 
 		if (oGridSettings) {
 			this._setGridLayout(oElement, oGridSettings);
@@ -215,7 +207,18 @@ sap.ui.define([
 	 * @virtual
 	 * @param {sap.ui.layout.cssgrid.IGridConfigurable} oGrid The grid
 	 */
-	GridLayoutBase.prototype.onGridAfterRendering = function (oGrid) { };
+	GridLayoutBase.prototype.onGridAfterRendering = function (oGrid) {
+		// Loops over each element's dom and adds the grid item class
+		oGrid.getGridDomRefs().forEach(function (oDomRef) {
+			if (oDomRef.children){
+				for (var i = 0; i < oDomRef.children.length; i++) {
+					if (!oDomRef.children[i].classList.contains("sapMGHLI") && !oDomRef.children[i].classList.contains("sapUiBlockLayerTabbable")) { // the item is not group header or a block layer tabbable
+						oDomRef.children[i].classList.add("sapUiLayoutCSSGridItem");
+					}
+				}
+			}
+		});
+	};
 
 	/**
 	 * Hook function for the Grid's resize. Will be called if the grid layout is responsive.
@@ -234,14 +237,29 @@ sap.ui.define([
 	};
 
 	/**
-	 * Add "display:grid" and configuration styles with RenderManager.
-	 * If the layout is responsive, the configuration styles are not added, as they are added by "applyGridLayout" later.
-	 *
-	 * @param {sap.ui.core.RenderManager} oRM The render manager of the Grid which wants to add the styles
+	 * @public
+	 * @returns {boolean} If native grid is supported by the browser
+	 */
+	GridLayoutBase.prototype.isGridSupportedByBrowser = function () {
+		return !Device.browser.msie;
+	};
+
+	/**
+	 * @returns {boolean} If the layout provides grid support for browsers that don't have native support
 	 * @private
 	 * @ui5-restricted
 	 */
-	GridLayoutBase.prototype.addGridStyles = function (oRM) {
+	GridLayoutBase.prototype.hasGridPolyfill = function () {
+		return false;
+	};
+
+	/**
+	 * Render display:grid styles. Used for non-responsive grid layouts.
+	 *
+	 * @param {sap.ui.core.RenderManager} oRM The render manager of the Control which wants to render display:grid styles
+	 * @param {sap.ui.layout.cssgrid.GridLayoutBase} oGridLayout The grid layout to use to apply display:grid styles
+	 */
+	GridLayoutBase.prototype.renderSingleGridLayout = function (oRM) {
 		var oGridSettings = this.getActiveGridSettings();
 
 		oRM.style("display", "grid");

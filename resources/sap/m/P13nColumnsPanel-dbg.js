@@ -38,7 +38,7 @@ sap.ui.define([
 	 * @class The <code>P13nColumnsPanel</code> control is used to define column-specific settings for table personalization.
 	 * @extends sap.m.P13nPanel
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @constructor
 	 * @public
 	 * @since 1.26.0
@@ -104,7 +104,6 @@ sap.ui.define([
 				 * @since 1.26.0
 				 */
 				addColumnsItem: {
-					deprecated: true,
 					parameters: {
 						/**
 						 * <code>columnsItem</code> that needs to be added in the model.
@@ -162,9 +161,7 @@ sap.ui.define([
 				 * @deprecated As of version 1.50, the event <code>setData</code> is obsolete.
 				 * @since 1.26.7
 				 */
-				setData: {
-					deprecated: true
-				}
+				setData: {}
 			}
 		},
 		renderer: {
@@ -536,7 +533,7 @@ sap.ui.define([
 						group: 2
 					})
 				}), new OverflowToolbarButton({
-					icon: IconPool.getIconURI("navigation-up-arrow"),
+					icon: IconPool.getIconURI("slim-arrow-up"),
 					text: oRb.getText('COLUMNSPANEL_MOVE_UP'),
 					tooltip: oRb.getText('COLUMNSPANEL_MOVE_UP'),
 					type: ButtonType.Transparent,
@@ -550,7 +547,7 @@ sap.ui.define([
 						group: 1
 					})
 				}), new OverflowToolbarButton({
-					icon: IconPool.getIconURI("navigation-down-arrow"),
+					icon: IconPool.getIconURI("slim-arrow-down"),
 					text: oRb.getText('COLUMNSPANEL_MOVE_DOWN'),
 					tooltip: oRb.getText('COLUMNSPANEL_MOVE_DOWN'),
 					type: ButtonType.Transparent,

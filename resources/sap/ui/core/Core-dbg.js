@@ -212,7 +212,7 @@ sap.ui.define([
 	 * @extends sap.ui.base.Object
 	 * @final
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.Core
 	 * @public
 	 * @hideconstructor
@@ -533,129 +533,117 @@ sap.ui.define([
 				}
 			}
 
+			// when a boot task is configured, add it to syncpoint2
+			var fnCustomBootTask = this.oConfiguration["xx-bootTask"];
+			if ( fnCustomBootTask ) {
+				var iCustomBootTask = oSyncPoint2.startTask("custom boot task");
+				fnCustomBootTask( function(bSuccess) {
+					oSyncPoint2.finishTask(iCustomBootTask, typeof bSuccess === "undefined" || bSuccess === true );
+				});
+			}
+
 			this._polyfillFlexbox();
 
-			// when the bootstrap script has finished, it calls require("sap/ui/core/Core").boot()
+			// when the bootstrap script has finished, it calls sap.ui.getCore().boot()
 			var iBootstrapScriptTask = oSyncPoint2.startTask("bootstrap script");
 			this.boot = function() {
 				if (this.bBooted) {
 					return;
 				}
 				this.bBooted = true;
-				postConstructorTasks.call(this);
 				oSyncPoint2.finishTask(iBootstrapScriptTask);
 			};
 
-			function postConstructorTasks() {
-				// when a boot task is configured, add it to syncpoint2
-				var fnCustomBootTask = this.oConfiguration["xx-bootTask"];
-				if ( fnCustomBootTask ) {
-					var iCustomBootTask = oSyncPoint2.startTask("custom boot task");
-					fnCustomBootTask( function(bSuccess) {
-						oSyncPoint2.finishTask(iCustomBootTask, typeof bSuccess === "undefined" || bSuccess === true );
+			if ( sPreloadMode === "sync" || sPreloadMode === "async" ) {
+				// determine set of libraries
+				var aLibs = aModules.reduce(function(aResult, sModule) {
+					var iPos = sModule.search(/\.library$/);
+					if ( iPos >= 0 ) {
+						aResult.push(sModule.slice(0, iPos));
+					}
+					return aResult;
+				}, []);
+
+				var preloaded = this.loadLibraries(aLibs, {
+					async: bAsync,
+					preloadOnly: true
+				});
+				if ( bAsync ) {
+					var iPreloadLibrariesTask = oSyncPoint2.startTask("preload bootstrap libraries");
+					preloaded.then(function() {
+						oSyncPoint2.finishTask(iPreloadLibrariesTask);
+					}, function() {
+						oSyncPoint2.finishTask(iPreloadLibrariesTask, false);
 					});
 				}
-
-				if ( sPreloadMode === "sync" || sPreloadMode === "async" ) {
-					// determine set of libraries
-					var aLibs = aModules.reduce(function(aResult, sModule) {
-						var iPos = sModule.search(/\.library$/);
-						if ( iPos >= 0 ) {
-							aResult.push(sModule.slice(0, iPos));
-						}
-						return aResult;
-					}, []);
-
-					var preloaded = this.loadLibraries(aLibs, {
-						async: bAsync,
-						preloadOnly: true
-					});
-					if ( bAsync ) {
-						var iPreloadLibrariesTask = oSyncPoint2.startTask("preload bootstrap libraries");
-						preloaded.then(function() {
-							oSyncPoint2.finishTask(iPreloadLibrariesTask);
-						}, function() {
-							oSyncPoint2.finishTask(iPreloadLibrariesTask, false);
-						});
-					}
-				}
-
-				// initializes the application cachebuster mechanism if configured
-				var aACBConfig = this.oConfiguration.getAppCacheBuster();
-				if (aACBConfig && aACBConfig.length > 0) {
-					if ( bAsync ) {
-						var iLoadACBTask = oSyncPoint2.startTask("require AppCachebuster");
-						sap.ui.require(["sap/ui/core/AppCacheBuster"], function(AppCacheBuster) {
-							AppCacheBuster.boot(oSyncPoint2);
-							// finish the task only after ACB had a chance to create its own task(s)
-							oSyncPoint2.finishTask(iLoadACBTask);
-						});
-					} else {
-						var AppCacheBuster = sap.ui.requireSync('sap/ui/core/AppCacheBuster');
-						AppCacheBuster.boot(oSyncPoint2);
-					}
-				}
-
-				// Initialize support info stack
-				if (this.oConfiguration.getSupportMode() !== null) {
-					var iSupportInfoTask = oSyncPoint2.startTask("support info script");
-
-					var fnCallbackSupportBootstrapInfo = function(Support, Bootstrap) {
-						Support.initializeSupportMode(that.oConfiguration.getSupportMode(), bAsync);
-
-						Bootstrap.initSupportRules(that.oConfiguration.getSupportMode());
-
-						oSyncPoint2.finishTask(iSupportInfoTask);
-					};
-
-					if (bAsync) {
-						sap.ui.require(["sap/ui/core/support/Support", "sap/ui/support/Bootstrap"], fnCallbackSupportBootstrapInfo, function (oError) {
-							Log.error("Could not load support mode modules:", oError);
-						});
-					} else {
-						Log.warning("Synchronous loading of Support mode. Set preload configuration to 'async' or switch to asynchronous bootstrap to prevent these synchronous request.", "SyncXHR", null, function() {
-							return {
-								type: "SyncXHR",
-								name: "support-mode"
-							};
-						});
-						fnCallbackSupportBootstrapInfo(
-							sap.ui.requireSync("sap/ui/core/support/Support"),
-							sap.ui.requireSync("sap/ui/support/Bootstrap")
-						);
-					}
-				}
-
-				// Initialize test tools
-				if (this.oConfiguration.getTestRecorderMode() !== null) {
-					var iTestRecorderTask = oSyncPoint2.startTask("test recorder script");
-
-					var fnCallbackTestRecorder = function (Bootstrap) {
-						Bootstrap.init(that.oConfiguration.getTestRecorderMode());
-						oSyncPoint2.finishTask(iTestRecorderTask);
-					};
-
-					if (bAsync) {
-						sap.ui.require([
-							"sap/ui/testrecorder/Bootstrap"
-						], fnCallbackTestRecorder, function (oError) {
-							Log.error("Could not load test recorder:", oError);
-						});
-					} else {
-						Log.warning("Synchronous loading of Test recorder mode. Set preload configuration to 'async' or switch to asynchronous bootstrap to prevent these synchronous request.", "SyncXHR", null, function() {
-							return {
-								type: "SyncXHR",
-								name: "test-recorder-mode"
-							};
-						});
-						fnCallbackTestRecorder(
-							sap.ui.requireSync("sap/ui/testrecorder/Bootstrap")
-						);
-					}
-				}
-
-				oSyncPoint2.finishTask(iCreateTasksTask);
 			}
+
+			// initializes the application cachebuster mechanism if configured
+			var aACBConfig = this.oConfiguration.getAppCacheBuster();
+			if (aACBConfig && aACBConfig.length > 0) {
+				var AppCacheBuster = sap.ui.requireSync('sap/ui/core/AppCacheBuster');
+				AppCacheBuster.boot(oSyncPoint2);
+			}
+
+			// Initialize support info stack
+			if (this.oConfiguration.getSupportMode() !== null) {
+				var iSupportInfoTask = oSyncPoint2.startTask("support info script");
+
+				var fnCallbackSupportBootstrapInfo = function(Support, Bootstrap) {
+					Support.initializeSupportMode(that.oConfiguration.getSupportMode(), bAsync);
+
+					Bootstrap.initSupportRules(that.oConfiguration.getSupportMode());
+
+					oSyncPoint2.finishTask(iSupportInfoTask);
+				};
+
+				if (bAsync) {
+					sap.ui.require(["sap/ui/core/support/Support", "sap/ui/support/Bootstrap"], fnCallbackSupportBootstrapInfo, function (oError) {
+						Log.error("Could not load support mode modules:", oError);
+					});
+				} else {
+					Log.warning("Synchronous loading of Support mode. Set preload configuration to 'async' or switch to asynchronous bootstrap to prevent these synchronous request.", "SyncXHR", null, function() {
+						return {
+							type: "SyncXHR",
+							name: "support-mode"
+						};
+					});
+					fnCallbackSupportBootstrapInfo(
+						sap.ui.requireSync("sap/ui/core/support/Support"),
+						sap.ui.requireSync("sap/ui/support/Bootstrap")
+					);
+				}
+			}
+
+			// Initialize test tools
+			if (this.oConfiguration.getTestRecorderMode() !== null) {
+				var iTestRecorderTask = oSyncPoint2.startTask("test recorder script");
+
+				var fnCallbackTestRecorder = function (Bootstrap) {
+					Bootstrap.init(that.oConfiguration.getTestRecorderMode());
+					oSyncPoint2.finishTask(iTestRecorderTask);
+				};
+
+				if (bAsync) {
+					sap.ui.require([
+						"sap/ui/testrecorder/Bootstrap"
+					], fnCallbackTestRecorder, function (oError) {
+						Log.error("Could not load test recorder:", oError);
+					});
+				} else {
+					Log.warning("Synchronous loading of Test recorder mode. Set preload configuration to 'async' or switch to asynchronous bootstrap to prevent these synchronous request.", "SyncXHR", null, function() {
+						return {
+							type: "SyncXHR",
+							name: "test-recorder-mode"
+						};
+					});
+					fnCallbackTestRecorder(
+						sap.ui.requireSync("sap/ui/testrecorder/Bootstrap")
+					);
+				}
+			}
+
+			oSyncPoint2.finishTask(iCreateTasksTask);
 		},
 
 		metadata : {
@@ -777,7 +765,7 @@ sap.ui.define([
 	Core.prototype._setupBrowser = function() {
 		var METHOD = "sap.ui.core.Core";
 
-		//set the browser for CSS attribute selectors. do not move this to the onload function because Safari does not
+		//set the browser for CSS attribute selectors. do not move this to the onload function because sf and ie do not
 		//use the classes
 		var html = document.documentElement;
 
@@ -813,6 +801,9 @@ sap.ui.define([
 				break;
 			case Device.os.OS.BLACKBERRY:
 				osCSS = "sap-bb";
+				break;
+			case Device.os.OS.WINDOWS_PHONE:
+				osCSS = "sap-winphone";
 				break;
 		}
 		if (osCSS) {
@@ -1205,6 +1196,9 @@ sap.ui.define([
 
 		var METHOD = "sap.ui.core.Core.init()";
 
+		// ensure that the core is booted now (e.g. loadAllMode)
+		this.boot();
+
 		Log.info("Initializing",null,METHOD);
 
 		this.oFocusHandler = new FocusHandler(document.body, this);
@@ -1304,7 +1298,6 @@ sap.ui.define([
 						 * in the global context, without closure variables.
 						 * See http://www.ecma-international.org/ecma-262/5.1/#sec-10.4.2
 						 */
-						// eslint-disable-next-line no-eval
 						window.eval(vOnInit);  // csp-ignore-legacy-api
 					}
 				}
@@ -1621,7 +1614,7 @@ sap.ui.define([
 			libPackage = lib.replace(/\./g, '/'),
 			http2 = this.oConfiguration.getDepCache();
 
-		if ( fileType === 'none' || sap.ui.loader._.getModuleState(libPackage + '/library.js') ) {
+		if ( fileType === 'none' || !!sap.ui.loader._.getModuleState(libPackage + '/library.js') ) {
 			return Promise.resolve(true);
 		}
 
@@ -1853,12 +1846,7 @@ sap.ui.define([
 				dependencies = dependenciesFromManifest(lib);
 			} catch (e) {
 				Log.error("failed to load '" + sPreloadModule + "' (" + (e && e.message || e) + ")");
-				// fall back to JSON, but only if the root cause was an XHRLoadError
-				var root = e;
-				while ( root && root.cause ) {
-					root = root.cause;
-				}
-				if ( root && root.name === "XHRLoadError" && fileType !== 'js' ) {
+				if ( e && e.loadError && fileType !== 'js' ) {
 					dependencies = loadJSONSync(lib);
 				} // ignore other errors (preload shouldn't fail)
 			}
@@ -2819,6 +2807,7 @@ sap.ui.define([
 
 			this.runPrerenderingTasks();
 
+			// avoid 'concurrent modifications' as IE8 can't handle them
 			var mUIAreas = this.mUIAreas;
 			for (var sId in mUIAreas) {
 				bUIUpdated = mUIAreas[sId].rerender() || bUIUpdated;

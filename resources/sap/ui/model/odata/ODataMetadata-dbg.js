@@ -12,15 +12,14 @@ sap.ui.define([
 	"sap/base/assert",
 	"sap/base/Log",
 	"sap/base/util/each",
-	"sap/base/util/extend",
 	"sap/base/util/isEmptyObject",
 	"sap/base/util/uid",
 	"sap/ui/base/EventProvider",
 	"sap/ui/core/cache/CacheManager",
-	"sap/ui/thirdparty/datajs"
+	"sap/ui/thirdparty/datajs",
+	"sap/ui/thirdparty/jquery"
 ],
-	function(Utils, assert, Log, each, extend, isEmptyObject, uid, EventProvider, CacheManager,
-		OData) {
+	function(Utils, assert, Log, each, isEmptyObject, uid, EventProvider, CacheManager, OData, jQuery) {
 	"use strict";
 	/*eslint max-nested-callbacks: 0*/
 
@@ -44,7 +43,7 @@ sap.ui.define([
 	 * Implementation to access OData metadata
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.model.odata.ODataMetadata
@@ -619,6 +618,7 @@ sap.ui.define([
 			this.mEntityTypes[sPath] = oEntityType;
 		}
 
+		//jQuery.sap.assert(oEntityType, "EntityType for path " + sPath + " could not be found!");
 		return oEntityType;
 	};
 
@@ -647,9 +647,9 @@ sap.ui.define([
 		if (this.mEntityTypes[sName]) {
 			oEntityType = this.mEntityTypes[sName];
 		} else {
-			each(this.oMetadata.dataServices.schema, function(i, oSchema) {
+			jQuery.each(this.oMetadata.dataServices.schema, function(i, oSchema) {
 				if (oSchema.entityType && (!sNamespace || oSchema.namespace === sNamespace)) {
-					each(oSchema.entityType, function(k, oEntity) {
+					jQuery.each(oSchema.entityType, function(k, oEntity) {
 						if (oEntity.name === sEntityName) {
 							oEntityType = oEntity;
 							that.mEntityTypes[sName] = oEntityType;
@@ -825,9 +825,9 @@ sap.ui.define([
 		var sTargetName = oEntityType.namespace ? oEntityType.namespace + "." : "";
 		sTargetName += oEntityType.name + "/" + oObject.name;
 
-		each(this.oMetadata.dataServices.schema, function(i, oSchema) {
+		jQuery.each(this.oMetadata.dataServices.schema, function(i, oSchema) {
 			if (oSchema.annotations) {
-				each(oSchema.annotations, function(k, oObject) {
+				jQuery.each(oSchema.annotations, function(k, oObject) {
 					//we do not support qualifiers on target level
 					if (oObject.target === sTargetName && !oObject.qualifier) {
 						aAnnotations.push(oObject.annotation);
@@ -837,8 +837,8 @@ sap.ui.define([
 			}
 		});
 		if (aAnnotations) {
-			each(aAnnotations, function(i, aAnnotation) {
-				each(aAnnotation, function(j, oAnnotation) {
+			jQuery.each(aAnnotations, function(i, aAnnotation) {
+				jQuery.each(aAnnotation, function(j, oAnnotation) {
 					if (oAnnotation.term === aParts[0]) {
 						oAnnotationNode = oAnnotation;
 					}
@@ -874,6 +874,7 @@ sap.ui.define([
 				sEntityTypeName = oEntitySet.entityType;
 			}
 		}
+		//jQuery.sap.assert(sEntityTypeName, "EntityType name of EntitySet "+ sCollection + " not found!");
 		return sEntityTypeName;
 	};
 
@@ -884,10 +885,10 @@ sap.ui.define([
 		var oObject;
 		if (sObjectName && sNamespace) {
 			// search in all schemas for the sObjectName
-			each(this.oMetadata.dataServices.schema, function(i, oSchema) {
+			jQuery.each(this.oMetadata.dataServices.schema, function(i, oSchema) {
 				// check if we found the right schema which will contain the sObjectName
 				if (oSchema[sObjectType] && oSchema.namespace === sNamespace) {
-					each(oSchema[sObjectType], function(j, oCurrentObject) {
+					jQuery.each(oSchema[sObjectType], function(j, oCurrentObject) {
 						if (oCurrentObject.name === sObjectName) {
 							oObject = oCurrentObject;
 							oObject.namespace = oSchema.namespace;
@@ -909,11 +910,11 @@ sap.ui.define([
 	ODataMetadata.prototype.getUseBatch = function() {
 		var bUseBatch = false;
 		// search in all schemas for the use batch extension
-		each(this.oMetadata.dataServices.schema, function(i, oSchema) {
+		jQuery.each(this.oMetadata.dataServices.schema, function(i, oSchema) {
 			if (oSchema.entityContainer) {
-				each(oSchema.entityContainer, function(k, oEntityContainer) {
+				jQuery.each(oSchema.entityContainer, function(k, oEntityContainer) {
 					if (oEntityContainer.extensions) {
-						each(oEntityContainer.extensions, function(l, oExtension) {
+						jQuery.each(oEntityContainer.extensions, function(l, oExtension) {
 							if (oExtension.name === "use-batch" && oExtension.namespace === "http://www.sap.com/Protocols/SAPData") {
 								bUseBatch = (typeof oExtension.value === 'string') ? (oExtension.value.toLowerCase() === 'true') : !!oExtension.value;
 								return false;
@@ -1054,7 +1055,7 @@ sap.ui.define([
 	ODataMetadata.prototype._getNavigationPropertyNames = function(oEntityType) {
 		var aNavProps = [];
 		if (oEntityType.navigationProperty) {
-			each(oEntityType.navigationProperty, function(k, oNavigationProperty) {
+			jQuery.each(oEntityType.navigationProperty, function(k, oNavigationProperty) {
 				aNavProps.push(oNavigationProperty.name);
 			});
 		}
@@ -1126,7 +1127,7 @@ sap.ui.define([
 		sProperty = sProperty.replace(/^\/|\/$/g, "");
 		var aParts = sProperty.split("/"); // path could point to a complex type or nav property
 
-		each(oEntityType.property, function(k, oProperty) {
+		jQuery.each(oEntityType.property, function(k, oProperty) {
 			if (oProperty.name === aParts[0]) {
 				oPropertyMetadata = oProperty;
 				return false;
@@ -1149,6 +1150,7 @@ sap.ui.define([
 			}
 		}
 
+		//jQuery.sap.assert(oPropertyMetadata, "PropertyType for property "+ aParts[0]+ " of EntityType " + oEntityType.name + " not found!");
 		return oPropertyMetadata;
 	};
 
@@ -1157,15 +1159,15 @@ sap.ui.define([
 		var that = this;
 
 		// Abort pending xml request
-		each(this.mRequestHandles, function(sKey, oRequestHandle) {
+		jQuery.each(this.mRequestHandles, function(sKey, oRequestHandle) {
 			oRequestHandle.bSuppressErrorHandlerCall = true;
 			oRequestHandle.abort();
 			delete that.mRequestHandles[sKey];
 		});
-		if (this.oLoadEvent) {
+		if (!!this.oLoadEvent) {
 			clearTimeout(this.oLoadEvent);
 		}
-		if (this.oFailedEvent) {
+		if (!!this.oFailedEvent) {
 			clearTimeout(this.oFailedEvent);
 		}
 
@@ -1223,7 +1225,7 @@ sap.ui.define([
 				"Accept-Language": sap.ui.getCore().getConfiguration().getLanguageTag()
 			};
 
-		extend(oDefaultHeaders, this.mHeaders, oLangHeader);
+		jQuery.extend(oDefaultHeaders, this.mHeaders, oLangHeader);
 
 		var oRequest = {
 			headers: oDefaultHeaders,
@@ -1290,9 +1292,9 @@ sap.ui.define([
 		if (this.mEntitySets) {
 			delete this.mEntitySets;
 		}
-		each(oTarget.dataServices.schema, function(i, oTargetSchema) {
+		jQuery.each(oTarget.dataServices.schema, function(i, oTargetSchema) {
 			// find schema
-			each(oSource.dataServices.schema, function(j, oSourceSchema) {
+			jQuery.each(oSource.dataServices.schema, function(j, oSourceSchema) {
 				if (oSourceSchema.namespace === oTargetSchema.namespace) {
 					//merge entityTypes
 					if (oSourceSchema.entityType) {
@@ -1313,9 +1315,9 @@ sap.ui.define([
 					}
 					//find EntityContainer if any
 					if (oTargetSchema.entityContainer && oSourceSchema.entityContainer) {
-						each(oTargetSchema.entityContainer, function(k, oTargetContainer) {
+						jQuery.each(oTargetSchema.entityContainer, function(k, oTargetContainer) {
 							//merge entitySets
-							each(oSourceSchema.entityContainer, function(l, oSourceContainer) {
+							jQuery.each(oSourceSchema.entityContainer, function(l, oSourceContainer) {
 								if (oSourceContainer.entitySet) {
 									if (oSourceContainer.name === oTargetContainer.name) {
 										//cache entitySet names

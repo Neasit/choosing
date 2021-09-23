@@ -91,7 +91,7 @@ sap.ui.define([
 	 * @implements sap.m.IconTab
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -437,8 +437,7 @@ sap.ui.define([
 			bHorizontalDesign = this.getDesign() === IconTabFilterDesign.Horizontal,
 			bTextOnly = oIconTabHeader._bTextOnly,
 			bInLine = oIconTabHeader._bInLine || oIconTabHeader.isInlineMode(),
-			bShowAll = this.getShowAll(),
-			sTextDir = this.getTextDirection();
+			bShowAll = this.getShowAll();
 
 		if (bHasIconTabBar) {
 			mAriaParams.controls = oIconTabBar.getId() + "-content";
@@ -521,7 +520,7 @@ sap.ui.define([
 			oRM.attr("title", sTooltip);
 		}
 
-		if (this._isOverflow() || this.getItems().length) {
+		if (this._bIsOverflow || this.getItems().length) {
 			oRM.attr("aria-haspopup", "menu");
 		}
 
@@ -592,26 +591,32 @@ sap.ui.define([
 			oRM.openStart("div", sId + "-text")
 				.class("sapMITBText");
 
-			if (!oIcon && !bShowAll) {
-				oRM.class("sapMITBBadgeHolder");
-			}
-
 			// Check for upperCase property on IconTabBar
 			if (bHasIconTabBar && oIconTabBar.getUpperCase()) {
 				oRM.class("sapMITBTextUpperCase");
 			}
 
+			if (bInLine) {
+				oRM.attr("dir", "ltr");
+			}
+
 			oRM.openEnd();
 
+
 			oRM.openStart("span")
-				.class("sapMITHTextContent")
-				.attr("dir", sTextDir !== TextDirection.Inherit ? sTextDir.toLowerCase() : "auto");
+				.class("sapMITHTextContent");
 
-			oRM.openEnd()
-				.text(oIconTabHeader._getDisplayText(this))
-				.close("span");
+			if (!oIcon && !bShowAll) {
+				oRM.class("sapMITBBadgeHolder");
+			}
 
-			if (this._isOverflow() || this.getItems().length && oIconTabHeader._isUnselectable(this)) {
+			oRM.openEnd();
+
+			oRM.text(oIconTabHeader._getDisplayText(this));
+
+			oRM.close("span");
+
+			if (this._bIsOverflow || this.getItems().length && oIconTabHeader._isUnselectable(this)) {
 				oRM.openStart("span", this.getId() + "-expandButton").class("sapMITHShowSubItemsIcon").openEnd();
 				oRM.icon(IconPool.getIconURI("slim-arrow-down"), null, {
 					"title": null,
@@ -789,7 +794,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Renders text in SelectList.
+	 * Renders a text.
 	 * @private
 	 */
 	IconTabFilter.prototype._renderText =  function (oRM) {
@@ -799,12 +804,15 @@ sap.ui.define([
 			sTextDir = this.getTextDirection();
 
 		oRM.openStart("span", this.getId() + "-text")
-			.attr("dir", sTextDir !== TextDirection.Inherit ? sTextDir.toLowerCase() : "auto")
+			.attr("dir", "ltr")
 			.class("sapMText")
 			.class("sapMTextNoWrap")
 			.class("sapMITBText")
 			.class("sapMITBBadgeHolder");
 
+		if (sTextDir !== TextDirection.Inherit){
+			oRM.attr('dir', sTextDir.toLowerCase());
+		}
 
 		var sTextAlign = Renderer.getTextAlign(TextAlign.Begin, sTextDir);
 		if (sTextAlign) {
@@ -835,7 +843,7 @@ sap.ui.define([
 			});
 			this._oSelectList._oIconTabHeader = this.getParent();
 			this._oSelectList._oTabFilter = this;
-			this._oSelectList._bIsOverflow = this._isOverflow;
+			this._oSelectList._bIsOverflow = this._bIsOverflow;
 		}
 		return this._oSelectList;
 	};
@@ -895,7 +903,7 @@ sap.ui.define([
 	};
 
 	IconTabFilter.prototype._hasChildWithBadge = function () {
-		var aItems = this._isOverflow() ? this._getIconTabHeader()._getItemsForOverflow(this._bIsStartOverflow) : this._getAllSubItems();
+		var aItems = this._bIsOverflow ? this._getIconTabHeader()._getItemsForOverflow() : this._getAllSubItems();
 
 		return aItems.some(function (oIT) {
 			return oIT.isA("sap.m.IBadge") && oIT.getBadgeCustomData() && oIT.getBadgeCustomData().getVisible();
@@ -951,7 +959,7 @@ sap.ui.define([
 
 		this._oPopover.removeAllContent();
 
-		if (this.getItems().length || this._isOverflow()) {
+		if (this.getItems().length || this._bIsOverflow) {
 			this._oPopover.addContent(oSelectList);
 			this._oPopover.setInitialFocus(bHasSelectedItem ? oSelectList.getSelectedItem() : oSelectList.getVisibleTabFilters()[0]);
 			this._oPopover.openBy(this);
@@ -1039,8 +1047,8 @@ sap.ui.define([
 			this._oPopover.removeAllContent();
 		}
 
-		if (this._isOverflow() && this.getParent().oSelectedItem) {
-			(this.getParent()._oSelectedRootItem || this.getParent().oSelectedItem._getRootTab()).$().trigger("focus");
+		if (this._bIsOverflow && this.getParent().oSelectedItem) {
+			(this.getParent()._oSelectedRootItem || this.getParent().oSelectedItem).$().focus();
 		}
 	};
 
@@ -1105,12 +1113,12 @@ sap.ui.define([
 			return false;
 		}
 
-		if (!this._isOverflow() && !oIconTabHeader.getMaxNestingLevel()) {
+		if (!this._bIsOverflow && !oIconTabHeader.getMaxNestingLevel()) {
 			return false;
 		}
 
 		// disable dragging selected item to the overflow
-		if (this._isOverflow() && oSelectedItem && (oSelectedItem === oDragControl || oSelectedItem._getRootTab() === oDragControl)) {
+		if (this._bIsOverflow && oSelectedItem && (oSelectedItem === oDragControl || oSelectedItem._getRootTab() === oDragControl)) {
 			return false;
 		}
 
@@ -1135,8 +1143,8 @@ sap.ui.define([
 			i,
 			iCustomDataItemIndex;
 
-		if (this._isOverflow()) {
-			aItemsForList = oIconTabHeader._getItemsForOverflow(this._bIsStartOverflow);
+		if (this._bIsOverflow) {
+			aItemsForList = oIconTabHeader._getItemsForOverflow();
 		}
 
 		oSelectList.destroyItems();
@@ -1175,10 +1183,6 @@ sap.ui.define([
 		return bHasSelectedItem;
 	};
 
-	IconTabFilter.prototype._isOverflow = function () {
-		return this._bIsOverflow || this._bIsStartOverflow;
-	};
-
 	/**
 	 * Returns the IconTabHeader instance which holds all the TabFilters.
 	 */
@@ -1191,7 +1195,7 @@ sap.ui.define([
 			return;
 		}
 
-		if (this._isOverflow() ||
+		if (this._bIsOverflow ||
 				((this._getNestedLevel() === 1 && this._getRealTab() === this) && this._getRealTab().getItems().length !== 0)) {
 
 					oEvent.stopImmediatePropagation();
@@ -1232,9 +1236,6 @@ sap.ui.define([
 		if (this._isInOverflow()) {
 			this._getIconTabHeader()._getOverflow()._updateExpandButtonBadge();
 		}
-		if (this._isInStartOverflow()) {
-			this._getIconTabHeader()._getStartOverflow()._updateExpandButtonBadge();
-		}
 
 		this._iHideBadgeTimeout = null;
 	};
@@ -1247,10 +1248,6 @@ sap.ui.define([
 		return !this._bIsOverflow && this._getIconTabHeader()._getItemsInStrip().indexOf(this._getRealTab()) === -1;
 	};
 
-	IconTabFilter.prototype._isInStartOverflow = function () {
-		return !this._bIsStartOverflow && this._getIconTabHeader()._getItemsInStrip().indexOf(this._getRealTab()) === -1;
-	};
-
 	IconTabFilter.prototype.onBadgeUpdate = function (sValue, sState, sBadgeId) {
 
 		var oDomRef = this.getDomRef(),
@@ -1260,7 +1257,6 @@ sap.ui.define([
 			sAriaLabelledBy,
 			sText,
 			oOverflow,
-			oStartOverflow,
 			sRbKey,
 			oRbArgs;
 
@@ -1292,10 +1288,6 @@ sap.ui.define([
 		if (oRootTab._isInOverflow()) {
 			oOverflow = this._getIconTabHeader()._getOverflow();
 			oOverflow._updateExpandButtonBadge();
-		}
-		if (oRootTab._isInStartOverflow()) {
-			oStartOverflow = this._getIconTabHeader()._getStartOverflow();
-			oStartOverflow._updateExpandButtonBadge();
 		} else if (oRootTab !== this) {
 			oRootTab._updateExpandButtonBadge();
 		}
@@ -1306,7 +1298,7 @@ sap.ui.define([
 
 		this._enableMotion();
 
-		if ((this._isInOverflow() || this._isInStartOverflow()) && this._oCloneInList) {
+		if (this._isInOverflow() && this._oCloneInList) {
 			this._oCloneInList.addCustomData(new BadgeCustomData());
 		}
 
@@ -1316,10 +1308,6 @@ sap.ui.define([
 		if (oRootTab._isInOverflow()) {
 			sRbKey = "ICONTABFILTER_SUB_ITEM_BADGE";
 			oRbArgs = [sText, oOverflow.getText()];
-		}
-		if (oRootTab._isInStartOverflow()) {
-			sRbKey = "ICONTABFILTER_SUB_ITEM_BADGE";
-			oRbArgs = [sText, oStartOverflow.getText()];
 		} else {
 			if (oRootTab !== this) {
 				sRbKey = "ICONTABFILTER_SUB_ITEM_BADGE";
@@ -1338,7 +1326,7 @@ sap.ui.define([
 	};
 
 	IconTabFilter.prototype._enableMotion = function () {
-		if (this._getRealTab()._isInOverflow() || this._getRealTab()._isInStartOverflow()) {
+		if (this._getRealTab()._isInOverflow()) {
 			if (this._oCloneInList && this._oCloneInList.getDomRef()) {
 				this._oCloneInList.getDomRef().classList.add("sapMITBFilterBadgeMotion");
 			}

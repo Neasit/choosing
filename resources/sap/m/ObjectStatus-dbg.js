@@ -12,10 +12,9 @@ sap.ui.define([
 	'sap/ui/core/IndicationColorSupport',
 	'sap/ui/core/library',
 	'sap/ui/base/DataType',
-	'sap/ui/core/InvisibleText',
 	'./ObjectStatusRenderer'
 ],
-	function(library, Control, ValueStateSupport, IndicationColorSupport, coreLibrary, DataType, InvisibleText, ObjectStatusRenderer) {
+	function(library, Control, ValueStateSupport, IndicationColorSupport, coreLibrary, DataType, ObjectStatusRenderer) {
 	"use strict";
 
 
@@ -29,8 +28,6 @@ sap.ui.define([
 	// shortcuts for sap.ui.core.ValueState
 	var ValueState = coreLibrary.ValueState;
 
-	// shortcut for sap.m.EmptyIndicator
-	var EmptyIndicatorMode = library.EmptyIndicatorMode;
 
 	/**
 	 * Constructor for a new ObjectStatus.
@@ -46,7 +43,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IFormContent
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -109,14 +106,7 @@ sap.ui.define([
 			 * Determines the direction of the text, not including the title.
 			 * Available options for the text direction are LTR (left-to-right) and RTL (right-to-left). By default the control inherits the text direction from its parent control.
 			 */
-			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit},
-
-			/**
-			 * Specifies if an empty indicator should be displayed when there is no text.
-			 *
-			 * @since 1.89
-			 */
-			emptyIndicatorMode: { type: "sap.m.EmptyIndicatorMode", group: "Appearance", defaultValue: EmptyIndicatorMode.Off }
+			textDirection : {type : "sap.ui.core.TextDirection", group : "Appearance", defaultValue : TextDirection.Inherit}
 		},
 		associations : {
 
@@ -135,25 +125,6 @@ sap.ui.define([
 		},
 		dnd: { draggable: true, droppable: false }
 	}});
-
-	/**
-	 * Returns a text compliant to the sap.m.ObjectStatus control instance state
-	 *
-	 * @private
-	 * @param {string} sState the propety state value.
-	 * @returns {string} The text compliant to the control state
-	 */
-	ObjectStatus.prototype._getStateText = function(sState) {
-		var sStateText;
-
-		if (sState !== ValueState.None) {
-			sStateText = ValueStateSupport.getAdditionalText(sState) ?
-				ValueStateSupport.getAdditionalText(sState) :
-				IndicationColorSupport.getAdditionalText(sState);
-		}
-
-		return sStateText;
-	};
 
 	/**
 	 * Called when the control is destroyed.
@@ -275,26 +246,24 @@ sap.ui.define([
 	/**
 	 * @see sap.ui.core.Control#getAccessibilityInfo
 	 *
-	 * @returns {object} Current accessibility state of the control
+	 * @returns {Object} Current accessibility state of the control
 	 * @protected
 	 */
 	ObjectStatus.prototype.getAccessibilityInfo = function() {
-		var sState = ValueStateSupport.getAdditionalText(this.getState()),
-			sDescription;
+		var sState = ValueStateSupport.getAdditionalText(this.getState());
 
 		if (this.getState() != ValueState.None) {
 			sState = (sState !== null) ? sState : IndicationColorSupport.getAdditionalText(this.getState());
 		}
 
-		sDescription = (
-			(this.getTitle() || "") + " " +
-			(this.getText() || "") + " " +
-			(sState !== null ? sState : "") + " " +
-			(this.getTooltip() || "")
-		).trim();
-
 		return {
-			description: sDescription + (sDescription ? " " + sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("OBJECT_STATUS") : "")
+			description: (
+				(this.getTitle() || "") + " " +
+				(this.getText() || "") + " " +
+				(sState !== null ? sState : "") + " " +
+				(this.getTooltip() || "") + " " +
+				sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("OBJECT_STATUS")
+			).trim()
 		};
 	};
 

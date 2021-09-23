@@ -81,7 +81,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @private
@@ -317,28 +317,13 @@ sap.ui.define([
 			}
 		};
 
-		SinglePlanningCalendarMonthGrid.prototype._findSrcControl = function (oEvent) {
-			if (!oEvent.target.parentElement || !oEvent.target.parentElement.classList.contains("sapUiCalendarRowApps")) {
-				return oEvent.srcControl;
-			}
-
-			// data-sap-ui-related - This is a relation to appointment object.
-			// This is the connection between the DOM Element and the Object representing an appointment.
-			var sAppointmentId = oEvent.target.parentElement.getAttribute("data-sap-ui-related");
-
-			// finding the appointment
-			return this.getAppointments().find(function (oAppointment) {
-				return oAppointment.sId === sAppointmentId;
-			});
-		};
-
 		/**
 		 * Helper function handling <code>keydown</code> or <code>tap</code> event on the grid.
 		 *
 		 * @param {jQuery.Event} oEvent The event object.
 		 */
 		SinglePlanningCalendarMonthGrid.prototype._fireSelectionEvent = function (oEvent) {
-			var oSrcControl = this._findSrcControl(oEvent),
+			var oSrcControl = oEvent.srcControl,
 				oTarget = oEvent.target,
 				bIsCell = oTarget && oTarget.classList.contains("sapMSPCMonthDay"),
 				bIsLink = oTarget && oTarget.classList.contains("sapMLnk"),
@@ -361,18 +346,6 @@ sap.ui.define([
 					appointments: this._toggleAppointmentSelection(undefined, true)
 				});
 			} else if (oSrcControl && oSrcControl.isA("sap.ui.unified.CalendarAppointment")) {
-				// add suffix in appointment
-				if (oTarget.parentElement && oTarget.parentElement.getAttribute("id")) {
-					var sTargetId = oTarget.parentElement.getAttribute("id");
-
-					// data-sap-ui-related - This is a relation to appointment object.
-					// This is the connection between the DOM Element and the Object representing an appointment.
-					var sBaseIDPart = oTarget.parentElement.getAttribute("data-sap-ui-related");
-					var sSuffix = sTargetId.replace(sBaseIDPart + "-", "");
-
-					oSrcControl._setAppointmentPartSuffix(sSuffix);
-				}
-
 				this.fireAppointmentSelect({
 					appointment: oSrcControl,
 					appointments: this._toggleAppointmentSelection(oSrcControl, !(oEvent.ctrlKey || oEvent.metaKey))
@@ -783,14 +756,12 @@ sap.ui.define([
 					date: { type: "object", group: "Data" }
 				}
 			},
-			renderer: {
-				apiVersion: 2,
-				render: function(oRm, oControl) {
-					oRm.openStart("div", oControl)
-						.class("sapMSinglePCPlaceholder")
-						.openEnd()
-						.close("div");
-				}
+			renderer: function(oRm, oControl) {
+				oRm.write("<div");
+				oRm.writeControlData(oControl);
+				oRm.addClass("sapMSinglePCPlaceholder");
+				oRm.writeClasses();
+				oRm.write("></div>");
 			}
 		});
 

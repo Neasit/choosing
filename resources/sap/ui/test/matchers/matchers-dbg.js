@@ -19,8 +19,7 @@ sap.ui.define([
 	'sap/ui/test/matchers/LabelFor',
 	'sap/ui/test/matchers/Properties',
 	'sap/ui/test/matchers/PropertyStrictEquals',
-	'sap/ui/test/matchers/Visible',
-	'sap/ui/test/matchers/Sibling'
+	'sap/ui/test/matchers/Visible'
 ], function () {
 	"use strict";
 });

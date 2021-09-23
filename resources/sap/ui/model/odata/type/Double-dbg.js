@@ -10,8 +10,10 @@ sap.ui.define([
 	"sap/ui/model/FormatException",
 	"sap/ui/model/ParseException",
 	"sap/ui/model/ValidateException",
-	"sap/ui/model/odata/type/ODataType"
-], function (Log, NumberFormat, FormatException, ParseException, ValidateException, ODataType) {
+	"sap/ui/model/odata/type/ODataType",
+	"sap/ui/thirdparty/jquery"
+], function (Log, NumberFormat, FormatException, ParseException, ValidateException, ODataType,
+		jQuery) {
 	"use strict";
 
 	/**
@@ -32,15 +34,10 @@ sap.ui.define([
 	 *   the formatter
 	 */
 	function getFormatter(oType) {
-		var oFormatOptions, oTypeFormatOptions;
+		var oFormatOptions;
 
 		if (!oType.oFormat) {
-			oFormatOptions = {groupingEnabled : true};
-			oTypeFormatOptions = oType.oFormatOptions || {};
-			if (oTypeFormatOptions.style !== "short" && oTypeFormatOptions.style !== "long") {
-				oFormatOptions.preserveDecimals = true;
-			}
-			Object.assign(oFormatOptions, oType.oFormatOptions);
+			oFormatOptions = jQuery.extend({groupingEnabled : true}, oType.oFormatOptions);
 			oType.oFormat = NumberFormat.getFloatInstance(oFormatOptions);
 		}
 		return oType.oFormat;
@@ -95,15 +92,12 @@ sap.ui.define([
 	 * @extends sap.ui.model.odata.type.ODataType
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @alias sap.ui.model.odata.type.Double
 	 * @param {object} [oFormatOptions]
 	 *   format options as defined in {@link sap.ui.core.format.NumberFormat}. In contrast to
 	 *   NumberFormat <code>groupingEnabled</code> defaults to <code>true</code>.
-	 * @param {boolean} [oFormatOptions.preserveDecimals=true]
-	 *   by default decimals are preserved, unless <code>oFormatOptions.style</code> is given as
-	 *   "short" or "long"; since 1.89.0
 	 * @param {object} [oConstraints]
 	 *   constraints; {@link #validateValue validateValue} throws an error if any constraint is
 	 *   violated

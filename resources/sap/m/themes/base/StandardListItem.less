@@ -16,6 +16,7 @@
 
 .sapMSLI > .sapMLIBContent {
 	white-space: nowrap;
+	overflow: hidden;
 	text-overflow: ellipsis;
 	display: flex;
 	align-items: center;
@@ -38,7 +39,13 @@
 	flex-direction: column;
 }
 
-.sapMSLINoTitleAdapt:not(.sapMSLIWithDescription) .sapMSLIDiv {
+/* flex-direction: column is not supported in IE11 */
+html[data-sap-ui-browser='ie11'] .sapMSLIWithDescription > .sapMLIBContent > .sapMSLIDiv {
+	display: inline-block;
+	width: 100%;
+}
+
+.sapMSLINoTitleAdapt .sapMSLIDiv {
 	height: 2.5625rem;
 }
 
@@ -211,8 +218,6 @@ html[dir=rtl] .sapMSLIInfo {
 	word-wrap: break-word;
 }
 
-.sapMSLINoTitleAdapt > .sapMLIBSelectS,
-.sapMSLINoTitleAdapt > .sapMLIBSelectM,
 .sapMSLIWithDescription > .sapMLIBSelectS,
 .sapMSLIWithDescription > .sapMLIBSelectM,
 .sapMSLIWrapping > .sapMLIBSelectS,

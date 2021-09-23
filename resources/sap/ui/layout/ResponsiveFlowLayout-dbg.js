@@ -10,6 +10,7 @@ sap.ui.define([
 	'./ResponsiveFlowLayoutData',
 	'./library',
 	'sap/ui/core/ResizeHandler',
+	'sap/ui/Device',
 	'./ResponsiveFlowLayoutRenderer',
 	"sap/ui/thirdparty/jquery",
 	'sap/ui/dom/jquery/rect' // jQuery Plugin "rect"
@@ -19,6 +20,7 @@ sap.ui.define([
 		ResponsiveFlowLayoutData,
 		library,
 		ResizeHandler,
+		Device,
 		ResponsiveFlowLayoutRenderer,
 		jQuery
 	) {
@@ -37,7 +39,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -532,7 +534,13 @@ sap.ui.define([
 						}
 
 						if (this._bLayoutDataChanged || bRender) {
-							this._oDomRef.innerHTML = "";
+
+							//in IE when setting the innerHTML property to "" the changes do not take effect correctly and all the children are gone
+							if (Device.browser.internet_explorer){
+								jQuery(this._oDomRef).empty();
+							} else {
+								this._oDomRef.innerHTML = "";
+							}
 
 							// reset this to be clean for next check interval
 							this._bLayoutDataChanged = false;

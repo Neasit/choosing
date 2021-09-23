@@ -199,7 +199,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 		}
 		var aWeekDaysWide = oLocaleData.getDaysStandAlone("wide", sCalendarType);
 
-		if (oMonth.getShowWeekNumbers() && sCalendarType !== CalendarType.Islamic) { // on Islamic primary calendar week numbers are not shown, do not add dummy cell
+		if (oMonth.getShowWeekNumbers()) {
 			this.renderDummyCell(oRm, "sapUiCalWH", true, "columnheader");
 		}
 
@@ -301,7 +301,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 		oRm.class("sapUiCalDummy");
 		oRm.style("visibility", bVisible ? "visible" : "hidden");
 		oRm.attr("role", sRole);
-		oRm.attr("aria-label", sap.ui.getCore().getLibraryResourceBundle("sap.ui.unified").getText("CALENDAR_WEEK"));
+		oRm.attr("tabindex", "-1");
 		oRm.openEnd();
 		oRm.close('div');
 	};
@@ -512,7 +512,7 @@ sap.ui.define(['sap/ui/unified/calendar/CalendarUtils', 'sap/ui/unified/calendar
 
 		oRm.openStart("span");
 		oRm.class("sapUiCalItemText");
-		if (aDayTypes[0] && aDayTypes[0].color) {
+		if (!!aDayTypes[0] && aDayTypes[0].color) {
 			oRm.class("sapUiCalItemTextCustomColor");
 		}
 		oRm.openEnd(); // span

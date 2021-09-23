@@ -8,13 +8,13 @@
 sap.ui.define([
 	"./_AggregationHelper",
 	"./_Cache",
-	"./_ConcatHelper",
+	"./_GrandTotalHelper",
 	"./_GroupLock",
 	"./_Helper",
 	"./_MinMaxHelper",
 	"sap/base/Log",
 	"sap/ui/base/SyncPromise"
-], function (_AggregationHelper, _Cache, _ConcatHelper, _GroupLock, _Helper, _MinMaxHelper,
+], function (_AggregationHelper, _Cache, _GrandTotalHelper, _GroupLock, _Helper, _MinMaxHelper,
 		Log, SyncPromise) {
 	"use strict";
 
@@ -25,7 +25,6 @@ sap.ui.define([
 	/**
 	 * Creates a cache for data aggregation that performs requests using the given requestor.
 	 * Note: The paths in $expand and $select will always be sorted in the cache's query string.
-	 * This kind of cache is only used if grand totals or group levels are involved!
 	 *
 	 * @param {sap.ui.model.odata.v4.lib._Requestor} oRequestor
 	 *   The requestor
@@ -36,52 +35,46 @@ sap.ui.define([
 	 *   <a href="http://docs.oasis-open.org/odata/odata-data-aggregation-ext/v4.0/">OData
 	 *   Extension for Data Aggregation Version 4.0</a>; must already be normalized by
 	 *   {@link _AggregationHelper.buildApply}
-	 * @param {object} mQueryOptions
-	 *   A map of key-value pairs representing the query string
 	 * @param {boolean} bHasGrandTotal
 	 *   Whether a grand total is needed
+	 * @param {object} mQueryOptions
+	 *   A map of key-value pairs representing the query string
+	 * @throws {Error}
+	 *   If the system query options "$count" or "$filter" are used together with group levels
 	 *
 	 * @alias sap.ui.model.odata.v4.lib._AggregationCache
 	 * @constructor
 	 * @extends sap.ui.model.odata.v4.lib._Cache
 	 * @private
 	 */
-	function _AggregationCache(oRequestor, sResourcePath, oAggregation, mQueryOptions,
-			bHasGrandTotal) {
-		var fnCount = function () {}, // no specific handling needed for "UI5__count" here
-			fnLeaves = null,
-			that = this;
+	function _AggregationCache(oRequestor, sResourcePath, oAggregation, bHasGrandTotal,
+			mQueryOptions) {
+		var that = this;
 
 		_Cache.call(this, oRequestor, sResourcePath, mQueryOptions, true);
 
+		if (oAggregation.groupLevels.length) {
+			if (mQueryOptions.$count) {
+				throw new Error("Unsupported system query option: $count");
+			}
+			if (mQueryOptions.$filter) {
+				throw new Error("Unsupported system query option: $filter");
+			}
+		}
+
 		this.oAggregation = oAggregation;
-		this.sDownloadUrl = _Cache.prototype.getDownloadUrl.call(this, "");
 		this.aElements = [];
 		this.aElements.$byPredicate = {};
 		this.aElements.$count = undefined;
 		this.aElements.$created = 0; // required for _Cache#drillDown (see _Cache.from$skip)
-		this.oLeavesPromise = undefined;
-		if (mQueryOptions.$count && oAggregation.groupLevels.length) {
-			mQueryOptions.$$leaves = true; // do this after #getDownloadUrl
-			this.oLeavesPromise = new SyncPromise(function (resolve) {
-				fnLeaves = function (oLeaves) {
-					// Note: count is of type Edm.Int64, represented as a string in OData responses;
-					// $count should be a number and the loss of precision is acceptable
-					resolve(parseInt(oLeaves.UI5__leaves));
-				};
-			});
-		}
-		this.oFirstLevel = this.createGroupLevelCache(null, bHasGrandTotal || !!fnLeaves);
+		this.oFirstLevel = this.createGroupLevelCache(null, bHasGrandTotal);
 		this.oGrandTotalPromise = undefined;
 		if (bHasGrandTotal) {
 			this.oGrandTotalPromise = new SyncPromise(function (resolve) {
-				_ConcatHelper.enhanceCache(that.oFirstLevel, oAggregation, [fnLeaves,
+				_GrandTotalHelper.enhanceCacheWithGrandTotal(that.oFirstLevel, oAggregation,
 					function (oGrandTotal) {
 						var oGrandTotalCopy;
 
-						if (oAggregation["grandTotal like 1.84"]) { // rename measures
-							_AggregationHelper.removeUI5grand__(oGrandTotal);
-						}
 						_AggregationHelper.setAnnotations(oGrandTotal, true, true, 0,
 							_AggregationHelper.getAllProperties(oAggregation));
 
@@ -97,10 +90,8 @@ sap.ui.define([
 						_Helper.setPrivateAnnotation(oGrandTotal, "predicate", "()");
 
 						resolve(oGrandTotal);
-					}, fnCount]);
+					});
 			});
-		} else if (fnLeaves) {
-			_ConcatHelper.enhanceCache(that.oFirstLevel, oAggregation, [fnLeaves, fnCount]);
 		}
 	}
 
@@ -180,8 +171,7 @@ sap.ui.define([
 	 * @see #expand
 	 */
 	_AggregationCache.prototype.collapse = function (sGroupNodePath) {
-		var oCollapsed,
-			iCount = 0,
+		var iCount = 0,
 			aElements = this.aElements,
 			oGroupNode = this.fetchValue(_GroupLock.$cached, sGroupNodePath).getResult(),
 			iGroupNodeLevel = oGroupNode["@$ui5.node.level"],
@@ -193,18 +183,14 @@ sap.ui.define([
 			iCount += 1;
 		}
 
-		oCollapsed = _Helper.getPrivateAnnotation(oGroupNode, "collapsed");
-		_Helper.updateAll(this.mChangeListeners, sGroupNodePath, oGroupNode, oCollapsed);
+		_Helper.updateAll(this.mChangeListeners, sGroupNodePath, oGroupNode,
+			_Helper.getPrivateAnnotation(oGroupNode, "collapsed"));
 
 		while (i < aElements.length && aElements[i]["@$ui5.node.level"] > iGroupNodeLevel) {
 			collapse(i);
 			i += 1;
 		}
-		if (this.oAggregation.subtotalsAtBottomOnly !== undefined
-				// Note: there is at least one key for "@$ui5.node.isExpanded"; there are more keys
-				// if and only if subtotals are actually being requested and (also) shown at the
-				// bottom
-				&& Object.keys(oCollapsed).length > 1) {
+		if (this.oAggregation.subtotalsAtBottomOnly !== undefined) {
 			collapse(i); // collapse subtotals at bottom
 		}
 		_Helper.setPrivateAnnotation(oGroupNode, "spliced", aElements.splice(iIndex + 1, iCount));
@@ -219,24 +205,32 @@ sap.ui.define([
 	 *
 	 * @param {object} [oGroupNode]
 	 *   The group node or <code>undefined</code> for the first level cache
-	 * @param {boolean} [bHasConcatHelper]
-	 *   Whether the _ConcatHelper is involved (use only for the first level cache!)
+	 * @param {boolean} [bHasGrandTotal]
+	 *   Whether a grand total is needed (use only for the first level cache!)
 	 * @returns {sap.ui.model.odata.v4.lib._CollectionCache}
 	 *   The group level cache
 	 *
 	 * @private
 	 */
-	_AggregationCache.prototype.createGroupLevelCache = function (oGroupNode, bHasConcatHelper) {
+	_AggregationCache.prototype.createGroupLevelCache = function (oGroupNode, bHasGrandTotal) {
 		var oAggregation = this.oAggregation,
 			aAllProperties = _AggregationHelper.getAllProperties(oAggregation),
-			oCache, aGroupBy, bLeaf, iLevel, mQueryOptions, bTotal;
+			oCache, sFilteredOrderby, aGroupBy, bLeaf, iLevel, mQueryOptions, bTotal;
 
 		iLevel = oGroupNode ? oGroupNode["@$ui5.node.level"] + 1 : 1;
 		bLeaf = iLevel > oAggregation.groupLevels.length;
 		aGroupBy = bLeaf
 			? oAggregation.groupLevels.concat(Object.keys(oAggregation.group).sort())
 			: oAggregation.groupLevels.slice(0, iLevel);
-		mQueryOptions = _AggregationHelper.filterOrderby(this.mQueryOptions, oAggregation, iLevel);
+
+		mQueryOptions = Object.assign({}, this.mQueryOptions);
+		sFilteredOrderby
+			= _AggregationHelper.filterOrderby(mQueryOptions.$orderby, oAggregation, iLevel);
+		if (sFilteredOrderby) {
+			mQueryOptions.$orderby = sFilteredOrderby;
+		} else {
+			delete mQueryOptions.$orderby;
+		}
 		bTotal = !bLeaf && Object.keys(oAggregation.aggregate).some(function (sAlias) {
 			return oAggregation.aggregate[sAlias].subtotals;
 		});
@@ -250,8 +244,7 @@ sap.ui.define([
 						? " and (" + mQueryOptions.$$filterBeforeAggregate + ")"
 						: "");
 		}
-		if (!bHasConcatHelper) {
-			// Note: UI5__count currently handled only by _ConcatHelper!
+		if (!bHasGrandTotal) { // Note: UI5__count currently handled only by _GrandTotalHelper!
 			delete mQueryOptions.$count;
 			mQueryOptions = _AggregationHelper.buildApply(oAggregation, mQueryOptions, iLevel);
 		}
@@ -280,11 +273,9 @@ sap.ui.define([
 	_AggregationCache.prototype.expand = function (oGroupLock, vGroupNodeOrPath) {
 		var oCache,
 			iCount,
-			aElements = this.aElements,
 			oGroupNode = typeof vGroupNodeOrPath === "string"
 				? this.fetchValue(_GroupLock.$cached, vGroupNodeOrPath).getResult()
 				: vGroupNodeOrPath,
-			iIndex,
 			aSpliced = _Helper.getPrivateAnnotation(oGroupNode, "spliced"),
 			that = this;
 
@@ -296,14 +287,11 @@ sap.ui.define([
 
 		if (aSpliced) {
 			_Helper.deletePrivateAnnotation(oGroupNode, "spliced");
-
-			iIndex = aElements.indexOf(oGroupNode) + 1;
-			// insert aSpliced at iIndex
-			this.aElements = aElements.concat(aSpliced, aElements.splice(iIndex));
-			this.aElements.$byPredicate = aElements.$byPredicate;
-
+			// Note: Array#splice uses varargs syntax for inserted items!
+			this.aElements.splice.apply(this.aElements,
+				[this.aElements.indexOf(oGroupNode) + 1, 0].concat(aSpliced));
 			iCount = aSpliced.length;
-			this.aElements.$count = aElements.$count + iCount;
+			this.aElements.$count += iCount;
 			aSpliced.forEach(function (oElement) {
 				var sPredicate = _Helper.getPrivateAnnotation(oElement, "predicate");
 
@@ -329,12 +317,9 @@ sap.ui.define([
 		return oCache.read(0, this.iReadLength, 0, oGroupLock).then(function (oResult) {
 			var iIndex = that.aElements.indexOf(oGroupNode) + 1,
 				iLevel = oGroupNode["@$ui5.node.level"],
-				oSubtotals = _Helper.getPrivateAnnotation(oGroupNode, "collapsed"),
-				// Note: there is at least one key for "@$ui5.node.isExpanded"; there are more keys
-				// if and only if subtotals are actually being requested and only or also shown at
-				// bottom
-				bSubtotalsAtBottom = that.oAggregation.subtotalsAtBottomOnly !== undefined
-					&& Object.keys(oSubtotals).length > 1,
+				oSubtotals,
+				// "only or also at bottom"
+				bSubtotalsAtBottom = that.oAggregation.subtotalsAtBottomOnly !== undefined,
 				i;
 
 			if (!oGroupNode["@$ui5.node.isExpanded"]) { // already collapsed again
@@ -368,7 +353,8 @@ sap.ui.define([
 					= _AggregationHelper.createPlaceholder(iLevel + 1, i - iIndex, oCache);
 			}
 			if (bSubtotalsAtBottom) {
-				oSubtotals = Object.assign({}, oSubtotals);
+				oSubtotals
+					= Object.assign({}, _Helper.getPrivateAnnotation(oGroupNode, "collapsed"));
 				_AggregationHelper.setAnnotations(oSubtotals, undefined, true, iLevel,
 					_AggregationHelper.getAllProperties(that.oAggregation));
 				_Helper.setPrivateAnnotation(oSubtotals, "predicate",
@@ -414,9 +400,6 @@ sap.ui.define([
 	_AggregationCache.prototype.fetchValue = function (oGroupLock, sPath, fnDataRequested,
 			oListener) {
 		if (sPath === "$count") {
-			if (this.oLeavesPromise) {
-				return this.oLeavesPromise;
-			}
 			if (this.oAggregation.groupLevels.length) {
 				Log.error("Failed to drill-down into $count, invalid segment: $count",
 					this.toString(), "sap.ui.model.odata.v4.lib._Cache");
@@ -430,24 +413,6 @@ sap.ui.define([
 		this.registerChange(sPath, oListener);
 
 		return this.drillDown(this.aElements, sPath, oGroupLock);
-	};
-
-	/**
-	 * @override
-	 * @see sap.ui.model.odata.v4.lib._Cache#getDownloadQueryOptions
-	 */
-	_AggregationCache.prototype.getDownloadQueryOptions = function (mQueryOptions) {
-		return _AggregationHelper.buildApply(this.oAggregation,
-			_AggregationHelper.filterOrderby(mQueryOptions, this.oAggregation),
-			0, true);
-	};
-
-	/**
-	 * @override
-	 * @see sap.ui.model.odata.v4.lib._Cache#getDownloadUrl
-	 */
-	_AggregationCache.prototype.getDownloadUrl = function (_sPath, _mCustomQueryOptions) {
-		return this.sDownloadUrl;
 	};
 
 	/**
@@ -508,14 +473,8 @@ sap.ui.define([
 		 */
 		function readGap(iGapStart, iGapEnd) {
 			var oCache = oGapParent,
-				mQueryOptions = oGapParent.getQueryOptions(),
 				iStart = _Helper.getPrivateAnnotation(that.aElements[iGapStart], "index"),
 				oStartElement = that.aElements[iGapStart];
-
-			if (mQueryOptions.$count) { // $count not needed anymore, 1st read was done by #expand
-				delete mQueryOptions.$count;
-				oGapParent.setQueryOptions(mQueryOptions, true);
-			}
 
 			aReadPromises.push(
 				oGapParent.read(iStart, iGapEnd - iGapStart, 0, oGroupLock.getUnlockedCopy(),
@@ -654,16 +613,19 @@ sap.ui.define([
 	_AggregationCache.prototype.refreshKeptElements = function () {};
 
 	/**
-	 * Returns the cache's URL.
+	 * Returns the cache's URL (ignoring dynamic parameters $skip/$top).
 	 *
 	 * @returns {string} The URL
 	 *
 	 * @public
-	 * @see sap.ui.model.odata.v4.lib._AggregationCache#getDownloadUrl
+	 * @see sap.ui.model.odata.v4.lib._AggregationCache.getResourcePathWithQuery
 	 */
 	// @override sap.ui.model.odata.v4.lib._Cache#toString
 	_AggregationCache.prototype.toString = function () {
-		return this.sDownloadUrl;
+		return this.oRequestor.getServiceUrl() + this.sResourcePath
+			+ this.oRequestor.buildQueryString(this.sMetaPath,
+				_AggregationHelper.buildApply(this.oAggregation, this.mQueryOptions),
+				false, true);
 	};
 
 	//*********************************************************************************************
@@ -744,7 +706,7 @@ sap.ui.define([
 	 *   Example: Products
 	 * @param {string} sDeepResourcePath
 	 *   The deep resource path to be used to build the target path for bound messages
-	 * @param {object} [oAggregation]
+	 * @param {object} oAggregation
 	 *   An object holding the information needed for data aggregation; see also
 	 *   <a href="http://docs.oasis-open.org/odata/odata-data-aggregation-ext/v4.0/">OData
 	 *   Extension for Data Aggregation Version 4.0</a>; must already be normalized by
@@ -752,13 +714,13 @@ sap.ui.define([
 	 * @param {object} mQueryOptions
 	 *   A map of key-value pairs representing the query string, the value in this pair has to
 	 *   be a string or an array of strings; if it is an array, the resulting query string
-	 *   repeats the key for each array value.<br>
+	 *   repeats the key for each array value.
 	 *   Examples:
 	 *   {foo : "bar", "bar" : "baz"} results in the query string "foo=bar&bar=baz"
 	 *   {foo : ["bar", "baz"]} results in the query string "foo=bar&foo=baz"
 	 * @param {boolean} [bSortExpandSelect]
 	 *   Whether the paths in $expand and $select shall be sorted in the cache's query string. When
-	 *   using min, max, grand total, or data aggregation they will always be sorted.
+	 *   using min, max, grand total, or data aggregation they will always be sorted
 	 * @param {boolean} [bSharedRequest]
 	 *   If this parameter is set, multiple requests for a cache using the same resource path will
 	 *   always return the same, shared cache. This cache is read-only, modifying calls lead to an
@@ -766,38 +728,22 @@ sap.ui.define([
 	 * @returns {sap.ui.model.odata.v4.lib._Cache}
 	 *   The cache
 	 * @throws {Error}
-	 *   If the system query option "$filter" is combined with group levels or with grand totals
-	 *   (unless "grandTotal like 1.84"), or if grand totals or group levels are combined with
-	 *   min/max, or if the system query options "$expand" or "$select" are combined with data
-	 *   aggregation
+	 *   If the system query options "$count" or "$filter" are used together with group levels, or
+	 *   if group levels are combined with min/max, or if the system query options "$expand" or
+	 *   "$select" are used at all
 	 *
 	 * @public
 	 */
 	_AggregationCache.create = function (oRequestor, sResourcePath, sDeepResourcePath, oAggregation,
 			mQueryOptions, bSortExpandSelect, bSharedRequest) {
-		var bHasGrandTotal, bHasGroupLevels, bHasMinOrMax;
+		var bAggregate, bHasGrandTotal, bHasMinOrMax;
 
 		if (oAggregation) {
 			bHasGrandTotal = _AggregationHelper.hasGrandTotal(oAggregation.aggregate);
-			bHasGroupLevels = !!oAggregation.groupLevels.length;
 			bHasMinOrMax = _AggregationHelper.hasMinOrMax(oAggregation.aggregate);
+			bAggregate = oAggregation.groupLevels.length || bHasGrandTotal || bHasMinOrMax;
 
-			if (bHasGrandTotal && mQueryOptions.$filter && !oAggregation["grandTotal like 1.84"]) {
-				throw new Error("Unsupported system query option: $filter");
-			}
-			if (bHasGroupLevels && mQueryOptions.$filter) {
-				throw new Error("Unsupported system query option: $filter");
-			}
-			if (bHasMinOrMax) {
-				if (bHasGrandTotal) {
-					throw new Error("Unsupported grand totals together with min/max");
-				}
-				if (bHasGroupLevels) {
-					throw new Error("Unsupported group levels together with min/max");
-				}
-			}
-
-			if (bHasGrandTotal || bHasGroupLevels || bHasMinOrMax) {
+			if (bAggregate) {
 				if ("$expand" in mQueryOptions) {
 					throw new Error("Unsupported system query option: $expand");
 				}
@@ -805,11 +751,13 @@ sap.ui.define([
 					throw new Error("Unsupported system query option: $select");
 				}
 
-				return bHasMinOrMax
-					? _MinMaxHelper.createCache(oRequestor, sResourcePath, oAggregation,
-						mQueryOptions)
-					: new _AggregationCache(oRequestor, sResourcePath, oAggregation, mQueryOptions,
-						bHasGrandTotal);
+				if (bHasMinOrMax) {
+					return _MinMaxHelper.createCache(oRequestor, sResourcePath, oAggregation,
+						mQueryOptions);
+				}
+
+				return new _AggregationCache(oRequestor, sResourcePath, oAggregation,
+					bHasGrandTotal, mQueryOptions);
 			}
 		}
 

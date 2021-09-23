@@ -87,8 +87,8 @@ sap.ui.define([
 			 * RuleEngineOpaAssertions represents a set of methods with which OPA test assertions can be enhanced.
 			 * To use this functionality, {@link sap.ui.core.support.RuleEngineOpaExtension RuleEngineOpaExtension} should be provided in the OPA extensions list.
 			 *
-			 * @interface
-			 * @alias sap.ui.core.support.RuleEngineOpaAssertions
+			 * @namespace
+			 * @name sap.ui.core.support.RuleEngineOpaAssertions
 			 * @public
 			 */
 			var oRuleEngineAssertions = /** @lends sap.ui.core.support.RuleEngineOpaAssertions */ {
@@ -242,6 +242,8 @@ sap.ui.define([
 
 					oContext = getWindow();
 
+					// Avoid method calls on _$files as IE11/Edge throws "Can't execute code from a freed script"
+					// BCP: 1980144925
 					oContext._$files[oContext._$files.length] = {
 						name: sFileName,
 						content: JSON.stringify(oHistory)

@@ -4,8 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(['./library'],
-		function (library) {
+sap.ui.define([], function () {
 	"use strict";
 
 	/**
@@ -15,9 +14,6 @@ sap.ui.define(['./library'],
 	var IconTabHeaderRenderer = {
 		apiVersion: 2
 	};
-
-	// shortcut for sap.m.TabsOverflowMode
-	var TabsOverflowMode = library.TabsOverflowMode;
 
 	/**
 	 * Renders the HTML for the given control, using the provided {@link sap.ui.core.RenderManager}.
@@ -77,16 +73,6 @@ sap.ui.define(['./library'],
 
 		oRM.openEnd();
 
-		if (aItems.length && oControl.getTabsOverflowMode() === TabsOverflowMode.StartAndEnd) {
-			oRM.openStart("div")
-				.class("sapMITHStartOverflow")
-				.openEnd();
-
-			oControl._getStartOverflow().render(oRM);
-
-			oRM.close("div");
-		}
-
 		if (mAriaTexts.headerDescription) {
 			oRM.renderControl(oControl._getInvisibleHeadText());
 		}
@@ -122,7 +108,7 @@ sap.ui.define(['./library'],
 
 		if (aItems.length) {
 			oRM.openStart("div")
-				.class("sapMITHEndOverflow")
+				.class("sapMITHOverflow")
 				.openEnd();
 
 			oControl._getOverflow().render(oRM);

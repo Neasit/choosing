@@ -46,7 +46,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.message.MessageProcessor
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @public
 	 * @alias sap.ui.model.Model
@@ -697,8 +697,9 @@ sap.ui.define([
 	 *
 	 * @name sap.ui.model.Model.prototype.bindContext
 	 * @function
-	 * @param {string}
-	 *         sPath the path pointing to the property that should be bound
+	 * @param {string | object}
+	 *         sPath the path pointing to the property that should be bound or an object
+	 *         which contains the following parameter properties: path, context, parameters
 	 * @param {sap.ui.model.Context}
 	 *         [oContext=null] the context object for this databinding (optional)
 	 * @param {object}
@@ -866,7 +867,6 @@ sap.ui.define([
 	 *
 	 * @param {boolean} bLegacySyntax The path syntax to use
 	 *
-	 * @deprecated since 1.88.0, legacy path syntax is not supported by most model implementations.
 	 * @public
 	 */
 	Model.prototype.setLegacySyntax = function(bLegacySyntax) {
@@ -878,7 +878,6 @@ sap.ui.define([
 	 *
 	 * @returns {boolean} Whether legacy path syntax is used
 	 *
-	 * @deprecated since 1.88.0, legacy path syntax is not supported by most model implementations.
 	 * @public
 	 */
 	Model.prototype.isLegacySyntax = function() {
@@ -951,7 +950,6 @@ sap.ui.define([
 			}
 			return;
 		}
-		bForceUpdate = this.bForceUpdate || bForceUpdate;
 		if (this.sUpdateTimer) {
 			clearTimeout(this.sUpdateTimer);
 			this.sUpdateTimer = null;

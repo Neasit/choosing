@@ -22,7 +22,7 @@ sap.ui.define(['./ViewSettingsItem', './library'],
 	 * @extends sap.m.ViewSettingsItem
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -120,7 +120,7 @@ sap.ui.define(['./ViewSettingsItem', './library'],
 	 *
 	 * @param {string} [sIdSuffix] a suffix to be appended to the cloned object id
 	 * @param {string[]} [aLocalIds] an array of local IDs within the cloned hierarchy (internally used)
-	 * @param {object} [oOptions] configuration object
+	 * @param {Object} [oOptions] configuration object
 	 * @returns {this} reference to the newly created clone
 	 * @public
 	 * @override

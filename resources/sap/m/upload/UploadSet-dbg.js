@@ -27,10 +27,9 @@ sap.ui.define([
 	"sap/ui/unified/FileUploader",
 	"sap/m/upload/UploadSetItem",
 	"sap/m/upload/Uploader",
-	"sap/m/upload/UploadSetRenderer",
-	"sap/m/upload/UploaderHttpRequestMethod"
+	"sap/m/upload/UploadSetRenderer"
 ], function (Control, Icon, KeyCodes, Log, deepEqual, MobileLibrary, Button, Dialog, List, MessageBox, OverflowToolbar,
-			 StandardListItem, Text, ToolbarSpacer, FileUploader, UploadSetItem, Uploader, Renderer, UploaderHttpRequestMethod) {
+			 StandardListItem, Text, ToolbarSpacer, FileUploader, UploadSetItem, Uploader, Renderer) {
 	"use strict";
 
 	/**
@@ -44,10 +43,10 @@ sap.ui.define([
 	 * and requests, unified behavior of instant and deferred uploads, as well as improved progress indication.
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @constructor
 	 * @public
-	 * @since 1.63
+	 * @since 1.62
 	 * @alias sap.m.upload.UploadSet
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel.
 	 */
@@ -104,13 +103,8 @@ sap.ui.define([
 				/**
 				 * URL where the uploaded files will be stored.
 				 */
-				uploadUrl: {type: "string", defaultValue: null},
-				/**
-				 * HTTP request method chosen for file upload.
-				 * @since 1.90
-				 */
-				httpRequestMethod: {type: "sap.m.upload.UploaderHttpRequestMethod", defaultValue: UploaderHttpRequestMethod.Post}
-				},
+				uploadUrl: {type: "string", defaultValue: null}
+			},
 			defaultAggregation: "items",
 			aggregations: {
 				/**
@@ -671,11 +665,8 @@ sap.ui.define([
 				tooltip: sTooltip,
 				iconOnly: false,
 				enabled: this.getUploadEnabled(),
-				fileType: this.getFileTypes(),
-				mimeType: this.getMediaTypes(),
 				icon: "",
 				iconFirst: false,
-				multiple: true,
 				style: "Transparent",
 				name: "uploadSetFileUploader",
 				sameFilenameAllowed: true,
@@ -1030,9 +1021,7 @@ sap.ui.define([
 
 	UploadSet.prototype._getImplicitUploader = function () {
 		if (!this._oUploader) {
-			this._oUploader = new Uploader({
-				httpRequestMethod : this.getHttpRequestMethod()
-			});
+			this._oUploader = new Uploader();
 			this._oUploader.setUploadUrl(this.getUploadUrl());
 			this.registerUploaderEvents(this._oUploader);
 			this.addDependent(this._oUploader);
@@ -1048,8 +1037,7 @@ sap.ui.define([
 	UploadSet.prototype._uploadItemIfGoodToGo = function (oItem) {
 		if (oItem.getUploadState() === UploadState.Ready && !oItem._isRestricted()) {
 			if (this.fireBeforeUploadStarts({item: oItem})) {
-				var oHeaderFields = oItem.getHeaderFields().length ? oItem.getHeaderFields() : this.getHeaderFields();
-				this._getActiveUploader().uploadItem(oItem, oHeaderFields);
+				this._getActiveUploader().uploadItem(oItem, this.getHeaderFields());
 			}
 		}
 	};

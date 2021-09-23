@@ -195,7 +195,11 @@ sap.ui.define(["./library", "sap/ui/core/Core", "sap/ui/Device", "sap/ui/core/In
 	 * @param {sap.ui.core.Control} [oLI] an object representation of the control that should be rendered
 	 * @protected
 	 */
-	ListItemBaseRenderer.addLegacyOutlineClass = function(rm, oLI) {};
+	ListItemBaseRenderer.addLegacyOutlineClass = function(rm, oLI) {
+		if (Device.browser.msie || Device.browser.edge) {
+			rm.class("sapMLIBLegacyOutline");
+		}
+	};
 
 	/**
 	 * Creates an invisible aria node for the given message bundle text

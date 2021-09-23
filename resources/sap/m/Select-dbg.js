@@ -97,10 +97,10 @@ function(
 		 * @see {@link fiori:https://experience.sap.com/fiori-design-web/select/ Select}
 		 *
 		 * @extends sap.ui.core.Control
-		 * @implements sap.ui.core.IFormContent, sap.ui.core.ISemanticFormContent
+		 * @implements sap.ui.core.IFormContent
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -112,8 +112,7 @@ function(
 				interfaces: [
 					"sap.ui.core.IFormContent",
 					"sap.m.IOverflowToolbarContent",
-					"sap.f.IShellBar",
-					"sap.ui.core.ISemanticFormContent"
+					"sap.f.IShellBar"
 				],
 				library: "sap.m",
 				properties: {
@@ -492,12 +491,12 @@ function(
 		Select.prototype._attachHiddenSelectHandlers = function () {
 			var oSelect = this._getHiddenSelect();
 
-			oSelect.on("focus", this._addFocusClass.bind(this));
-			oSelect.on("blur", this._removeFocusClass.bind(this));
+			oSelect.on("focusin", this._addFocusClass.bind(this));
+			oSelect.on("focusout", this._removeFocusClass.bind(this));
 		};
 
 		Select.prototype.focus = function() {
-			this._getHiddenSelect().focus();
+			this._getHiddenSelect().focusin();
 			Control.prototype.focus.call(this, arguments);
 		};
 
@@ -513,8 +512,8 @@ function(
 			var oSelect = this._getHiddenSelect();
 
 			if (oSelect) {
-				oSelect.off("focus");
-				oSelect.off("blur");
+				oSelect.off("focusin");
+				oSelect.off("focusout");
 			}
 		};
 
@@ -536,14 +535,7 @@ function(
 
 		Select.prototype._getValueStateText = function() {
 			var sValueState = this.getValueState(),
-				sValueStateTypeText,
-				sValueStateText;
-
-				if (sValueState === ValueState.None) {
-					return "";
-				}
-
-				sValueStateTypeText = Core.getLibraryResourceBundle("sap.m").getText("INPUTBASE_VALUE_STATE_" + sValueState.toUpperCase());
+				sValueStateTypeText = Core.getLibraryResourceBundle("sap.m").getText("INPUTBASE_VALUE_STATE_" + sValueState.toUpperCase()),
 				sValueStateText = sValueStateTypeText + " " + (this.getValueStateText() || ValueStateSupport.getAdditionalText(this));
 
 			return sValueStateText;
@@ -765,7 +757,7 @@ function(
 		Select.prototype.setValue = function(sValue) {
 			var oDomRef = this.getDomRef(),
 				oTextPlaceholder = oDomRef && oDomRef.querySelector(".sapMSelectListItemText"),
-				bForceAnnounce = !this.isOpen() && this._isFocused() && this._oInvisibleMessage;
+				bForceAnnounce = !this.isOpen() && this._isFocused() && this._oInvisibleMessage && Device.os.macintosh;
 
 			if (oTextPlaceholder) {
 				oTextPlaceholder.textContent = sValue;
@@ -775,6 +767,7 @@ function(
 			this._getValueIcon();
 
 			if (bForceAnnounce) {
+				// auto-announce of new value (when direct text node of div@role="combobox" is changed) is not working on MacOS.
 				// InvisibleMessage is used in case the popover is closed.
 				// (aria-activedescendant is announcing the new selection when popover is opened).
 				this._oInvisibleMessage.announce(sValue, InvisibleMessageMode.Assertive);
@@ -785,9 +778,12 @@ function(
 			var oSelect = this._getHiddenSelect(),
 				oInput = this._getHiddenInput(),
 				oSelectedKey = this.getSelectedKey(),
-				sSelectedItemText = this._getSelectedItemText();
+				oSelectedItem = this.getSelectedItem(),
+				sSelectedItemText;
 
 			oInput.attr("value", oSelectedKey || "");
+
+			sSelectedItemText = oSelectedItem ? oSelectedItem.getText() : "";
 			oSelect.text(sSelectedItemText);
 		};
 
@@ -994,25 +990,6 @@ function(
 
 			// initialize the control's picker
 			return this.createPicker(this.getPickerType());
-		};
-
-		/**
-		 * Gets the InvisibleText instance for the <code>valueStateText</code> property.
-		 *
-		 * @returns {sap.ui.core.InvisibleText | null} The <code>InvisibleText</code> instance, used to reference the text in aria-labelledby of interested controls.
-		 * @private
-		 */
-		Select.prototype.getValueStateTextInvisibleText = function() {
-			if (this.bIsDestroyed) {
-				return null;
-			}
-
-			if (!this._oValueStateTextInvisibleText) {
-				this._oValueStateTextInvisibleText = new InvisibleText({ id: this.getId() + "-valueStateText-InvisibleText" });
-				this._oValueStateTextInvisibleText.toStatic();
-			}
-
-			return this._oValueStateTextInvisibleText;
 		};
 
 		Select.prototype.getSimpleFixFlex = function() {
@@ -1411,11 +1388,6 @@ function(
 				oValueIcon = this._getValueIcon();
 			this._oSelectionOnFocus = null;
 
-			if (this._oValueStateTextInvisibleText) {
-				this._oValueStateTextInvisibleText.destroy();
-				this._oValueStateTextInvisibleText = null;
-			}
-
 			if (oValueStateMessage) {
 				this.closeValueStateMessage();
 				oValueStateMessage.destroy();
@@ -1440,14 +1412,14 @@ function(
 		 * @private
 		 */
 		Select.prototype.ontouchstart = function(oEvent) {
+
 			// mark the event for components that needs to know if the event was handled
 			oEvent.setMarked();
 
-			if (this.getEnabled() && this.getEditable()) {
+			if (this.getEnabled() && this.getEditable() && this.isOpenArea(oEvent.target)) {
 
 				// add the active state to the Select's field
 				this.addStyleClass(this.getRenderer().CSS_CLASS + "Pressed");
-				this.focus();
 			}
 		};
 
@@ -1536,8 +1508,9 @@ function(
 		 */
 		Select.prototype.onkeypress = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1572,8 +1545,9 @@ function(
 		 */
 		Select.prototype.onsapshow = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1620,8 +1594,9 @@ function(
 		 */
 		Select.prototype.onsapescape = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable() || this._bSpaceDown) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable() || this._bSpaceDown) {
 				return;
 			}
 
@@ -1645,8 +1620,9 @@ function(
 			// Prevent the opening of the native select with options
 			oEvent.preventDefault();
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1688,8 +1664,9 @@ function(
 		 * @private
 		 */
 		Select.prototype.onkeyup = function(oEvent) {
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1718,8 +1695,9 @@ function(
 		 */
 		Select.prototype.onsapdown = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1744,8 +1722,9 @@ function(
 		 */
 		Select.prototype.onsapup = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1771,8 +1750,9 @@ function(
 		 */
 		Select.prototype.onsaphome = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1795,8 +1775,9 @@ function(
 		 */
 		Select.prototype.onsapend = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1818,8 +1799,9 @@ function(
 		 */
 		Select.prototype.onsappagedown = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1850,8 +1832,9 @@ function(
 		 */
 		Select.prototype.onsappageup = function(oEvent) {
 
-			// prevents actions from occurring when the control is non-editable
-			if (!this.getEditable()) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled() || !this.getEditable()) {
 				return;
 			}
 
@@ -1881,6 +1864,11 @@ function(
 		 * @private
 		 */
 		Select.prototype.onsaptabnext = function (oEvent) {
+			// prevents actions from occurring when the control is non-editable or disabled,
+			// IE11 browser focus non-focusable elements
+			if (!this.getEnabled()) {
+				return;
+			}
 
 			if (this.isOpen()) {
 				this.close();
@@ -1916,6 +1904,13 @@ function(
 					this.openValueStateMessage();
 				}
 			}.bind(this), 100);
+
+			// note: in some circumstances IE browsers focus non-focusable elements
+			if (Device.browser.msie && (oEvent.target !== this.getFocusDomRef())) {	// whether an inner element is receiving the focus
+
+				// force the focus to leave the inner element and set it back to the control's root element
+				this.focus();
+			}
 		};
 
 		/**
@@ -2133,8 +2128,7 @@ function(
 
 			this._oList = new SelectList({
 				width: "100%",
-				keyboardNavigationMode: sKeyboardNavigationMode,
-				hideDisabledItems: true
+				keyboardNavigationMode: sKeyboardNavigationMode
 			}).addStyleClass(this.getRenderer().CSS_CLASS + "List-CTX")
 			.addEventDelegate({
 				ontap: function(oEvent) {
@@ -2148,7 +2142,6 @@ function(
 			}, this)
 			.attachSelectionChange(this.onSelectionChange, this);
 
-			 this._oList.setProperty("_tabIndex", "-1");
 			 this._oList.toggleStyleClass("sapMSelectListWrappedItems", this.getWrapItemsText());
 
 			return this._oList;
@@ -2292,12 +2285,7 @@ function(
 		 */
 		Select.prototype.getSelectableItems = function() {
 			var oList = this.getList();
-
-			if (!oList) {
-				return [];
-			}
-
-			return oList.getSelectableItems();
+			return oList ? oList.getSelectableItems() : [];
 		};
 
 		/**
@@ -2320,16 +2308,6 @@ function(
 		Select.prototype.isOpenArea = function(oDomRef) {
 			var oOpenAreaDomRef = this.getOpenArea();
 			return oOpenAreaDomRef && oOpenAreaDomRef.contains(oDomRef);
-		};
-
-		Select.prototype.getFormFormattedValue = function() {
-			var oItem = this.getSelectedItem();
-
-			return oItem ? oItem.getText() : "";
-		};
-
-		Select.prototype.getFormValueProperty = function () {
-			return "selectedKey";
 		};
 
 		/**
@@ -2509,9 +2487,7 @@ function(
 
 		Select.prototype._updatePickerAriaLabelledBy = function (sValueState) {
 			var oPicker = this.getPicker(),
-				// to avoid double speech output, referenced element should not be nested inside picker
-				// so we set aria-labelledby to element which is in the static area
-				sPickerValueStateContentId = this.getValueStateTextInvisibleText().getId();
+				sPickerValueStateContentId = this.getPickerValueStateContentId();
 
 			if (sValueState === ValueState.None) {
 				oPicker.removeAriaLabelledBy(sPickerValueStateContentId);
@@ -2850,11 +2826,8 @@ function(
 		};
 
 		Select.prototype.setValueStateText = function(sValueStateText) {
-			var oInvisibleText = this.getValueStateTextInvisibleText();
 
 			this.setProperty("valueStateText", sValueStateText);
-
-			oInvisibleText.setText(sValueStateText);
 
 			if (this.getDomRefForValueState()) {
 				this._updatePickerValueStateContentText();
@@ -3062,7 +3035,7 @@ function(
 		 *
 		 * @see sap.ui.core.Control#getAccessibilityInfo
 		 * @protected
-		 * @returns {object} The <code>sap.m.Select</code> accessibility information
+		 * @returns {Object} The <code>sap.m.Select</code> accessibility information
 		 */
 		Select.prototype.getAccessibilityInfo = function() {
 			var bIconOnly = this._isIconOnly(),

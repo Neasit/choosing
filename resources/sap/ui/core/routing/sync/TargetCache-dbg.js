@@ -11,7 +11,6 @@ sap.ui.define(["sap/ui/core/mvc/View"], function(View) {
 	 * @private
 	 * @experimental
 	 * @since 1.33
-	 * @deprecated Since 1.90. Use a {@link sap.ui.core.routing.async.TargetCache async.TargetCache} instead
 	 */
 	return {
 
@@ -26,7 +25,7 @@ sap.ui.define(["sap/ui/core/mvc/View"], function(View) {
 			function fnCreateView() {
 				oOptions.viewName = oOptions.name;
 				delete oOptions.name;
-				return View._create(oOptions);
+				return View._legacyCreate(oOptions);
 			}
 
 			var oView,

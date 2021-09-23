@@ -70,7 +70,7 @@ sap.ui.define([
 		 * The message toast has the same behavior on all devices. However, you can adjust the width of the control, for example, for use on a desktop device.
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @namespace
 		 * @public
@@ -226,6 +226,9 @@ sap.ui.define([
 
 			if (sap.ui.getCore().getConfiguration().getAccessibility()) {
 				oMessageToastDomRef.setAttribute("role", "alert");
+
+				// prevents JAWS from reading the text of the MessageToast twice
+				oMessageToastDomRef.setAttribute("aria-label", " ");
 			}
 
 			oMessageToastDomRef.style.width = mSettings.width;

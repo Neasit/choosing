@@ -76,7 +76,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -152,7 +152,6 @@ sap.ui.define([
 			 * @deprecated Since version 1.82, replaced by <code>tokenDelete</code> event.
 			 */
 			tokenChange : {
-				deprecated: true,
 				parameters : {
 
 					/**
@@ -194,7 +193,6 @@ sap.ui.define([
 			 * @since 1.46
 			 */
 			tokenUpdate: {
-				deprecated: true,
 				allowPreventDefault : true,
 				parameters: {
 					/**
@@ -721,7 +719,13 @@ sap.ui.define([
 			iScrollWidth *= -1;
 		}
 
-		domRef.scrollLeft = iScrollWidth;
+		if (Device.browser.msie) {
+			setTimeout(function () {
+				domRef.scrollLeft = iScrollWidth;
+			});
+		} else {
+			domRef.scrollLeft = iScrollWidth;
+		}
 	};
 
 	Tokenizer.prototype._registerResizeHandler = function(){
@@ -789,7 +793,7 @@ sap.ui.define([
 	Tokenizer.prototype.onBeforeRendering = function() {
 		var aTokens = this.getTokens();
 
-		if (aTokens.length !== 1) {
+		if (aTokens.length === 0) {
 			this.setFirstTokenTruncated(false);
 		}
 
@@ -1051,10 +1055,14 @@ sap.ui.define([
 			oEvent.preventDefault();
 		};
 
-		document.addEventListener(sShortcutName, cutToClipboard);
-		document.execCommand(sShortcutName);
-		document.removeEventListener(sShortcutName, cutToClipboard);
-
+		if (Device.browser.msie && window.clipboardData) {
+			/* TODO remove after the end of support for Internet Explorer */
+			window.clipboardData.setData("text", sTokensTexts);
+		} else {
+			document.addEventListener(sShortcutName, cutToClipboard);
+			document.execCommand(sShortcutName);
+			document.removeEventListener(sShortcutName, cutToClipboard);
+		}
 	};
 
 	/**
@@ -1129,11 +1137,16 @@ sap.ui.define([
 			oTargetToken = oEvent.getMark("tokenTap"),
 			bDeleteToken = oEvent.getMark("tokenDeletePress"),
 			aTokens = this._getVisibleTokens(),
+			oLastToken = aTokens[aTokens.length - 1],
 			oFocusedToken, iFocusIndex, iIndex, iMinIndex, iMaxIndex;
 
 		if (bDeleteToken || !oTargetToken || (!bShiftKey && bCtrlKey)) { // Ctrl
 			this._oSelectionOrigin = null;
 			return;
+		}
+
+		if (Device.browser.msie && oTargetToken === oLastToken) {
+			this.scrollToEnd();
 		}
 
 		if (!bShiftKey) { // Simple click/tap

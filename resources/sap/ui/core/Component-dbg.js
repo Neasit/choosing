@@ -14,7 +14,6 @@ sap.ui.define([
 	'sap/base/util/merge',
 	'sap/ui/base/ManagedObject',
 	'sap/ui/base/ManagedObjectRegistry',
-	'sap/ui/core/ResizeHandler',
 	'sap/ui/thirdparty/URI',
 	'sap/ui/performance/trace/Interaction',
 	'sap/base/assert',
@@ -23,8 +22,7 @@ sap.ui.define([
 	'sap/base/util/UriParameters',
 	'sap/base/util/isPlainObject',
 	'sap/base/util/LoaderExtensions',
-	'sap/ui/VersionInfo',
-	'sap/ui/core/mvc/ViewType'
+	'sap/ui/VersionInfo'
 ], function(
 	Manifest,
 	ComponentMetadata,
@@ -34,7 +32,6 @@ sap.ui.define([
 	merge,
 	ManagedObject,
 	ManagedObjectRegistry,
-	ResizeHandler,
 	URI,
 	Interaction,
 	assert,
@@ -43,12 +40,20 @@ sap.ui.define([
 	UriParameters,
 	isPlainObject,
 	LoaderExtensions,
-	VersionInfo,
-	ViewType
+	VersionInfo
 ) {
 	"use strict";
 
-	/* global Promise */
+	/*global Promise */
+
+	// TODO: dependency to sap/ui/core/library not possible due to cyclic dependency
+	var ViewType = {
+		JSON: "JSON",
+		XML: "XML",
+		HTML: "HTML",
+		JS: "JS",
+		Template: "Template"
+	};
 
 	var ServiceStartupOptions = {
 		lazy: "lazy",
@@ -228,7 +233,7 @@ sap.ui.define([
 	 * @extends sap.ui.base.ManagedObject
 	 * @abstract
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.Component
 	 * @since 1.9.2
 	 */
@@ -296,14 +301,8 @@ sap.ui.define([
 			// registry for services
 			this._mServices = {};
 
-			this._oKeepAliveConfig = this.getManifestEntry("/sap.ui5/keepAlive");
-			if (this._oKeepAliveConfig) {
-				this._oKeepAliveConfig.supported = !!this._oKeepAliveConfig.supported;
-			}
-
-			this._bIsActive = true;
-
 			ManagedObject.apply(this, args);
+
 		},
 
 		metadata : {
@@ -611,10 +610,6 @@ sap.ui.define([
 	 * @public
 	 */
 	Component.prototype.runAsOwner = function(fn) {
-		if (!this.isActive()) {
-			throw new Error("Execute 'runAsOwner' on an inactive owner component is not supported. Component: '" +
-				this.getMetadata().getName() + "' with id '" + this.getId() + "'.");
-		}
 		return runWithOwner(fn, this.getId());
 	};
 
@@ -623,8 +618,9 @@ sap.ui.define([
 	/**
 	 * Components don't have a facade and therefore return themselves as their interface.
 	 *
-	 * @returns {this} <code>this</code> as there's no facade for components
+	 * @returns {sap.ui.core.Component} <code>this</code> as there's no facade for components
 	 * @see sap.ui.base.Object#getInterface
+	 * @returns {this}
 	 * @public
 	 */
 	Component.prototype.getInterface = function() {
@@ -668,15 +664,7 @@ sap.ui.define([
 
 		// before unload handler (if exists)
 		if (this.onWindowBeforeUnload) {
-			this._fnWindowBeforeUnloadHandler = function(oEvent) {
-				var vReturnValue = this.onWindowBeforeUnload.apply(this, arguments);
-				// set returnValue for Chrome
-				if (typeof (vReturnValue) === 'string') {
-					oEvent.returnValue = vReturnValue;
-					oEvent.preventDefault();
-					return vReturnValue;
-				}
-			}.bind(this);
+			this._fnWindowBeforeUnloadHandler = this.onWindowBeforeUnload.bind(this);
 			window.addEventListener("beforeunload", this._fnWindowBeforeUnloadHandler);
 		}
 
@@ -775,24 +763,8 @@ sap.ui.define([
 			});
 			var EventBus = sap.ui.requireSync("sap/ui/core/EventBus");
 			this._oEventBus = new EventBus();
-
-			if (!this.isActive()) {
-				this._oEventBus.suspend();
-			}
 		}
 		return this._oEventBus;
-	};
-
-	/**
-	 * Determines if the component is active
-	 *
-	 * @returns {boolean} If the component is active <code>true</code>, otherwise <code>false</code>
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core
-	 */
-	Component.prototype.isActive = function() {
-		return this._bIsActive;
 	};
 
 	/**
@@ -839,16 +811,15 @@ sap.ui.define([
 			mergeParent: true,
 			cacheTokens: mCacheTokens,
 			activeTerminologies: this.getActiveTerminologies()
-		}),
-			mModelConfigurations = {},
-			sModelName;
+		});
 
 		if (!mAllModelConfigurations) {
 			return;
 		}
 
 		// filter out models which are already created
-		for (sModelName in mAllModelConfigurations) {
+		var mModelConfigurations = {};
+		for (var sModelName in mAllModelConfigurations) {
 			if (!this._mManifestModels[sModelName]) {
 				mModelConfigurations[sModelName] = mAllModelConfigurations[sModelName];
 			}
@@ -856,13 +827,13 @@ sap.ui.define([
 
 		// create all models which are not created, yet.
 		var mCreatedModels = Component._createManifestModels(mModelConfigurations, this.toString());
-		for (sModelName in mCreatedModels) {
+		for (var sModelName in mCreatedModels) {
 			// keep the model instance to be able to destroy the created models on component destroy
 			this._mManifestModels[sModelName] = mCreatedModels[sModelName];
 		}
 
 		// set all the models to the component
-		for (sModelName in this._mManifestModels) {
+		for (var sModelName in this._mManifestModels) {
 			var oModel = this._mManifestModels[sModelName];
 
 			// apply the model to the component with provided name ("" as key means unnamed model)
@@ -1187,10 +1158,8 @@ sap.ui.define([
 	 * implementation, to handle cleanup before the real unload or to prompt a question
 	 * to the user, if the component should be exited.
 	 *
-	 * @return {string|undefined} a string if a prompt should be displayed to the user
-	 *                  confirming closing the Component (e.g. when the Component is not yet saved),
-	 * 					or <code>undefined</code> if no prompt should be shown.
-	 *
+	 * @return {string} a string if a prompt should be displayed to the user
+	 *                  confirming closing the Component (e.g. when the Component is not yet saved).
 	 * @public
 	 * @since 1.15.1
 	 * @name sap.ui.core.Component.prototype.onWindowBeforeUnload
@@ -1264,9 +1233,6 @@ sap.ui.define([
 		}
 
 		if (oOwnerComponent) {
-			if (!oOwnerComponent.isActive()) {
-				throw new Error("Creation of component '" + mConfig.name + "' is not possible due to inactive owner component '" + oOwnerComponent.getId() + "'");
-			}
 			// create the nested component in the context of this component
 			return oOwnerComponent.runAsOwner(createComponent);
 		} else {
@@ -1498,8 +1464,8 @@ sap.ui.define([
 							if (oModelConfig.type === 'sap.ui.model.odata.v2.ODataModel' ||
 								oModelConfig.type === 'sap.ui.model.odata.v4.ODataModel') {
 
-								var sCacheTokenForAnnotation = mCacheTokens.dataSources && mCacheTokens.dataSources[oAnnotation.uri];
-								if (sCacheTokenForAnnotation || oModelConfig.type === 'sap.ui.model.odata.v2.ODataModel') {
+								var sCacheToken = mCacheTokens.dataSources && mCacheTokens.dataSources[oAnnotation.uri];
+								if (sCacheToken || oModelConfig.type === 'sap.ui.model.odata.v2.ODataModel') {
 									/* eslint-disable no-loop-func */
 									["sap-language", "sap-client"].forEach(function(sName) {
 										if (!oAnnotationUri.hasQuery(sName) && oConfig.getSAPParam(sName)) {
@@ -1509,9 +1475,9 @@ sap.ui.define([
 									/* eslint-enable no-loop-func */
 								}
 
-								if (sCacheTokenForAnnotation) {
+								if (sCacheToken) {
 									Component._applyCacheToken(oAnnotationUri, {
-										cacheToken: sCacheTokenForAnnotation,
+										cacheToken: sCacheToken,
 										componentName: sLogComponentName,
 										dataSource: sAnnotation
 									});
@@ -1583,8 +1549,7 @@ sap.ui.define([
 					if (oModelConfig.type === 'sap.ui.model.odata.v2.ODataModel' ||
 						oModelConfig.type === 'sap.ui.model.odata.v4.ODataModel') {
 
-						var oModelDataSource = mConfig.dataSources && mConfig.dataSources[oModelConfig.dataSource];
-						var sCacheToken = mCacheTokens.dataSources && mCacheTokens.dataSources[oModelDataSource.uri];
+						var sCacheToken = mCacheTokens.dataSources && mCacheTokens.dataSources[oDataSource.uri];
 						// Handle sap-language URI parameter
 						// Do not add it if it is already set in the "metadataUrlParams" or is part of the model URI
 						mMetadataUrlParams = oModelConfig.settings && oModelConfig.settings.metadataUrlParams;
@@ -1683,13 +1648,15 @@ sap.ui.define([
 					// only use 1st argument with "uri" string if there are no settings
 					oModelConfig.settings = [ oModelConfig.uri ];
 				}
-			} else if (bAddOrigin && oModelConfig.uriSettingName !== undefined && oModelConfig.settings && oModelConfig.settings[oModelConfig.uriSettingName]) {
-				// Origin segment: only if the uri is given via the respective settingsName, e.g. "serviceURL"
-				oModelConfig.preOriginBaseUri = oModelConfig.settings[oModelConfig.uriSettingName].split("?")[0];
-				oModelConfig.settings[oModelConfig.uriSettingName] = ODataUtils.setOrigin(oModelConfig.settings[oModelConfig.uriSettingName], {
-					alias: sSystemParameter
-				});
-				oModelConfig.postOriginUri = oModelConfig.settings[oModelConfig.uriSettingName].split("?")[0];
+			} else {
+				// Origin segment: check if the uri is given via the respective settingsName, e.g. "serviceURL"
+				if (bAddOrigin && oModelConfig.uriSettingName !== undefined && oModelConfig.settings && oModelConfig.settings[oModelConfig.uriSettingName]) {
+					oModelConfig.preOriginBaseUri = oModelConfig.settings[oModelConfig.uriSettingName].split("?")[0];
+					oModelConfig.settings[oModelConfig.uriSettingName] = ODataUtils.setOrigin(oModelConfig.settings[oModelConfig.uriSettingName], {
+						alias: sSystemParameter
+					});
+					oModelConfig.postOriginUri = oModelConfig.settings[oModelConfig.uriSettingName].split("?")[0];
+				}
 			}
 
 			// Origin segment: Adapt annotation uris here, based on the base part of the service uri.
@@ -1697,8 +1664,8 @@ sap.ui.define([
 			if (bAddOrigin && oModelConfig.settings && oModelConfig.settings.annotationURI) {
 				var aAnnotationUris = [].concat(oModelConfig.settings.annotationURI); //"to array"
 				var aOriginAnnotations = [];
-				for (var k = 0; k < aAnnotationUris.length; k++) {
-					aOriginAnnotations.push(ODataUtils.setAnnotationOrigin(aAnnotationUris[k], {
+				for (var i = 0; i < aAnnotationUris.length; i++) {
+					aOriginAnnotations.push(ODataUtils.setAnnotationOrigin(aAnnotationUris[i], {
 						alias: sSystemParameter,
 						preOriginBaseUri: oModelConfig.preOriginBaseUri,
 						postOriginBaseUri: oModelConfig.postOriginBaseUri
@@ -1789,7 +1756,7 @@ sap.ui.define([
 	 * Used within loadComponent to create models during component load.
 	 *
 	 * "afterManifest"
-	 * Models that are configured for preload via "preload=true" or URI parameter.
+	 * Models that are activated for preload via "preload=true" or URI parameter.
 	 * They will be created after the manifest is available.
 	 *
 	 * "afterPreload"
@@ -1853,7 +1820,7 @@ sap.ui.define([
 				mModelConfigs.afterPreload[sModelName] = mModelConfig;
 			} else if (mModelConfig.preload) {
 				// Only create models:
-				//   - which are flagged for preload (mModelConfig.preload) or configured via internal URI param (see above)
+				//   - which are flagged for preload (mModelConfig.preload) or activated via internal URI param (see above)
 				//   - in case the model class is already loaded (otherwise log a warning)
 				if (sap.ui.loader._.getModuleState(mModelConfig.type.replace(/\./g, "/") + ".js")) {
 					mModelConfigs.afterManifest[sModelName] = mModelConfig;
@@ -2032,9 +1999,6 @@ sap.ui.define([
 	 * only be required after all preloads have been rejected or resolved. Only then, the new instance will
 	 * be created.
 	 *
-	 * A component can implement the {@link sap.ui.core.IAsyncContentCreation} interface.
-	 * Please see the respective documentation for more information.
-	 *
 	 * @example
 	 *
 	 *   Component.create({
@@ -2057,7 +2021,7 @@ sap.ui.define([
 	 * @param {object} [mOptions.componentData] Initial data of the Component, see {@link sap.ui.core.Component#getComponentData}.
 	 * @param {sap.ui.core.ID} [mOptions.id] ID of the new Component
 	 * @param {string[]} [mOptions.activeTerminologies] List of active terminologies.
-	 *              The order of the given active terminologies is significant. The {@link module:sap/base/i18n/ResourceBundle ResourceBundle} API
+	 *              The order of the given active terminologies is significant. The {@link sap.base.i18n.ResourceBundle ResourceBundle} API
 	 *              documentation describes the processing behavior in more detail.
 	 *              Please have a look at this dev-guide chapter for general usage instructions: {@link topic:eba8d25a31ef416ead876e091e67824e Text Verticalization}.
 	 * @param {object} [mOptions.settings] Settings of the new Component
@@ -2149,7 +2113,7 @@ sap.ui.define([
 	 * @param {string} [vConfig.id] sId of the new Component
 	 * @param {object} [vConfig.settings] Settings of the new Component
 	 * @param {string[]} [vConfig.activeTerminologies] List of active terminologies.
-	 *              The order of the given active terminologies is significant. The {@link module:sap/base/i18n/ResourceBundle ResourceBundle} API
+	 *              The order of the given active terminologies is significant. The {@link sap.base.i18n.ResourceBundle ResourceBundle} API
 	 *              documentation describes the processing behavior in more detail.
 	 *              Please also have a look at this dev-guide chapter for general usage instructions: {@link topic:eba8d25a31ef416ead876e091e67824e Text Verticalization}.
 	 * @param {boolean} [vConfig.async] Indicates whether the Component creation should be done asynchronously; defaults to true when using the manifest property with a truthy value otherwise the default is false (experimental setting)
@@ -2212,14 +2176,13 @@ sap.ui.define([
 			Log.warning("Do not use synchronous component creation (" + vConfig["name"] + ")! " +
 				"Use the new asynchronous factory 'Component.create' instead", "sap.ui.component", null, fnLogProperties.bind(null, vConfig["name"]));
 		}
-
-		return componentFactory(vConfig, /*bLegacy=*/true);
+		return componentFactory(vConfig);
 	};
 
 	/*
 	 * Part of the old sap.ui.component implementation than can be re-used by the new factory
 	 */
-	function componentFactory(vConfig, bLegacy) {
+	function componentFactory(vConfig) {
 		var oOwnerComponent = Component.get(ManagedObject._sOwnerId);
 		// get terminologies information: API -> Owner Component -> Configuration
 		var aActiveTerminologies = vConfig.activeTerminologies || (oOwnerComponent && oOwnerComponent.getActiveTerminologies()) || sap.ui.getCore().getConfiguration().getActiveTerminologies();
@@ -2234,34 +2197,27 @@ sap.ui.define([
 		}
 
 		function notifyOnInstanceCreated(oInstance, vConfig) {
-			if (vConfig.async) {
-				var pRootControlReady = oInstance.rootControlLoaded ? oInstance.rootControlLoaded() : Promise.resolve();
-				if (typeof Component._fnOnInstanceCreated === "function") {
-					return pRootControlReady.then(function() {
-						return Component._fnOnInstanceCreated(oInstance, vConfig);
-					});
-				}
-				// If we're async but we don't have a promise we still need to be one !
-				return pRootControlReady;
-			}
 			if (typeof Component._fnOnInstanceCreated === "function") {
-				Component._fnOnInstanceCreated(oInstance, vConfig);
+				var oPromise = Component._fnOnInstanceCreated(oInstance, vConfig);
+				if (vConfig.async && oPromise instanceof Promise) {
+					return oPromise;
+				}
+			}
+			if (vConfig.async) {
+				// If we're async but we don't have a promise we still need to be one !
+				return Promise.resolve(oInstance);
 			}
 			return oInstance;
 		}
 
 		function createInstance(oClass) {
-			if (bLegacy && oClass.getMetadata().isA("sap.ui.core.IAsyncContentCreation")) {
-				throw new Error("Do not use deprecated factory function 'sap.ui.component' in combination with IAsyncContentCreation (" + vConfig["name"] + "). " +
-				"Use 'Component.create' instead");
-			}
 
 			// retrieve the required properties
 			var sName = vConfig.name,
-			sId = vConfig.id,
-			oComponentData = vConfig.componentData,
-			sController = sName + '.Component',
-			mSettings = vConfig.settings;
+				sId = vConfig.id,
+				oComponentData = vConfig.componentData,
+				sController = sName + '.Component',
+				mSettings = vConfig.settings;
 
 			// create an instance
 			var oInstance = new oClass(extend({}, mSettings, {
@@ -2301,7 +2257,8 @@ sap.ui.define([
 						return oInstance;
 					});
 			} else {
-				return notifyOnInstanceCreated(oInstance, vConfig);
+				notifyOnInstanceCreated(oInstance, vConfig);
+				return oInstance;
 			}
 		}
 
@@ -2791,10 +2748,10 @@ sap.ui.define([
 			var aComponents = [];
 			var mComponents = oManifest.getEntry("/sap.ui5/dependencies/components");
 			if (mComponents) {
-				for (var sCompName in mComponents) {
+				for (var sComponentName in mComponents) {
 					// filter the lazy components
-					if (!mComponents[sCompName].lazy) {
-						aComponents.push(sCompName);
+					if (!mComponents[sComponentName].lazy) {
+						aComponents.push(sComponentName);
 					}
 				}
 			}
@@ -3032,12 +2989,13 @@ sap.ui.define([
 				fnCallLoadComponentCallback = function(oLoadedManifest) {
 					// if a callback is registered to the component load, call it with the configuration
 					if (typeof Component._fnLoadComponentCallback === "function") {
-						// secure configuration from manipulation, manifest can be adjusted by late changes
+						// secure configuration and manifest from manipulation
 						var oConfigCopy = deepExtend({}, oConfig);
+						var oManifestCopy = merge({}, oLoadedManifest);
 						// trigger the callback with a copy of its required data
 						// do not await any result from the callback nor stop component loading on an occurring error
 						try {
-							return Component._fnLoadComponentCallback(oConfigCopy, oLoadedManifest);
+							Component._fnLoadComponentCallback(oConfigCopy, oManifestCopy);
 						} catch (oError) {
 							Log.error("Callback for loading the component \"" + oLoadedManifest.getComponentName() +
 								"\" run into an error. The callback was skipped and the component loading resumed.",
@@ -3071,9 +3029,7 @@ sap.ui.define([
 				// after all promises including the loading of dependent libs have been resolved
 				// pass the manifest to the callback function in case the manifest is present and a callback was set
 				if (oManifest && fnCallLoadComponentCallback) {
-					return oManifest.then(fnCallLoadComponentCallback).then(function() {
-						return v;
-					});
+					oManifest.then(fnCallLoadComponentCallback);
 				}
 				return v;
 			}).then(function(v) {
@@ -3416,190 +3372,6 @@ sap.ui.define([
 		}
 		return sCommandName ? oCommand : oCommands;
 	};
-
-	/**
-	 * Deactivates the component and all descendant components
-	 *
-	 * If this or any descendant component has not enabled keep alive, no component will be deactivated
-	 *
-	 * Deactivation includes following steps:
-	 * <ul>
-	 * <li>all elements associated (via ownerId) with the deactivated component are notified about the deactivation</li>
-	 * <li>the eventbus of each deactivated component is suspended</li>
-	 * <li>the router of each deactivated component is stopped</li>
-	 * <li>the 'onDeactivate' hook of each deactivated component is executed</li>
-	 * </ul>
-	 *
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core, sap.ushell
-	 */
-	Component.prototype.deactivate = function() {
-		var oOwnerComponent = Component.getOwnerComponentFor(this);
-		if (oOwnerComponent && oOwnerComponent.isActive()) {
-			throw new Error("Component.deactivate must not be called on nested components.");
-		}
-
-		if (!this.isKeepAliveSupported()) {
-			Log.warning("Deactivation of component failed. Component '" + this.getId() + "' does not support 'keepAlive'.");
-			return;
-		}
-		if (!this.isActive()) {
-			Log.warning("Deactivation of component failed. Component '" + this.getId() + "' is already inactive.");
-			return;
-		}
-
-		// deactivate component
-		this.onOwnerDeactivation();
-
-		// mark the component as inactive
-		this._bIsActive = false;
-
-		// deactivate all child elements
-		Element.registry.filter(function(oElement) {
-			var sOwnerId = Component.getOwnerIdFor(oElement);
-			if (sOwnerId === this.getId()) {
-				ResizeHandler.suspend(oElement.getDomRef());
-				return oElement.onOwnerDeactivation();
-			}
-		}, this);
-
-		// deactivate all child components
-		Component.registry.filter(function(oComponent) {
-			var sOwnerId = Component.getOwnerIdFor(oComponent);
-			if (sOwnerId === this.getId()) {
-				oComponent.deactivate();
-			}
-		}, this);
-
-		// suspend EventBus
-		if (this._oEventBus) {
-			this._oEventBus.suspend();
-		}
-
-		// stop the router
-		if (this.getRouter()) {
-			this.getRouter().stop();
-		}
-
-		// call lifecyclehook 'onDeactivate'
-		if (typeof this.onDeactivate === "function") {
-			this.onDeactivate();
-		}
-	};
-
-	/**
-	 * Activates the component and all descendant components.
-	 *
-	 * If this or any descendant component does not enabled keep alive, no component will be activated
-	 *
-	 * Activation includes following steps:
-	 * <ul>
-	 * <li>all elements associated (via ownerId) with the activated components are notified about the activation</li>
-	 * <li>the eventbus of each activated component is resumed</li>
-	 * <li>the router of each activated component is initialized</li>
-	 * <li>the 'onActivate' hook of each activated component is executed</li>
-	 * </ul>
-	 *
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core, sap.ushell
-	 */
-	Component.prototype.activate = function() {
-		if (!this.isKeepAliveSupported()) {
-			Log.warning("Activation of component failed. Component '" + this.getId() + "' does not support 'keepAlive'.");
-			return;
-		}
-		if (this.isActive()) {
-			Log.warning("Activation of component failed. Component '" + this.getId() + "' is already active.");
-			return;
-		}
-
-		// activate component
-		this.onOwnerActivation();
-
-		// mark the component as active
-		this._bIsActive = true;
-
-		// resume all child elements
-		Element.registry.forEach(function(oElement) {
-			var sCompId = Component.getOwnerIdFor(oElement);
-			if (sCompId === this.getId()) {
-				ResizeHandler.resume(oElement.getDomRef());
-				return oElement.onOwnerActivation();
-			}
-		}, this);
-
-		// activate all child components
-		Component.registry.forEach(function(oComponent) {
-			var sOwnerId = Component.getOwnerIdFor(oComponent);
-			if (sOwnerId === this.getId()) {
-				oComponent.activate();
-			}
-		}, this);
-
-		// resume eventbus
-		if (this._oEventBus) {
-			this._oEventBus.resume();
-		}
-
-		// resume router
-		if (this.getRouter()) {
-			this.getRouter().initialize();
-		}
-
-		// call lifecyclehook 'onActivate'
-		if (typeof this.onActivate === "function") {
-			this.onActivate();
-		}
-	};
-
-	/**
-	 * Checks whether a component and its nested components support "keep-alive" or not.
-	 * Returns <code>false</code>, if at least one component does not support "keep-alive".
-	 *
-	 * @return {boolean} Whether the component supports "keep-alive" or not
-	 * @since 1.88
-	 * @private
-	 * @ui5-restricted sap.ui.core, sap.ushell
-	 */
-	Component.prototype.isKeepAliveSupported = function() {
-		var bIsKeepAliveSupported = this._oKeepAliveConfig && this._oKeepAliveConfig.supported;
-
-		if (bIsKeepAliveSupported) {
-			bIsKeepAliveSupported = Component.registry
-				.filter(function (oComponent) {
-					var sOwnerId = Component.getOwnerIdFor(oComponent);
-					if (sOwnerId === this.getId()) {
-						return true;
-					}
-				}, this).every(function (oComponent) {
-					return oComponent.isKeepAliveSupported();
-				}, this);
-		}
-
-		return !!bIsKeepAliveSupported;
-	};
-
-	/**
-	 * This method is called after the component is activated
-	 *
-	 * @function
-	 * @name sap.ui.core.Component.prototype.onActivate
-	 * @abstract
-	 * @since 1.88
-	 * @protected
-	 */
-
-	/**
-	 * This method is called after the component is deactivated
-	 *
-	 * @function
-	 * @name sap.ui.core.Component.prototype.onDeactivate
-	 * @abstract
-	 * @since 1.88
-	 * @protected
-	 */
 
 	return Component;
 });

@@ -37,6 +37,24 @@ html.sap-desktop .sapMToken:hover {
 	border-radius: 0.125rem;
 }
 
+html[data-sap-ui-browser^="ie"].sap-desktop,
+html[data-sap-ui-browser^="ed"].sap-desktop {
+	.sapMToken:focus {
+		position: relative;
+		outline: none;
+
+		.sapMTokenText:before {
+			position: absolute;
+			top: 2px;
+			left: 2px;
+			right: 2px;
+			bottom: 2px;
+			content: "";
+			pointer-events: none;
+		}
+	}
+}
+
 .sapMTokenText {
 	display: inline-block;
 	overflow: hidden;
@@ -46,6 +64,7 @@ html.sap-desktop .sapMToken:hover {
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;
+	-ms-user-select: none;
 	user-select: none;
 
 	pointer-events: none;
@@ -80,6 +99,19 @@ html.sap-desktop .sapMToken:hover {
 	touch-action: none;
 }
 
+html[data-sap-ui-browser^="ie"].sap-desktop .sapMTokenIcon,
+html[data-sap-ui-browser^="ed"].sap-desktop .sapMTokenIcon {
+	line-height: 1.625rem;
+}
+
+html[data-sap-ui-browser^="ie"].sap-desktop .sapUiSizeCondensed .sapMTokenIcon {
+	line-height: 1.0625rem;
+}
+
+html[data-sap-ui-browser^="ed"].sap-desktop .sapUiSizeCondensed .sapMTokenIcon {
+	line-height: 1rem;
+}
+
 .sapUiSizeCompact .sapMToken {
 	font-size: @sapMFontSmallSize;
 	padding-left: @_sap_m_Token_TokenCompactPadding;
@@ -97,6 +129,11 @@ html.sap-desktop .sapMToken:hover {
 .sapUiSizeCompact .sapMTokenIcon {
 	font-size: @sapMFontSmallSize;
 	padding: 0 0.25rem;
+	line-height: 1.125rem;
+}
+
+html[data-sap-ui-browser^="ie"].sap-desktop .sapUiSizeCompact .sapMTokenIcon,
+html[data-sap-ui-browser^="ed"].sap-desktop .sapUiSizeCompact .sapMTokenIcon {
 	line-height: 1.125rem;
 }
 

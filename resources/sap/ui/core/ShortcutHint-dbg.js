@@ -45,6 +45,7 @@ sap.ui.define([
 			} catch (e) {
 				Log.error("Error on retrieving command shortcut. Command "
 					+ sCommandName + " was not found!");
+				return;
 			}
 		};
 

@@ -20,15 +20,14 @@ sap.ui.define([
 	 * @namespace
 	 * @name sap.ui.layout
 	 * @author SAP SE
-	 * @version 1.92.0
-	 * @since 1.15
+	 * @version 1.87.0
 	 * @public
 	 */
 
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.ui.layout",
-		version: "1.92.0",
+		version: "1.87.0",
 		dependencies: ["sap.ui.core"],
 		designtime: "sap/ui/layout/designtime/library.designtime",
 		types: [
@@ -57,8 +56,7 @@ sap.ui.define([
 			"sap.ui.layout.cssgrid.CSSGridGapShortHand"
 		],
 		interfaces: [
-			"sap.ui.layout.cssgrid.IGridConfigurable",
-			"sap.ui.layout.cssgrid.IGridItemLayoutData"
+			"sap.ui.layout.cssgrid.IGridConfigurable"
 		],
 		controls: [
 			"sap.ui.layout.AlignedFlowLayout",
@@ -180,15 +178,6 @@ sap.ui.define([
 	 * @public
 	 * @function
 	 * @name sap.ui.layout.cssgrid.IGridConfigurable.getGridLayoutConfiguration
-	 */
-
-	/**
-	 * LayoutData for grid items
-	 *
-	 * @since 1.88.0
-	 * @public
-	 * @interface
-	 * @name sap.ui.layout.cssgrid.IGridItemLayoutData
 	 */
 
 	/**
@@ -661,8 +650,7 @@ sap.ui.define([
 	 * @classdesc An <code>int</code> type that defines how many columns a <code>Form</code> control using
 	 * the <code>ColumnLayout</code> as layout can have if it has extra-large size
 	 *
-	 * Allowed values are numbers from 1 to 6.
-	 * <b>Note:</b> In versions lower than 1.89 only 4 columns are allowed.
+	 * Allowed values are numbers from 1 to 4.
 	 *
 	 * @final
 	 * @namespace
@@ -672,7 +660,7 @@ sap.ui.define([
 	 */
 	sap.ui.layout.form.ColumnsXL = DataType.createType('sap.ui.layout.form.ColumnsXL', {
 		isValid : function(vValue) {
-			if (vValue > 0 && vValue <= 6) {
+			if (vValue > 0 && vValue <= 4) {
 				return true;
 			} else {
 				return false;

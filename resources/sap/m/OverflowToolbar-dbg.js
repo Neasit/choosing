@@ -6,7 +6,6 @@
 
 // Provides control sap.m.OverflowToolbar.
 sap.ui.define([
-	"sap/ui/core/library",
 	"./library",
 	"sap/ui/core/Control",
 	"sap/m/ToggleButton",
@@ -25,7 +24,6 @@ sap.ui.define([
 	"sap/base/Log",
 	"sap/ui/dom/jquery/Focusable" // jQuery Plugin "lastFocusableDomRef"
 ], function(
-	coreLibrary,
 	library,
 	Control,
 	ToggleButton,
@@ -51,8 +49,6 @@ sap.ui.define([
 	// shortcut for sap.m.ButtonType
 	var ButtonType = library.ButtonType;
 
-	// shortcut for sap.ui.core.aria.HasPopup
-	var AriaHasPopup = coreLibrary.aria.HasPopup;
 
 	// shortcut for sap.m.OverflowToolbarPriority
 	var OverflowToolbarPriority = library.OverflowToolbarPriority;
@@ -129,7 +125,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.Toolbar,sap.m.IBar
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -193,6 +189,9 @@ sap.ui.define([
 
 		// When set to true, the overflow button will be rendered
 		this._bOverflowButtonNeeded = false;
+
+		// When set to true, means that the overflow toolbar is in a popup
+		this._bNestedInAPopover = null;
 
 		// When set to true, changes to the properties of the controls in the toolbar will trigger a recalculation
 		this._bListenForControlPropertyChanges = false;
@@ -269,6 +268,8 @@ sap.ui.define([
 	 */
 	OverflowToolbar.prototype.onAfterRendering = function () {
 		this._bInvalidatedAndNotRendered = false;
+		// TODO: refactor with addEventDelegate for onAfterRendering for both overflow button and its label
+		this._getOverflowButton().$().attr("aria-haspopup", "menu");
 
 		if (this._bContentVisibilityChanged) {
 			this._bControlsInfoCached = false;
@@ -896,6 +897,7 @@ sap.ui.define([
 		this._resetToolbar();
 
 		this._bControlsInfoCached = false;
+		this._bNestedInAPopover = null;
 		this._iPreviousToolbarWidth = null;
 		if (bHardReset) {
 			this._bSkipOptimization = true;
@@ -945,7 +947,6 @@ sap.ui.define([
 
 	OverflowToolbar.prototype._getToggleButton = function (sIdPrefix) {
 		return new ToggleButton({
-				ariaHasPopup: AriaHasPopup.Menu,
 				id: this.getId() + sIdPrefix,
 				icon: IconPool.getIconURI("overflow"),
 				press: this._overflowButtonPressed.bind(this),
@@ -1070,7 +1071,55 @@ sap.ui.define([
 	 * @private
 	 */
 	OverflowToolbar.prototype._popOverClosedHandler = function () {
+		var bWindowsPhone = Device.os.windows_phone || Device.browser.edge && Device.browser.mobile;
+
 		this._getOverflowButton().setPressed(false); // Turn off the toggle button
+		this._getOverflowButton().$().trigger("focus"); // Focus the toggle button so that keyboard handling will work
+
+		if (this._isNestedInsideAPopup() || bWindowsPhone) {
+			return;
+		}
+
+		// On IE/sometimes other browsers, if you click the toggle button again to close the popover, onAfterClose is triggered first, which closes the popup, and then the click event on the toggle button reopens it
+		// To prevent this behaviour, disable the overflow button till the end of the current javascript engine's "tick"
+		this._getOverflowButton().setEnabled(false);
+		setTimeout(function () {
+			this._getOverflowButton().setEnabled(true);
+
+			// In order to restore focus, we must wait another tick here to let the renderer enable it first
+			setTimeout(function () {
+				this._getOverflowButton().$().trigger("focus");
+			}.bind(this), 0);
+		}.bind(this), 0);
+	};
+
+	/**
+	 * Checks if the overflowToolbar is nested in a popup
+	 * @returns {boolean}
+	 * @private
+	 */
+	OverflowToolbar.prototype._isNestedInsideAPopup = function () {
+		var fnScanForPopup;
+
+		if (this._bNestedInAPopover !== null) {
+			return this._bNestedInAPopover;
+		}
+
+		fnScanForPopup = function (oControl) {
+			if (!oControl) {
+				return false;
+			}
+
+			if (oControl.getMetadata().isInstanceOf("sap.ui.core.PopupInterface")) {
+				return true;
+			}
+
+			return fnScanForPopup(oControl.getParent());
+		};
+
+		this._bNestedInAPopover = fnScanForPopup(this);
+
+		return this._bNestedInAPopover;
 	};
 
 	/**
@@ -1552,7 +1601,7 @@ sap.ui.define([
 	OverflowToolbar._getControlWidth = function (oControl) {
 		var oDomRef = oControl && oControl.getDomRef();
 
-		if (oDomRef && oControl.$().is(":visible")) {
+		if (oDomRef) {
 			// Getting the precise width of the control, as sometimes JQuery's .outerWidth() returns different values
 			// for the same element.
 			return Math.round(oDomRef.getBoundingClientRect().width + OverflowToolbar._getControlMargins(oControl));

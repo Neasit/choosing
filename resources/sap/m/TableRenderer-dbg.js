@@ -79,15 +79,12 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 			};
 
 		if (type == "Head") {
-			var aVisibleColumns = aColumns.filter(function(oCol){
-				return oCol.getVisible();
-			});
 			var oForcedColumn = aColumns.reduce(function(oRefColumn, oColumn, iOrder) {
 				oColumn.setIndex(-1);
 				oColumn.setInitialOrder(iOrder);
 				oColumn.setForcedColumn(false);
-				return (oColumn.getVisible() && oColumn.getCalculatedMinScreenWidth() < oRefColumn.getCalculatedMinScreenWidth()) ? oColumn : oRefColumn;
-			}, aVisibleColumns[0]);
+				return (oColumn.getCalculatedMinScreenWidth() < oRefColumn.getCalculatedMinScreenWidth()) ? oColumn : oRefColumn;
+			}, aColumns[0]);
 
 			var iHeaderLength = aColumns.filter(function(oColumn) {
 				return	oColumn.getVisible() &&
@@ -128,7 +125,7 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 			rm.class("sapMListTblHeaderNone");
 		} else {
 			rm.class("sapMListTblRow").class("sapMListTbl" + type + "er");
-			rm.class("sapMLIBFocusable").class("sapMTableRowCustomFocus");
+			ColumnListItemRenderer.addFocusableClasses(rm, oTable);
 		}
 
 		rm.openEnd();
@@ -166,12 +163,9 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 			}
 
 			var control = oColumn["get" + type + "er"](),
-				vFixedLayout = oTable.getFixedLayout(),
-				width = (iHeaderLength == 1 && vFixedLayout != "Strict") ? "" : oColumn.getWidth(),
+				width = (iHeaderLength == 1) ? "" : oColumn.getWidth(),
 				aStyleClass = oColumn.getStyleClass(true).split(" "),
 				align = oColumn.getCssAlign();
-
-			oTable._bCheckLastColumnWidth = vFixedLayout == "Strict" && iHeaderLength == 1;
 
 			if (type == "Head") {
 				rm.openStart(cellTag, oColumn);
@@ -189,7 +183,6 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 			});
 			rm.class(clsPrefix + "Cell");
 			rm.class(clsPrefix + type + "erCell");
-			rm.attr("data-sap-ui-column", oColumn.getId());
 			rm.attr("data-sap-width", oColumn.getWidth());
 			rm.style("width", width);
 
@@ -216,9 +209,6 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 						rm.attr("role", "button");
 						rm.attr("aria-haspopup", "dialog");
 						rm.class("sapMColumnHeaderActive");
-					} else if (oTable.bFocusableHeaders) {
-						rm.attr("tabindex", 0);
-						rm.class("sapMColumnHeaderFocusable");
 					}
 
 					if (align) {
@@ -274,8 +264,8 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 	 * add table container class name
 	 */
 	TableRenderer.renderContainerAttributes = function(rm, oControl) {
-		rm.attr("role", "application").attr("data-sap-ui-pasteregion", "true");
-		rm.attr("aria-roledescription", Core.getLibraryResourceBundle("sap.m").getText("TABLE_CONTAINER_ROLE_DESCRIPTION"));
+		rm.attr("role", "application");
+		rm.attr("aria-roledescription", Core.getLibraryResourceBundle("sap.m").getText("TABLE_ROLE_DESCRIPTION"));
 		rm.class("sapMListTblCnt");
 
 		// write accessibility state for the table container
@@ -288,7 +278,6 @@ sap.ui.define(["sap/ui/core/Renderer", "sap/ui/core/Core", "./library", "./ListB
 	TableRenderer.renderListStartAttributes = function(rm, oControl) {
 		rm.openStart("table", oControl.getId("listUl"));
 		rm.class("sapMListTbl");
-		rm.attr("aria-labelledby", Core.getLibraryResourceBundle("sap.m").getText("TABLE_ARIA_LABEL"));
 		if (oControl.getFixedLayout() === false) {
 			rm.style("table-layout", "auto");
 		}

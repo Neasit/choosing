@@ -167,7 +167,7 @@ sap.ui.define([
 		if (!mPattern2Formatter[sPattern]) {
 			mPattern2Formatter[sPattern] = DateFormat.getDateTimeInstance({
 				calendarType : CalendarType.Gregorian,
-				pattern : sPattern,
+				pattern: sPattern,
 				UTC : true
 			});
 		}
@@ -523,7 +523,7 @@ sap.ui.define([
 	 *   search by header name
 	 * @param {string} sResourcePath
 	 *   The resource path of the request
-	 * @param {boolean} [_bVersionOptional]
+	 * @param {boolean} [_bVersionOptional=false]
 	 *   Indicates whether the OData service version is optional, which is the case for all OData V2
 	 *   responses. So this parameter is ignored.
 	 * @throws {Error} If the "DataServiceVersion" header is neither "1.0" nor "2.0" nor not set at
@@ -636,9 +636,9 @@ sap.ui.define([
 	 * @param {object} mQueryOptions The query options
 	 * @param {function (string,any)} fnResultHandler
 	 *   The function to process the converted options getting the name and the value
-	 * @param {boolean} [bDropSystemQueryOptions]
+	 * @param {boolean} [bDropSystemQueryOptions=false]
 	 *   Whether all system query options are dropped (useful for non-GET requests)
-	 * @param {boolean} [bSortExpandSelect]
+	 * @param {boolean} [bSortExpandSelect=false]
 	 *   Whether the paths in $expand and $select shall be sorted in the query string
 	 * @throws {Error}
 	 *   If a system query option other than $expand and $select is used or if any $expand value is
@@ -982,16 +982,16 @@ sap.ui.define([
 	asV2Requestor._setDateTimeFormatter = function () {
 		oDateFormatter = DateFormat.getDateInstance({
 			calendarType : CalendarType.Gregorian,
-			pattern : "yyyy-MM-dd",
+			pattern: "yyyy-MM-dd",
 			UTC : true
 		});
 		oDateTimeOffsetFormatter = DateFormat.getDateTimeInstance({
 			calendarType : CalendarType.Gregorian,
-			pattern : "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+			pattern: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
 		});
 		oTimeFormatter = DateFormat.getTimeInstance({
 			calendarType : CalendarType.Gregorian,
-			pattern : "HH:mm:ss",
+			pattern: "HH:mm:ss",
 			UTC : true
 		});
 	};

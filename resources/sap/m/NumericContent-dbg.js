@@ -94,8 +94,7 @@ sap.ui.define([
 		"zh_tw": 6
 	};
 
-	var DeviationIndicator = library.DeviationIndicator,
-		ValueColor = library.ValueColor;
+	var ValueColor = library.ValueColor;
 
 	/**
 	 * Constructor for a new sap.m.GenericTile control.
@@ -107,7 +106,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.34
 	 *
 	 * @public
@@ -159,7 +158,7 @@ sap.ui.define([
 				 * Updates the size of the control. If not set, then the default size is applied based on the device tile.
 				 * @deprecated Since version 1.38.0. The NumericContent control has now a fixed size, depending on the used media (desktop, tablet or phone).
 				 */
-				"size": {type: "sap.m.Size", group: "Appearance", defaultValue: "Auto", deprecated: true},
+				"size": {type: "sap.m.Size", group: "Appearance", defaultValue: "Auto"},
 
 				/**
 				 * The number of characters of the <code>value</code> property to display.
@@ -365,7 +364,7 @@ sap.ui.define([
 		} else {
 			sAltText = sAltText.concat(sEmptyValue);
 		}
-		if (this.getIndicator() && this.getIndicator() !== DeviationIndicator.None) {
+		if (this.getIndicator() && this.getIndicator() !== library.DeviationIndicator.None) {
 			sAltText = sAltText.concat("\n");
 			sAltText = sAltText.concat(this._rb.getText(("NUMERICCONTENT_DEVIATION_" + this.getIndicator()).toUpperCase()));
 		}

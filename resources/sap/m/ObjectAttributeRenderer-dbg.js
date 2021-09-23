@@ -78,9 +78,6 @@ sap.ui.define(["sap/ui/core/library"],
 			this.renderActiveText(oRm, oOA, oParent);
 		} else {
 			oRm.renderControl(oOA._getUpdatedTextControl());
-			if (oOA._bEmptyIndicatorMode) {
-				oRm.renderControl(oOA.getAggregation("_textControl"));
-			}
 		}
 		oRm.close("div");
 	};

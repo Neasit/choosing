@@ -5,20 +5,24 @@
  */
 
 // Provides class sap.ui.core.ComponentMetadata
-sap.ui.define(['./ComponentMetadata', 'sap/ui/core/mvc/ViewType'],
-	function(ComponentMetadata, ViewType) {
+sap.ui.define(['./ComponentMetadata', './library'],
+	function(ComponentMetadata, library) {
 	"use strict";
+
+	// shortcut for enum(s)
+	var ViewType = library.mvc.ViewType;
+
 
 	/**
 	 * Creates a new metadata object for a UIComponent subclass.
 	 *
 	 * @param {string} sClassName Fully qualified name of the class that is described by this metadata object
-	 * @param {object} oClassInfo Static info to construct the metadata from
+	 * @param {object} oStaticInfo Static info to construct the metadata from
 	 *
 	 * @experimental Since 1.15.1. The Component concept is still under construction, so some implementation details can be changed in future.
 	 * @class
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.15.1
 	 * @alias sap.ui.core.UIComponentMetadata
 	 * @extends sap.ui.core.ComponentMetadata
@@ -76,7 +80,6 @@ sap.ui.define(['./ComponentMetadata', 'sap/ui/core/mvc/ViewType'],
 	 * the Component metadata or in the proper Component manifest.
 	 *
 	 * @return {object} routing configuration
-	 * @param {boolean} [bDoNotMerge] Returns the local routing config if set to <code>true</code>
 	 * @private
 	 * @since 1.16.1
 	 * @experimental Since 1.16.1. Implementation might change.
@@ -96,7 +99,6 @@ sap.ui.define(['./ComponentMetadata', 'sap/ui/core/mvc/ViewType'],
 	 * the Component metadata or in the proper Component manifest.
 	 *
 	 * @return {array} routes
-	 * @param {boolean} [bDoNotMerge] Returns the local routes if set to <code>true</code>
 	 * @private
 	 * @since 1.16.1
 	 * @experimental Since 1.16.1. Implementation might change.
@@ -109,9 +111,6 @@ sap.ui.define(['./ComponentMetadata', 'sap/ui/core/mvc/ViewType'],
 
 	/**
 	 * Converts the legacy metadata into the new manifest format
-	 *
-	 * @param {object} oStaticInfo Static info containing the legacy metadata
-	 * @param {object} oManifest The new manifest
 	 * @private
 	 */
 	UIComponentMetadata.prototype._convertLegacyMetadata = function(oStaticInfo, oManifest) {

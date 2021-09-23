@@ -8,7 +8,7 @@ sap.ui.define([
 	"sap/base/util/uid",
 	"sap/ui/thirdparty/jquery",
 	'sap/ui/core/Component'
-], function(ComponentContainer, uid, jQueryDOM, Component) {
+], function(ComponentContainer, uid, jQueryDOM/*, Component */) {
 	"use strict";
 
 	var _loadingStarted = false,
@@ -31,10 +31,8 @@ sap.ui.define([
 				throw new Error("sap.ui.test.launchers.componentLauncher: Start was called twice without teardown. Only one component can be started at a time.");
 			}
 
-			if ( mComponentConfig.manifest === undefined ) {
-				mComponentConfig.manifest = false;
-			}
-			var oPromise = Component.create(mComponentConfig);
+			mComponentConfig.async = true;
+			var oPromise = sap.ui.component(mComponentConfig);
 
 			_loadingStarted = true;
 
@@ -46,11 +44,7 @@ sap.ui.define([
 				jQueryDOM("body").append(_$Component).addClass("sapUiOpaBodyComponent");
 
 				// create and place the component into html
-				_oComponentContainer = new ComponentContainer({
-					component: oComponent,
-					height: "100%",
-					width: "100%"
-				});
+				_oComponentContainer = new ComponentContainer({component: oComponent});
 
 				_oComponentContainer.placeAt(sId);
 			});

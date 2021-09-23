@@ -59,7 +59,7 @@ function(
 		 *
 		 * <b>Note:</b> The control must only be used in the context of a list.
 		 * @extends sap.m.ListItemBase
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -416,7 +416,7 @@ function(
 		ObjectListItem.prototype._activeHandlingInheritor = function() {
 			var sActiveSrc = this.getActiveIcon();
 
-			if (this._oImageControl && sActiveSrc) {
+			if (!!this._oImageControl  && !!sActiveSrc) {
 				this._oImageControl.setSrc(sActiveSrc);
 			}
 		};
@@ -428,7 +428,7 @@ function(
 		 */
 		ObjectListItem.prototype._inactiveHandlingInheritor = function() {
 			var sSrc = this.getIcon();
-			if (this._oImageControl) {
+			if (!!this._oImageControl) {
 				this._oImageControl.setSrc(sSrc);
 			}
 		};
@@ -658,7 +658,7 @@ function(
 
 		/**
 		 * @private
-		 * @returns {sap.m.Text} Title text control
+		 * @returns {sap.m.ObjectListItem} Title text control
 		 */
 		ObjectListItem.prototype._getTitleText = function() {
 

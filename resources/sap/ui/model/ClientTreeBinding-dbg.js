@@ -6,14 +6,16 @@
 
 // Provides the JSON model implementation of a list binding
 sap.ui.define([
-	"./ChangeReason",
-	"./TreeBinding",
-	"sap/base/util/each",
-	"sap/ui/model/FilterProcessor",
-	"sap/ui/model/FilterType",
-	"sap/ui/model/SorterProcessor"
-], function(ChangeReason, TreeBinding, each, FilterProcessor, FilterType, SorterProcessor) {
+	'./ChangeReason',
+	'./TreeBinding',
+	'sap/ui/model/SorterProcessor',
+	'sap/ui/model/FilterProcessor',
+	'sap/ui/model/FilterType',
+	"sap/ui/thirdparty/jquery"
+],
+	function(ChangeReason, TreeBinding, SorterProcessor, FilterProcessor, FilterType, jQuery) {
 	"use strict";
+
 
 	/**
 	 * Creates a new ClientTreeBinding.
@@ -83,7 +85,7 @@ sap.ui.define([
 			iLength = this.oModel.iSizeLimit;
 		}
 
-		var sResolvedPath = this.getResolvedPath(),
+		var sResolvedPath = this.oModel.resolve(this.sPath, this.oContext),
 			that = this,
 			aContexts,
 			oContext,
@@ -103,7 +105,7 @@ sap.ui.define([
 			aContexts = [];
 			sContextPath = this._sanitizePath(sResolvedPath);
 
-			each(this.oModel._getObject(sContextPath), function(iIndex, oObject) {
+			jQuery.each(this.oModel._getObject(sContextPath), function(iIndex, oObject) {
 				that._saveSubContext(oObject, aContexts, sContextPath, iIndex);
 			});
 
@@ -119,10 +121,10 @@ sap.ui.define([
 
 	/**
 	 * Return node contexts for the tree
-	 * @param {sap.ui.model.Context} oContext to use for retrieving the node contexts
+	 * @param {object} oContext to use for retrieving the node contexts
 	 * @param {int} iStartIndex the startIndex where to start the retrieval of contexts
 	 * @param {int} iLength determines how many contexts to retrieve beginning from the start index.
-	 * @return {sap.ui.model.Context[]} the contexts array
+	 * @return {object[]} the contexts array
 	 * @protected
 	 */
 	ClientTreeBinding.prototype.getNodeContexts = function(oContext, iStartIndex, iLength) {
@@ -336,7 +338,7 @@ sap.ui.define([
 		this.bIsFiltering = false;
 
 		if (aUnfilteredContexts.length > 0) {
-			each(aUnfilteredContexts, function(i, oContext){
+			jQuery.each(aUnfilteredContexts, function(i, oContext){
 				// Add parentContext reference for later use (currently to calculate correct group IDs in the adapter)
 				oContext._parentContext = oParentContext;
 				that._applyFilterRecursive(oContext);
@@ -347,8 +349,7 @@ sap.ui.define([
 			}, this.mNormalizeCache);
 
 			if (aFilteredContexts.length > 0) {
-				this.filterInfo.aFilteredContexts =
-					this.filterInfo.aFilteredContexts.concat(aFilteredContexts);
+				jQuery.merge(this.filterInfo.aFilteredContexts, aFilteredContexts);
 				this.filterInfo.aFilteredContexts.push(oParentContext);
 				this.filterInfo.oParentContext = oParentContext;
 			}

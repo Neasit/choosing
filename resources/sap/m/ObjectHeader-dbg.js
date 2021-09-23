@@ -80,7 +80,7 @@ sap.ui.define([
 	 * <code>sapUiResponsivePadding--header</code>.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public

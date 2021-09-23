@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -271,6 +271,8 @@ sap.ui.define([
 
 		}
 
+		return mAriaProps;
+
 	};
 
 	/*
@@ -300,7 +302,7 @@ sap.ui.define([
 
 		if (oContainer && oContainer.getElementRenderedDomRef) {
 			return oContainer.getElementRenderedDomRef(that);
-		} else  {
+		}else {
 			return null;
 		}
 
@@ -411,7 +413,7 @@ sap.ui.define([
 
 	function _controlChanged(oChanges) {
 
-		if (oChanges.name == "required" || oChanges.name == "editable") {
+		if (oChanges.name == "required") {
 			this.invalidateLabel();
 		}
 
@@ -500,17 +502,10 @@ sap.ui.define([
 
 		oField.addDelegate(this._oFieldDelegate);
 
-		if (!this._bNoObserverChange) {
-			if (oField.getMetadata().getProperty("required")) {
-				this._oObserver.observe(oField, {
-					properties: ["required"]
-				});
-			}
-			if (oField.getMetadata().getProperty("editable")) {
-				this._oObserver.observe(oField, {
-					properties: ["editable"]
-				});
-			}
+		if (!this._bNoObserverChange && oField.getMetadata().getProperty("required")) {
+			this._oObserver.observe(oField, {
+				properties: ["required"]
+			});
 		}
 
 	}

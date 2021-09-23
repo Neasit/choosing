@@ -136,7 +136,7 @@ sap.ui.define([
 				Log.warning("Parameters have been requested but theme is not applied, yet.", "sap.ui.core.theming.Parameters");
 			}
 
-			// In some browsers (e.g. Safari) it might happen that after switching the theme or adopting the <link>'s href,
+			// In some browsers (Safari / Edge) it might happen that after switching the theme or adopting the <link>'s href,
 			// the parameters from the previous stylesheet are taken. This can be prevented by checking whether the theme is applied.
 			if (bThemeApplied && bUseInlineParameters) {
 				var $link = jQuery(document.getElementById(sId));
@@ -595,8 +595,9 @@ sap.ui.define([
 				return undefined;
 			}
 
-			if (vName instanceof Object && !Array.isArray(vName)) {
-				// async variant of Parameters.get
+			if (typeof vName === "string") {
+				aNames = [vName];
+			} else if (vName instanceof Object && !Array.isArray(vName)) {
 				if (!vName.name) {
 					return undefined;
 				}
@@ -604,20 +605,8 @@ sap.ui.define([
 				fnAsyncCallback = vName.callback;
 				aNames = typeof vName.name === "string" ? [vName.name] : vName.name;
 				bAsync = true;
-			} else {
-				// legacy variant
-				if (typeof vName === "string") {
-					aNames = [vName];
-				} else { // vName is Array
-					aNames = vName;
-				}
-
-				Log.warning(
-					"Legacy variant usage of sap.ui.core.theming.Parameters.get API detected for parameter(s): '" + aNames.join(", ") + "'. Use asynchronous variant instead.",
-					"LegacyParametersGet",
-					"sap.ui.support",
-					function() { return { type: "LegacyParametersGet" }; }
-				);
+			} else { // vName is Array
+				aNames = vName;
 			}
 
 			var resolveWithParameter, vResult;
@@ -745,7 +734,7 @@ sap.ui.define([
 				}
 			}
 
-			if (bForce && !logo) {
+			if (!!bForce && !logo) {
 				return sap.ui.resource('sap.ui.core', 'themes/base/img/1x1.gif');
 			}
 

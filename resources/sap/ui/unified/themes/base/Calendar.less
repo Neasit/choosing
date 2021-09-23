@@ -164,7 +164,7 @@ html.sap-desktop .sapUiCalHead > button.sapUiCalDsbl:focus,
 .sapUiCalYearPicker {
 	width: 14em;
 	display: inline-block;
-	width: 19rem; /* +1rem padding left and right = 320 px*/
+	width: 18rem; /* +1rem padding left and right = 320 px*/
 }
 
 .sapUiCalMonthView,
@@ -512,7 +512,7 @@ html.sapUiMedia-Std-Phone .sapUiCalHeadB0{
 .sapUiCalContent > .sapUiCalMonthPicker,
 .sapUiCalContent > .sapUiCalYearPicker{
 	top: 0;
-	padding: 2rem 0 1rem 0;
+	padding: 2rem 0.5rem 1rem 0.5rem;
 	background-color: @sapUiListBackground;
 }
 
@@ -547,23 +547,14 @@ html.sapUiMedia-Std-Phone .sapUiCalHeadB0{
 	padding-top: 2rem;
 }
 
+.sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalMonthPicker,
+.sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalYearPicker,
 .sapUiCalMulti > .sapUiCalContent > .sapUiCalMonthPicker,
 .sapUiCalMulti > .sapUiCalContent > .sapUiCalYearPicker{
 	top: 1rem;
 	bottom: auto;
 	padding: 1rem;
 	margin-left: -10rem;
-}
-
-.sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalMonthPicker,
-.sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalYearPicker,
-.sapUiSizeCompact .sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalMonthPicker,
-.sapUiSizeCompact.sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalMonthPicker,
-.sapUiSizeCompact .sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalYearPicker,
-.sapUiSizeCompact.sapUiCalWidth:not(.sapUiCalInt):not(.sapUiCalMulti) > .sapUiCalContent > .sapUiCalYearPicker {
-	box-sizing: border-box;
-	width: 100%;
-	margin-left: 0;
 }
 
 /* Day names inside day */
@@ -787,6 +778,10 @@ html.sapUiMedia-Std-Phone .sapUiCalHeadB0{
 	margin-left: 0;
 }
 
+.sapUiSizeCompact .sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalMonthPicker,
+.sapUiSizeCompact.sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalMonthPicker,
+.sapUiSizeCompact .sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalYearPicker,
+.sapUiSizeCompact.sapUiCalWidth:not(.sapUiCalInt) > .sapUiCalContent > .sapUiCalYearPicker,
 .sapUiSizeCompact .sapUiCalMulti > .sapUiCalContent > .sapUiCalMonthPicker,
 .sapUiSizeCompact.sapUiCalMulti > .sapUiCalContent > .sapUiCalMonthPicker,
 .sapUiSizeCompact .sapUiCalMulti > .sapUiCalContent > .sapUiCalYearPicker,

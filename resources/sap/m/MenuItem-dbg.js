@@ -23,7 +23,7 @@ sap.ui.define(['./library', 'sap/ui/core/Item', 'sap/ui/base/ManagedObjectObserv
 		 * @extends sap.ui.core.Item
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @public
@@ -91,17 +91,17 @@ sap.ui.define(['./library', 'sap/ui/core/Item', 'sap/ui/base/ManagedObjectObserv
 						/**
 						 * The aggregation name of the changed aggregation.
 						 */
-						aggregationName : {type: "string"},
+						aggregationName : {type: "String"},
 
 						/**
 						 * Which method changed the aggregation.
 						 */
-						methodName: {type: "string"},
+						methodName: {type: "String"},
 
 						/**
 						 * What parameters were used to change the aggregation.
 						 */
-						methodParams: {type: "object"}
+						methodParams: {type: "Object"}
 					}
 				}
 			}

@@ -5,7 +5,7 @@
     "type": "library",
     "embeds": [],
     "applicationVersion": {
-      "version": "1.92.0"
+      "version": "1.87.0"
     },
     "title": "Unified controls intended for both, mobile and desktop scenarios",
     "description": "Unified controls intended for both, mobile and desktop scenarios",
@@ -22,10 +22,10 @@
   },
   "sap.ui5": {
     "dependencies": {
-      "minUI5Version": "1.92",
+      "minUI5Version": "1.87",
       "libs": {
         "sap.ui.core": {
-          "minVersion": "1.92.0"
+          "minVersion": "1.87.0"
         }
       }
     },
@@ -38,7 +38,6 @@
           "bg",
           "ca",
           "cs",
-          "cy",
           "da",
           "de",
           "el",
@@ -52,11 +51,9 @@
           "et",
           "fi",
           "fr",
-          "fr-CA",
           "hi",
           "hr",
           "hu",
-          "id",
           "it",
           "iw",
           "ja",
@@ -69,7 +66,6 @@
           "no",
           "pl",
           "pt",
-          "pt-PT",
           "ro",
           "ru",
           "sh",

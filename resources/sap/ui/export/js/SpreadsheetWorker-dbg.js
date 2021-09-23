@@ -13,6 +13,14 @@ importScripts(origin + 'XLSXBuilder.js');
 importScripts(origin + '../provider/DataProviderBase.js');
 importScripts(origin + 'libs/JSZip3.js');
 
+// Promise implementation for IE
+if (!self.Promise) {
+	/* global ES6Promise */
+
+	importScripts(origin + 'libs/es6-promise.js');
+	ES6Promise.polyfill();
+}
+
 self.onmessage = function(oMessage) {
 	'use strict';
 
@@ -26,7 +34,7 @@ self.onmessage = function(oMessage) {
 
 	var mSettings = oMessage.data;
 	spreadsheet =
-		new XLSXBuilder(mSettings.workbook.columns, mSettings.workbook.context, mSettings.workbook.hierarchyLevel, mSettings.customizing);
+		new XLSXBuilder(mSettings.workbook.columns, mSettings.workbook.context, mSettings.workbook.hierarchyLevel, mSettings.customconfig);
 
 	provider = new DataProviderBase(mSettings);
 

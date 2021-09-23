@@ -4,6 +4,8 @@
  */
 
 sap.ui.define([
+		'jquery.sap.global',
+		'./library',
 		'sap/ui/core/Core',
 		'./ExportDialog',
 		'sap/ui/base/EventProvider',
@@ -12,10 +14,10 @@ sap.ui.define([
 		'sap/base/Log',
 		'sap/ui/export/ExportUtils'
 	],
-	function(Core, ExportDialog, EventProvider, Device, SpreadsheetExport, Log, ExportUtils) {
+	function(jQuery, library, Core, ExportDialog, EventProvider, Device, SpreadsheetExport, Log, ExportUtils) {
 		'use strict';
 
-		/* global Blob */
+		/*global Blob */
 
 		var CLASS_NAME = 'sap.ui.export.Spreadsheet';
 
@@ -74,7 +76,6 @@ sap.ui.define([
 		 *         <li><code>falseValue</code> (string) - Textual representation of a boolean type that has the value <code>false</code></li>
 		 *         <li><code>template</code> (string) - Formatting template that supports indexed placeholders within curly brackets</li>
 		 *         <li><code>inputFormat</code> (string) - Formatting template for string formatted dates</li>
-		 *         <li><code>utc</code> (boolean) - Defines whether the <code>DateTime</code> is displayed as UTC or local time</li>
 		 *         <li><code>valueMap</code> (string) - Mapping object or Map containing the values that should be mapped to a particular key</li>
 		 *         <li><code>wrap</code> (boolean) - Indicates if wrapping is enabled for this particular column</li>
 		 *      </ul>
@@ -82,7 +83,7 @@ sap.ui.define([
 		 *      <li><code>workbook.context</code> - Context object that will be applied to the generated file. It may contain the following fields:</li>
 		 *      <ul>
 		 *          <li><code>application</code> (string) - The application that creates the XLSX document (default: "SAP UI5")</li>
-		 *          <li><code>version</code> (string) - Application version that creates the XLSX document (default: "1.92.0")</li>
+		 *          <li><code>version</code> (string) - Application version that creates the XLSX document (default: "1.87.0")</li>
 		 *          <li><code>title</code> (string) - Title of the XLSX document (NOT the filename)</li>
 		 *          <li><code>modifiedBy</code> (string) - User context for the XLSX document</li>
 		 *          <li><code>sheetName</code> (string) - The label of the data sheet</li>
@@ -165,7 +166,7 @@ sap.ui.define([
 		 *       columns: aColumns,
 		 *       context: {
 		 *         application: 'Debug Test Application',
-		 *         version: '1.92.0',
+		 *         version: '1.87.0',
 		 *         title: 'Some random title',
 		 *         modifiedBy: 'John Doe',
 		 *         metaSheetName: 'Custom metadata',
@@ -250,7 +251,7 @@ sap.ui.define([
 		 * @param {Object} mSettings - Export settings
 		 * @param {Object} mSettings.workbook - Spreadsheet properties
 		 * @param {Array} mSettings.workbook.columns - Column configuration
-		 * @param {Object} [mSettings.workbook.context] - Export context that will be applied to the exported file
+		 * @param {Object} mSettings.workbook.context - Export context that will be applied to the exported file
 		 * @param {string} [mSettings.workbook.context.application] - Application that created this XLSX
 		 * @param {string} [mSettings.workbook.context.version] - Application version that was used to create this XLSX
 		 * @param {string} [mSettings.workbook.context.title] - Title of the XLSX document (NOT the file name)
@@ -277,11 +278,10 @@ sap.ui.define([
 		 * @constructor The <code>sap.ui.export.Spreadsheet</code> class allows you to export table data from a UI5 application to a spreadsheet file.
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @since 1.50
 		 * @name sap.ui.export.Spreadsheet
-		 * @extends sap.ui.base.EventProvider
 		 * @see {@link topic:2691788a08fc43f7bf269ea7c6336caf Spreadsheet}
 		 * @public
 		 */
@@ -292,7 +292,6 @@ sap.ui.define([
 
 				/* Default settings */
 				this._mSettings = {
-					customizing: {},
 					fileName: 'Export',
 					showProgress: true,
 					worker: true
@@ -305,115 +304,8 @@ sap.ui.define([
 						this._mSettings[sProperty] = sProperty !== 'dataSource' ? mSettings[sProperty] : this.processDataSource(mSettings[sProperty]);
 					}
 				}.bind(this));
-
-				this.codeListsPromise = this.codeListsPromise instanceof Promise ? this.codeListsPromise : Promise.resolve();
 			}
 		});
-
-		function addUnit(sCurrencyCode, oCurrency, mCurrencies) {
-			if (!(mCurrencies[sCurrencyCode] instanceof Object)) {
-				mCurrencies[sCurrencyCode] = {};
-			}
-
-			if (!isNaN(oCurrency.digits)) {
-				mCurrencies[sCurrencyCode].scale = oCurrency.digits;
-			}
-
-			if (!isNaN(oCurrency.UnitSpecificScale)) {
-				mCurrencies[sCurrencyCode].scale = oCurrency.UnitSpecificScale;
-			}
-
-			if (isNaN(mCurrencies[sCurrencyCode].scale)) {
-				delete mCurrencies[sCurrencyCode];
-			}
-		}
-
-		/**
-		 * Sets the default document title and sheet name to the export parameters object.
-		 *
-		 * @function
-		 * @name sap.ui.export.Spreadsheet#setDefaultExportSettings
-		 * @param {Object} mParameters - Export parameters object
-		 * @returns {Promise} Promise object
-		 * @private
-		 */
-		Spreadsheet.prototype.setDefaultExportSettings = function(mParameters) {
-			var sCurrencyCode, mCurrencySettings, mUnitSettings;
-
-			/* Initialize currency customizing for custom currencies and currency code list */
-			mCurrencySettings = mParameters.customizing.currency = {};
-
-			/* Attach custom currency configuration */
-			var oCustomCurrencies = Core.getConfiguration().getFormatSettings().getCustomCurrencies();
-
-			if (oCustomCurrencies) {
-				for (sCurrencyCode in oCustomCurrencies) {
-					addUnit(sCurrencyCode, oCustomCurrencies[sCurrencyCode], mCurrencySettings);
-				}
-			}
-
-			return this.codeListsPromise.then(function(aCodeLists) {
-				var mCurrencyCodes, mUnitsOfMeasure, sUnitCode;
-
-				if (!Array.isArray(aCodeLists)) {
-					return;
-				}
-
-				mUnitSettings = mParameters.customizing.unit = {};
-				mCurrencyCodes = aCodeLists[0];
-				mUnitsOfMeasure = aCodeLists[1];
-
-				for (sUnitCode in mCurrencyCodes) {
-					addUnit(sUnitCode, mCurrencyCodes[sUnitCode], mCurrencySettings);
-				}
-
-				for (sUnitCode in mUnitsOfMeasure) {
-					addUnit(sUnitCode, mUnitsOfMeasure[sUnitCode], mUnitSettings);
-				}
-			}).then(function() {
-
-				/* Async call to resource bundle */
-				return Core.getLibraryResourceBundle('sap.ui.export', true);
-			}).then(function(oResourceBundle) {
-				var oWorkbookContext = mParameters.workbook.context;
-
-				/**
-				 * Check if a document title and a sheet name have been defined in the 'context' settings.
-				 * Otherwise use default resource bundle properties
-				 */
-				if (!(oWorkbookContext instanceof Object)) {
-					oWorkbookContext = mParameters.workbook.context = {};
-				}
-				if (!oWorkbookContext.title) {
-					oWorkbookContext.title = oResourceBundle.getText('XLSX_DEFAULT_TITLE');
-				}
-				if (!oWorkbookContext.sheetName) {
-					oWorkbookContext.sheetName = oResourceBundle.getText('XLSX_DEFAULT_SHEETNAME');
-				}
-			});
-		};
-
-		/**
-		 * Requests the unit and currency specific code lists from
-		 * the ODataMetaModel and attaches it to the export settings.
-		 *
-		 * @param {sap.ui.model.odata.ODataMetaModel} oMetaModel - ODataMetaModel instance that is used to request service specific code lists.
-		 * @param {Object} mSettings - Export settings that will receive the code lists
-		 * @returns {Promise} The returned Promise will always resolve with an Array
-		 */
-		Spreadsheet.requestCodeLists = function(oMetaModel) {
-			if (!oMetaModel.isA(['sap.ui.model.odata.ODataMetaModel', 'sap.ui.model.odata.v4.ODataMetaModel'])) {
-				return Promise.resolve([null, null]);
-			}
-
-			return Promise.all([
-				oMetaModel.requestCurrencyCodes(),
-				oMetaModel.requestUnitsOfMeasure()
-			]).catch(function(oError) {
-				Log.warning(CLASS_NAME + ': Code lists cannot be processed due to the following error - ' + oError);
-				return Promise.resolve([null, null]);
-			});
-		};
 
 		/**
 		 * The <code>beforeExport</code> event is fired just before the export process is started.
@@ -592,9 +484,7 @@ sap.ui.define([
 		var getCountFromBinding = function(oBinding) {
 			var iCount;
 
-			if (typeof oBinding.getCount === 'function') {
-				iCount = oBinding.getCount();
-			} else if (typeof oBinding.getTotalSize === 'function') {
+			if (typeof oBinding.getTotalSize === 'function') {
 				iCount = oBinding.getTotalSize();
 			} else if (!oBinding.isA('sap.ui.model.TreeBinding') // Explicitly exclude TreeBinding because Binding#getLength is numberOfExpandedLevels dependent
 					&& typeof oBinding.isLengthFinal === 'function'
@@ -616,7 +506,7 @@ sap.ui.define([
 		 * @param {sap.ui.model.ListBinding|sap.ui.model.TreeBinding} oBinding - A subclass of <code>sap.ui.model.ListBinding</code> or <code>sap.ui.model.TreeBinding</code>
 		 * @returns {Object} - Valid data source configuration built upon the ListBinding
 		 */
-		Spreadsheet.prototype.createDataSourceFromBinding = function(oBinding) {
+		var createDataSourceFromBinding = function(oBinding) {
 			/**
 			 * Use empty array as default in case of <code>ListBinding</code> is not of type
 			 * ClientListBinding and does not provide a getDownloadUrl function
@@ -659,14 +549,6 @@ sap.ui.define([
 					count: getCountFromBinding(oBinding),
 					useBatch: bV4ODataModel || oModel.bUseBatch
 				};
-
-				/* Obtain CodeLists from ODataMetaModel */
-				if (oModel.getMetaModel()
-					&& typeof oModel.getMetaModel().requestCurrencyCodes === 'function'
-					&& typeof oModel.getMetaModel().requestUnitsOfMeasure === 'function') {
-
-					this.codeListsPromise = Spreadsheet.requestCodeLists(oModel.getMetaModel(), this._mSettings);
-				}
 			}
 
 			return oDataSource;
@@ -716,7 +598,7 @@ sap.ui.define([
 			}
 
 			if (oDataSource.isA && oDataSource.isA(['sap.ui.model.ListBinding', 'sap.ui.model.TreeBinding'])) {
-				mDataSource = this.createDataSourceFromBinding(oDataSource);
+				mDataSource = createDataSourceFromBinding(oDataSource);
 			}
 
 			return mDataSource;
@@ -824,7 +706,7 @@ sap.ui.define([
 						// Set initial status
 						progressDialog.updateStatus(0, mParameters.dataSource.count);
 
-						// Start export once the dialog is present and the code lists have been loaded
+						// Start export once the dialog is present
 						oSpreadsheet.process = SpreadsheetExport.execute(mParameters, onmessage);
 					});
 				}
@@ -847,6 +729,7 @@ sap.ui.define([
 			});
 		}
 
+
 		/**
 		 * Loads data from the backend, builds and saves the resulting spreadsheet file. You can use the <code>cancel</code> method to stop a running export.
 		 *
@@ -866,12 +749,55 @@ sap.ui.define([
 				return Promise.reject(sMessage);
 			}
 
-			return this.setDefaultExportSettings(mParameters).then(function() {
+			return this._setDefaultExportSettings(mParameters).then(function() {
 				this.fireEvent('beforeExport', {exportSettings: mParameters}, false, false);
+
+				/* Attach custom currency configuration */
+				var oCustomCurrencyConfig = Core.getConfiguration().getFormatSettings().getCustomCurrencies();
+				if (oCustomCurrencyConfig) {
+					mParameters.customconfig = mParameters.customconfig || {};
+					mParameters.customconfig.currencySettings = {
+						customCurrencies: oCustomCurrencyConfig
+					};
+				}
+
 				ExportUtils.validateSettings(mParameters);
 
 				return _createBuildPromise(this, mParameters);
 			}.bind(this));
+		};
+
+		/**
+		 * Sets the default document title and sheet name to the export parameters object.
+		 *
+		 * @function
+		 * @name sap.ui.export.Spreadsheet#_setDefaultExportSettings
+		 * @param {Object} mParameters - Export parameters object
+		 * @returns {Promise} Promise object
+		 * @private
+		 */
+		Spreadsheet.prototype._setDefaultExportSettings = function(mParameters) {
+			return new Promise(function(fnResolve) {
+				/* Async call to resource bundle */
+				var oResourceBundlePromise = Core.getLibraryResourceBundle('sap.ui.export', true);
+				oResourceBundlePromise.then(function(oResourceBundleResolve) {
+					/**
+					 * Check if a document title and a sheet name have been defined in the 'context' settings.
+					 * Otherwise use default resource bundle properties
+					 */
+					if (typeof mParameters.workbook.context !== 'object') {
+						mParameters.workbook.context = {};
+					}
+					if (!mParameters.workbook.context.title) {
+						mParameters.workbook.context.title = oResourceBundleResolve.getText('XLSX_DEFAULT_TITLE');
+					}
+					if (!mParameters.workbook.context.sheetName) {
+						mParameters.workbook.context.sheetName = oResourceBundleResolve.getText('XLSX_DEFAULT_SHEETNAME');
+					}
+
+					fnResolve();
+				});
+			});
 		};
 
 		return Spreadsheet;

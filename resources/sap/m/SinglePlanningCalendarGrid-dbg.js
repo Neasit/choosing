@@ -29,6 +29,7 @@ sap.ui.define([
 		'sap/ui/unified/DateTypeRange',
 		'sap/ui/events/KeyCodes',
 		'./SinglePlanningCalendarGridRenderer',
+		'sap/ui/Device',
 		'sap/ui/core/delegate/ItemNavigation',
 		"sap/ui/thirdparty/jquery",
 		'./PlanningCalendarLegend'
@@ -52,6 +53,7 @@ sap.ui.define([
 		DateTypeRange,
 		KeyCodes,
 		SinglePlanningCalendarGridRenderer,
+		Device,
 		ItemNavigation,
 		jQuery,
 		PlanningCalendarLegend
@@ -101,7 +103,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.92.0
+		 * @version 1.87.0
 		 *
 		 * @constructor
 		 * @private
@@ -618,8 +620,9 @@ sap.ui.define([
 						});
 					});
 
-					oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
-
+					if (!Device.browser.msie && !Device.browser.edge) {
+						oEvent.getParameter("browserEvent").dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					}
 				}.bind(this),
 
 				/**
@@ -736,7 +739,9 @@ sap.ui.define([
 						jQuery(".sapUiDnDDragging").removeClass("sapUiDnDDragging");
 					});
 
-					oBrowserEvent.dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					if (!Device.browser.msie && !Device.browser.edge) {
+						oBrowserEvent.dataTransfer.setDragImage(getResizeGhost(), 0, 0);
+					}
 
 					var oGrid = oEvent.getParameter("target"),
 						aIntervalPlaceholders = oGrid.getAggregation("_intervalPlaceholders"),
@@ -1948,7 +1953,7 @@ sap.ui.define([
 		 * those controls.
 		 *
 		 * @param {sap.ui.core.Control} oControl - The Control that gets rendered by the RenderManager
-		 * @param {object} mAriaProps - The mapping of "aria-" prefixed attributes
+		 * @param {Object} mAriaProps - The mapping of "aria-" prefixed attributes
 		 * @protected
 		 */
 		SinglePlanningCalendarGrid.prototype.enhanceAccessibilityState = function(oControl, mAriaProps) {

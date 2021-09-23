@@ -47,7 +47,6 @@ sap.ui.define(["sap/base/Log"], function(Log) {
 					if ( e.shiftKey && e.altKey && e.ctrlKey && bLeftAlt ) {
 						// invariant: when e.altKey is true, there must have been a preceding keydown with keyCode === 18, so bLeftAlt is always up-to-date
 						if ( e.keyCode === 80 ) { // 'P'
-							e.preventDefault();
 							sap.ui.require(['sap/ui/core/support/techinfo/TechnicalInfo'], function(TechnicalInfo) {
 								TechnicalInfo.open(function() {
 									var oInfo = getModuleSystemInfo();
@@ -57,7 +56,6 @@ sap.ui.define(["sap/base/Log"], function(Log) {
 								Log.error("Could not load module 'sap/ui/core/support/techinfo/TechnicalInfo':", oError);
 							});
 						} else if ( e.keyCode === 83 ) { // 'S'
-							e.preventDefault();
 							sap.ui.require(['sap/ui/core/support/Support'], function(Support) {
 								var oSupport = Support.getStub();
 								if (oSupport.getType() != Support.StubType.APPLICATION) {

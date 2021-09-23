@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @param {object} [mSettings] initial settings for the new control
 	 * @class The P13nSortPanel control is used to define settings for sorting in table personalization.
 	 * @extends sap.m.P13nPanel
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @constructor
 	 * @public
 	 * @since 1.26.0
@@ -251,7 +251,13 @@ sap.ui.define([
 
 			var aKeyFields = [];
 			var sModelName = (this.getBindingInfo("items") || {}).model;
-
+			var fGetValueOfProperty = function(sName, oContext, oItem) {
+				var oBinding = oItem.getBinding(sName);
+				if (oBinding && oContext) {
+					return oContext.getObject()[oBinding.getPath()];
+				}
+				return oItem.getMetadata().getProperty(sName) ? oItem.getProperty(sName) : oItem.getAggregation(sName);
+			};
 			this.getItems().forEach(function(oItem_) {
 				var oContext = oItem_.getBindingContext(sModelName);
 				// Update key of model (in case of 'restore' the key in model gets lost because it is overwritten by Restore Snapshot)
@@ -260,8 +266,8 @@ sap.ui.define([
 				}
 				aKeyFields.push({
 					key: oItem_.getColumnKey(),
-					text: oItem_.getText(),
-					tooltip:  oItem_.getTooltip()
+					text: fGetValueOfProperty("text", oContext, oItem_),
+					tooltip: fGetValueOfProperty("tooltip", oContext, oItem_)
 				});
 			});
 			aKeyFields.splice(0, 0, {
@@ -281,8 +287,8 @@ sap.ui.define([
 				}
 				aConditions.push({
 					key: oSortItem_.getKey(),
-					keyField: oSortItem_.getColumnKey(),
-					operation: oSortItem_.getOperation()
+					keyField: fGetValueOfProperty("columnKey", oContext, oSortItem_),
+					operation: fGetValueOfProperty("operation", oContext, oSortItem_)
 				});
 			});
 			this._oSortPanel.setConditions(aConditions);

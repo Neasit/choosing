@@ -6,13 +6,14 @@
 
 //Provides an abstraction for list bindings
 sap.ui.define([
-	"sap/base/util/deepExtend",
-	"sap/base/util/extend",
-	"sap/ui/model/ChangeReason",
-	"sap/ui/model/Context",
-	"sap/ui/model/ContextBinding"
-], function(deepExtend, extend, ChangeReason, Context, ContextBinding) {
+	'sap/ui/model/Context',
+	'sap/ui/model/ContextBinding',
+	'sap/ui/model/ChangeReason',
+	"sap/ui/thirdparty/jquery"
+],
+		function(Context, ContextBinding, ChangeReason, jQuery) {
 	"use strict";
+
 
 	/**
 	 * Constructor for odata.ODataContextBinding
@@ -27,13 +28,8 @@ sap.ui.define([
 	 * @param {string} [mParameters.expand] For the OData <code>$expand</code> query option parameter which should be included in the request
 	 * @param {string} [mParameters.select] For the OData <code>$select</code> query option parameter which should be included in the request
 	 * @param {Object<string,string>} [mParameters.custom] An optional map of custom query parameters. Custom parameters must not start with <code>$</code>.
-	 * @param {boolean} [mParameters.createPreliminaryContext]
-	 *   Whether a preliminary context will be created
-	 * @param {boolean} [mParameters.usePreliminaryContext]
-	 *   Whether a preliminary context will be used. When set to <code>true</code>, the model can
-	 *   bundle the OData calls for dependent bindings into fewer $batch requests. For more
-	 *   information, see
-	 *   {@link topic:6c47b2b39db9404582994070ec3d57a2#loio62149734b5c24507868e722fe87a75db Optimizing Dependent Bindings}
+	 * @param {boolean} [mParameters.createPreliminaryContext] Whether a preliminary Context will be created
+	 * @param {boolean} [mParameters.usePreliminaryContext] Whether a preliminary Context will be used
 	 * @abstract
 	 * @public
 	 * @alias sap.ui.model.odata.v2.ODataContextBinding
@@ -45,7 +41,7 @@ sap.ui.define([
 			ContextBinding.call(this, oModel, sPath, oContext, mParameters, oEvents);
 			this.sRefreshGroupId = undefined;
 			this.bPendingRequest = false;
-			this.mParameters = deepExtend({}, this.mParameters);
+			this.mParameters = jQuery.extend(true, {}, this.mParameters);
 			this.bCreatePreliminaryContext = this.mParameters.createPreliminaryContext || oModel.bPreliminaryContext;
 			this.bUsePreliminaryContext = this.mParameters.usePreliminaryContext || oModel.bPreliminaryContext;
 			this.mParameters.createPreliminaryContext = this.bCreatePreliminaryContext;
@@ -80,7 +76,7 @@ sap.ui.define([
 		}
 
 		// if path cannot be resolved or parent context is created, set element context to null
-		sResolvedPath = this.getResolvedPath();
+		sResolvedPath = this.oModel.resolve(this.sPath, this.oContext);
 		if (!sResolvedPath || bCreatedRelative) {
 			this.oElementContext = null;
 			this._fireChange({ reason: ChangeReason.Context });
@@ -200,7 +196,7 @@ sap.ui.define([
 		var that = this, oData, sKey, oStoredEntry, bChangeDetected = false,
 			mParameters = this.mParameters,
 			bCreatedRelative = this.isRelative() && this.oContext && this.oContext.bCreated,
-			sResolvedPath = this.getResolvedPath(),
+			sResolvedPath = this.oModel.resolve(this.sPath, this.oContext),
 			sContextPath;
 
 		if (this.bInitial || bCreatedRelative) {
@@ -226,7 +222,7 @@ sap.ui.define([
 				this.bPendingRequest = true;
 			}
 			if (this.sRefreshGroupId) {
-				mParameters = extend({},this.mParameters);
+				mParameters = jQuery.extend({},this.mParameters);
 				mParameters.groupId = this.sRefreshGroupId;
 			}
 			var oContext = this.oModel.createBindingContext(this.sPath, this.oContext, mParameters, function(oContext) {
@@ -298,7 +294,7 @@ sap.ui.define([
 
 			this.oContext = oContext;
 
-			sResolvedPath = this.getResolvedPath();
+			sResolvedPath = this.oModel.resolve(this.sPath, this.oContext);
 
 			// If path doesn't resolve or parent context is created, reset current context
 			if (!sResolvedPath || bCreated) {

@@ -9,17 +9,16 @@
  */
 sap.ui.define([
 	'sap/ui/base/DataType',
-	'sap/ui/core/mvc/ViewType', // provides sap.ui.core.mvc.ViewType
 	'./CalendarType', // provides sap.ui.core.CalendarType
 	'./Core' // provides sap.ui.getCore()
 ],
-	function(DataType, ViewType) {
+	function(DataType) {
 	"use strict";
 
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.ui.core",
-		version: "1.92.0",
+		version: "1.87.0",
 		designtime: "sap/ui/core/designtime/library.designtime",
 		types: [
 
@@ -84,9 +83,7 @@ sap.ui.define([
 			"sap.ui.core.dnd.IDragInfo",
 			"sap.ui.core.dnd.IDropInfo",
 			"sap.ui.core.IDScope",
-			"sap.ui.core.ITitleContent",
-			"sap.ui.core.IAsyncContentCreation",
-			"sap.ui.core.IPlaceholderSupport"
+			"sap.ui.core.ITitleContent"
 		],
 		controls: [
 			"sap.ui.core.ComponentContainer",
@@ -159,8 +156,7 @@ sap.ui.define([
 	 * @namespace
 	 * @alias sap.ui.core
 	 * @author SAP SE
-	 * @version 1.92.0
-	 * @since 0.8
+	 * @version 1.87.0
 	 * @public
 	 */
 	var thisLib = sap.ui.core;
@@ -1247,21 +1243,18 @@ sap.ui.define([
 		/**
 		 * Indication Color 6
 		 * @public
-		 * @since 1.75
 		 */
 		Indication06 : "Indication06",
 
 		/**
 		 * Indication Color 7
 		 * @public
-		 * @since 1.75
 		 */
 		Indication07 : "Indication07",
 
 		/**
 		 * Indication Color 8
 		 * @public
-		 * @since 1.75
 		 */
 		Indication08 : "Indication08"
 	};
@@ -1511,7 +1504,7 @@ sap.ui.define([
 	/**
 	 * Sort order of a column.
 	 *
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @enum {string}
 	 * @public
 	 * @since 1.61.0
@@ -1686,49 +1679,6 @@ sap.ui.define([
 	 */
 
 	/**
-	 * Marker interface for subclasses of <code>sap.ui.core.UIComponent</code>.
-	 *
-	 * Implementing this interface allows a {@link sap.ui.core.UIComponent} to be created fully asynchronously.
-	 * This interface will implicitily set the component's rootView and router configuration to async.
-	 * Nested views will also be handled asynchronously.
-	 * Additionally the error handling during the processing of views is stricter and will fail if a view definition contains
-	 * errors, e.g. broken binding strings.
-	 *
-	 * <b>Note:</b> Nested components (via {@link sap.ui.core.ComponentContainer}) are not handled asynchronously by default.
-	 *
-	 * When implementing this interface the {@link sap.ui.core.Component.create Component.create} factory's result Promise
-	 * will resolve once the defined <code>rootView</code> is fully processed.
-	 *
-	 * An asynchronous component can also return a Promise in its {@link sap.ui.core.UIComponent#createContent createContent} function.
-	 * This Promise will also be chained into the {@link sap.ui.core.Component.create Component.create} factory's result Promise.
-	 *
-	 * See {@link sap.ui.core.UIComponent#createContent} for more details and usage samples.
-	 *
-	 * @name sap.ui.core.IAsyncContentCreation
-	 * @interface
-	 * @public
-	 * @since 1.89.0
-	 */
-
-	/**
-	 * Marker interface for container controls.
-	 *
-	 * Implementing this interface allows a container control to display a {@link sap.ui.core.Placeholder}.
-	 * This requires the container control to implement the <code>showPlaceholder</code> and <code>hidePlaceholder</code>
-	 * methods.
-	 *
-	 * Optionally, the <code>needPlaceholder</code> method can be implemented to defined, whether a placeholder is needed or not.
-	 * If implemented, this method must return a <code>boolean</code>. Depending on the return value, <code>showPlaceholder</code>
-	 * will be called or not.
-	 *
-	 * @name sap.ui.core.IPlaceholderSupport
-	 * @interface
-	 * @public
-	 * @since 1.92.0
-	 */
-
-	/**
-
 	 * Marker interface for controls that can serve as a context menu.
 	 *
 	 * Implementation of this interface should implement the <code>openAsContextMenu</code> method.
@@ -1737,18 +1687,6 @@ sap.ui.define([
 	 * @interface
 	 * @public
 	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
-	 */
-
-	/**
-	 * Opens the control by given opener ref.
-	 * @param {jQuery.Event | object} oEvent
-	 *   An <code>oncontextmenu</code> event object or an object with properties left, top, offsetX, offsetY
-	 * @param {sap.ui.core.Element|HTMLElement} oOpenerRef
-	 *   The element which will get the focus back again after the menu was closed
-	 *
-	 * @public
-	 * @function
-	 * @name sap.ui.core.IContextMenu.openAsContextMenu
 	 */
 
 	/**
@@ -1793,6 +1731,16 @@ sap.ui.define([
 	 */
 
 	/**
+	 * Opens the control by given opener ref.
+	 * @param {string} oEvent oncontextmenu event
+	 * @param {sap.ui.core.Element|Element} oOpenerRef The element which will get the focus back again after the menu was closed.
+	 *
+	 * @public
+	 * @function
+	 * @name sap.ui.core.IContextMenu.openAsContextMenu
+	 */
+
+	/**
 	 * Marker interface for controls that can be used as content of <code>sap.ui.layout.form.Form</code>
 	 * or <code>sap.ui.layout.form.SimpleForm</code>.
 	 *
@@ -1802,6 +1750,7 @@ sap.ui.define([
 	 * @since 1.48.0
 	 * @name sap.ui.core.IFormContent
 	 * @interface
+	 * @extends sap.ui.core.Control
 	 * @public
 	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
 	 */
@@ -1847,6 +1796,7 @@ sap.ui.define([
 	 * @since 1.86.0
 	 * @name sap.ui.core.ISemanticFormContent
 	 * @interface
+	 * @extends sap.ui.core.Control
 	 * @public
 	 * @experimental As of version 1.86
 	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
@@ -2124,6 +2074,7 @@ sap.ui.define([
 		None : "None"
 	};
 
+
 	thisLib.mvc = thisLib.mvc || {};
 
 	/**
@@ -2131,10 +2082,42 @@ sap.ui.define([
 	 *
 	 * @enum {string}
 	 * @public
-	 * @alias sap.ui.core.mvc.ViewType
 	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
 	 */
-	thisLib.mvc.ViewType = ViewType;
+	thisLib.mvc.ViewType = {
+
+		/**
+		 * JSON View
+		 * @public
+		 */
+		JSON : "JSON",
+
+		/**
+		 * XML view
+		 * @public
+		 */
+		XML : "XML",
+
+		/**
+		 * HTML view
+		 * @public
+		 */
+		HTML : "HTML",
+
+		/**
+		 * JS View
+		 * @public
+		 */
+		JS : "JS",
+
+		/**
+		 * Template View
+		 * @public
+		 */
+		Template : "Template"
+
+	};
+
 
 	thisLib.routing = thisLib.routing || {};
 
@@ -2208,6 +2191,7 @@ sap.ui.define([
 		Container : "Container"
 
 	};
+
 
 	/**
 	 * Enumeration for different mode behaviors of the <code>InvisibleMessage</code>.

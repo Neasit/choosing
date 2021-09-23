@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-/**
+ /**
   * @typedef {Object} sap.m.Title
   * @typedef {Object} sap.ui.core.Title
   */
@@ -58,8 +58,8 @@ sap.ui.define([
 	 * are overridden: <code>text</code>, <code>textAlign</code>, <code>textDirection</code>, or not used: <code>wrapping</code>,
 	 * <code>wrappingType</code>. The <code>title</code> association will be ignored too.
 	 *
-	 * If the <code>title</code> association is used, <code>text</code>, <code>level</code> and <code>tooltip</code> properties
-	 * will override the corresponding properties of the <code>sap.m.Title</code> control.
+	 * If the <code>title</code> association is used, <code>text</code>, <code>level</code> and <code>tooltip<code> properties
+	 * will override the corresponding properties of the <>sap.m.Title</code> control.
 	 *
  	 * <h3>Usage</h3>
  	 * <h4>When to use</h4>
@@ -77,7 +77,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IShrinkable
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @since 1.27.0
 	 *
 	 * @constructor
@@ -197,8 +197,10 @@ sap.ui.define([
 	/**
 	 * Gets the currently set title.
 	 *
+	 * @name sap.m.Title._getTitle
+	 * @method
 	 * @private
-	 * @returns {sap.ui.core.Title} Instance of the associated sap.ui.core.Title if exists.
+	 * @returns {sap.m.Title} Instance of the associated sap.ui.core.Title if exists.
 	 */
 	Title.prototype._getTitle = function(){
 		var sTitle = this.getTitle();
@@ -216,6 +218,8 @@ sap.ui.define([
 	/**
 	 * Title on change handler.
 	 *
+	 * @name sap.m.Title._onTitleChanged
+	 * @method
 	 * @private
 	 */
 	Title.prototype._onTitleChanged = function(){

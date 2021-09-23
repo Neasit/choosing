@@ -160,7 +160,7 @@ sap.ui.define([
 	 *   The value for the JSON
 	 */
 	_MetadataConverter.prototype.getAnnotationValue = function (sType, sValue) {
-		var vValue, aValues, i;
+		var i, vValue, aValues;
 
 		switch (sType) {
 			case "AnnotationPath":
@@ -213,8 +213,8 @@ sap.ui.define([
 	_MetadataConverter.prototype.getInlineAnnotationValue = function (oElement) {
 		var oAttribute,
 			oAttributeList = oElement.attributes,
-			vValue,
-			i;
+			i,
+			vValue;
 
 		// check the last attribute first, this is typically the one with the annotation value
 		for (i = oAttributeList.length - 1; i >= 0; i -= 1) {
@@ -425,10 +425,10 @@ sap.ui.define([
 	 * @returns {object} The value for the JSON
 	 */
 	_MetadataConverter.prototype.postProcessRecord = function (oElement, aResult) {
-		var oPropertyValue,
+		var i,
+			oPropertyValue,
 			oResult = this.oAnnotatable.target,
-			oType = oElement.getAttribute("Type"),
-			i;
+			oType = oElement.getAttribute("Type");
 
 		if (oType) {
 			oResult.$Type = this.resolveAlias(oType);
@@ -605,11 +605,11 @@ sap.ui.define([
 	/**
 	 * Resolves an alias in the given qualified name or full name.
 	 *
-	 * @param {string} [sName] The name
+	 * @param {string} sName The name
 	 * @returns {string} The name with the alias resolved (if there was one)
 	 */
 	_MetadataConverter.prototype.resolveAlias = function (sName) {
-		var iDot = sName ? sName.indexOf(".") : -1,
+		var iDot = sName.indexOf("."),
 			sNamespace;
 
 		if (iDot >= 0 && !sName.includes(".", iDot + 1)) { // if there is exactly one dot
@@ -650,7 +650,7 @@ sap.ui.define([
 	 * Resolves all aliases in the given path.
 	 *
 	 * @param {string} sPath The path
-	 * @param {boolean} [bHandleParentheses]
+	 * @param {boolean} [bHandleParentheses=false]
 	 *   Whether parentheses in a path segment should be handled specially for alias replacement,
 	 *   for example to address a bound action's specific overload
 	 * @returns {string} The path with aliases resolved (if there were any)
@@ -729,7 +729,7 @@ sap.ui.define([
 	 *     known children.
 	 *   * All other properties are known child elements, the value is the configuration for
 	 *     that child element.
-	 * @param {boolean} [bUseProcessElementHook]
+	 * @param {boolean} [bUseProcessElementHook=false]
 	 *   If true, the hook processElement at the aggregate is used, otherwise the processor is
 	 *   called directly
 	 * @returns {any}
@@ -741,13 +741,14 @@ sap.ui.define([
 			oChildList = oElement.childNodes,
 			oChildNode,
 			vChildResult,
+			i,
 			aIncludes,
+			j,
 			sName,
 			sPreviousNamespace = this.xmlns,
 			vResult,
 			aResult = [],
-			sXmlNamespace = oConfig.__xmlns || this.xmlns,
-			i, j;
+			sXmlNamespace = oConfig.__xmlns || this.xmlns;
 
 		if (sXmlNamespace && sXmlNamespace !== oElement.namespaceURI) {
 			// Ignore this element because the namespace is not as expected

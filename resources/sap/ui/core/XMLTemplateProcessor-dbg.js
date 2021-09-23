@@ -11,10 +11,7 @@ sap.ui.define([
 	'sap/ui/base/DataType',
 	'sap/ui/base/ManagedObject',
 	'sap/ui/core/CustomData',
-	'sap/ui/core/Component',
 	'./mvc/View',
-	'./mvc/ViewType',
-	'./mvc/XMLProcessingMode',
 	'./mvc/EventHandlerResolver',
 	'./ExtensionPoint',
 	'./StashedControlSupport',
@@ -33,10 +30,7 @@ function(
 	DataType,
 	ManagedObject,
 	CustomData,
-	Component,
 	View,
-	ViewType,
-	XMLProcessingMode,
 	EventHandlerResolver,
 	ExtensionPoint,
 	StashedControlSupport,
@@ -86,8 +80,8 @@ function(
 	}
 
 	function localName(xmlNode) {
-		// localName for standard browsers, nodeName in the absence of namespaces
-		return xmlNode.localName || xmlNode.nodeName;
+		// localName for standard browsers, baseName for IE, nodeName in the absence of namespaces
+		return xmlNode.localName || xmlNode.baseName || xmlNode.nodeName;
 	}
 
 	/**
@@ -98,13 +92,6 @@ function(
 	 * @private
 	 */
 	var XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
-
-	/**
-	 * The official XMLNS namespace. Must only be used for xmlns:* attributes.
-	 * @const
-	 * @private
-	 */
-	var XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
 
 	/**
 	 * The official SVG namespace. Can be used to embed SVG in an XMLView.
@@ -158,7 +145,7 @@ function(
 	 * @const
 	 * @private
 	 */
-	var UI5_INTERNAL_NAMESPACE = "http://schemas.sap.com/sapui5/extension/sap.ui.core.Internal/1";
+	var ID_MARKER_NAMESPACE = "http://schemas.sap.com/sapui5/extension/sap.ui.core.Internal/1";
 
 	/**
 	 * A prefix for XML namespaces that are reserved for XMLPreprocessor extensions.
@@ -511,18 +498,6 @@ function(
 		return pProvider;
 	}
 
-	function findNamespacePrefix(node, namespace, prefix) {
-		var sCandidate = prefix;
-		for (var iCount = 0; iCount < 100; iCount++) {
-			var sRegisteredNamespace = node.lookupNamespaceURI(sCandidate);
-			if (sRegisteredNamespace == null || sRegisteredNamespace === namespace) {
-				return sCandidate;
-			}
-			sCandidate = prefix + iCount;
-		}
-		throw new Error("Could not find an unused namespace prefix after 100 tries, giving up");
-	}
-
 	/**
 	 * Parses a complete XML template definition (full node hierarchy)
 	 *
@@ -531,8 +506,12 @@ function(
 	 * @param {boolean} bEnrichFullIds Flag for running in a mode which only resolves the ids and writes them back
 	 *     to the xml source.
 	 * @param {boolean} bAsync Whether or not to perform the template processing asynchronously.
-	 *     The async processing will only be active in conjunction with the internal XML processing mode set
-	 *     to <code>XMLProcessingMode.Sequential</code> or <code>XMLProcessingMode.SequentialLegacy</code>.
+	 *     The async processing will only be active in conjunction with the internal XML processing mode set to <code>sequential</code>.
+	 *     The processing mode "sequential" is implicitly activated for the following type of async views:
+	 *      a) root views in the manifest
+	 *      b) XMLViews created with the (XML)View.create factory
+	 *      c) XMLViews used via routing
+	 *     Additionally all declarative nested subviews (and in future: fragments) are also processed asynchronously.
 	 * @param {object} oParseConfig parse configuration options, e.g. settings pre-processor
 	 *
 	 * @return {Promise} with an array containing Controls and/or plain HTML element strings
@@ -541,15 +520,10 @@ function(
 		// the output of the template parsing, containing strings and promises which resolve to control or control arrays
 		// later this intermediate state with promises gets resolved to a flat array containing only strings and controls
 		var aResult = [],
-			sInternalPrefix = findNamespacePrefix(xmlNode, UI5_INTERNAL_NAMESPACE, "__ui5"),
 			pResultChain = parseAndLoadRequireContext(xmlNode, bAsync) || SyncPromise.resolve();
 
-		// define internal namespace on root node
-		xmlNode.setAttributeNS(XMLNS_NAMESPACE, "xmlns:" + sInternalPrefix, UI5_INTERNAL_NAMESPACE);
-
-		bAsync = bAsync && !!oView._sProcessingMode;
-		Log.debug("XML processing mode is " + (oView._sProcessingMode || "default") + ".", "", "XMLTemplateProcessor");
-		Log.debug("XML will be processed " + bAsync ? "asynchronously" : "synchronously" + ".", "", "XMLTemplateProcessor");
+		bAsync = bAsync && oView._sProcessingMode === "sequential";
+		Log.debug("XML processing mode is " + (bAsync ? "sequential" : "default"), "", "XMLTemplateProcessor");
 
 		var bDesignMode = sap.ui.getCore().getConfiguration().getDesignMode();
 		if (bDesignMode) {
@@ -886,8 +860,9 @@ function(
 					// whereas for Fragments the actual Fragment's name is required - oView can be either View or Fragment
 					var oContainer = oView instanceof View ? oView._oContainingView : oView;
 
-					// The ExtensionPoint module is actually the sap.ui.extensionpoint function.
-					// We still call _factory for skipping the deprecation warning.
+					// @evo-todo: The factory call needs to be refactored into a proper async/sync switch.
+					// @evo-todo: The ExtensionPoint module is actually the sap.ui.extensionpoint function.
+					//            We still call _factory for skipping the deprecation warning for now.
 					var fnExtensionPointFactory = ExtensionPoint._factory.bind(null, oContainer, node.getAttribute("name"), function() {
 						// create extensionpoint with callback function for defaultContent - will only be executed if there is no customizing configured or if customizing is disabled
 						var pChild = SyncPromise.resolve();
@@ -909,7 +884,7 @@ function(
 							});
 							return aDefaultContent;
 						});
-					}, undefined /* [targetControl] */, undefined /* [aggregationName] */, bAsync);
+					});
 
 					return SyncPromise.resolve(oView.fnScopedRunWithOwner ? oView.fnScopedRunWithOwner(fnExtensionPointFactory) : fnExtensionPointFactory());
 				}
@@ -982,7 +957,7 @@ function(
 					for (var i = 0; i < node.attributes.length; i++) {
 						var attr = node.attributes[i],
 							sName = attr.name,
-							sNamespace = attr.namespaceURI,
+							sNamespace,
 							oInfo = mKnownSettings[sName],
 							sValue = attr.value;
 
@@ -1040,19 +1015,14 @@ function(
 								var sLocalName = localName(attr);
 								aCustomData.push(new CustomData({
 									key:sLocalName,
-									value:parseScalarType("any", sValue, sLocalName, oView._oContainingView.oController, oRequireModules)
+									value:parseScalarType("any", sValue, sLocalName, oView._oContainingView.oController)
 								}));
 							} else if (sNamespace === SUPPORT_INFO_NAMESPACE) {
 								sSupportData = sValue;
 							} else if (sNamespace && sNamespace.startsWith(PREPROCESSOR_NAMESPACE_PREFIX)) {
 								Log.debug(oView + ": XMLView parser ignored preprocessor attribute '" + sName + "' (value: '" + sValue + "')");
-							} else if (sNamespace === UI5_INTERNAL_NAMESPACE && localName(attr) === "invisible") {
-								oInfo = mKnownSettings.visible;
-								if (oInfo && oInfo._iKind === 0 && oInfo.type === "boolean") {
-									mSettings.visible = false;
-								}
 							} else if (sNamespace === CORE_NAMESPACE
-									   || sNamespace === UI5_INTERNAL_NAMESPACE
+									   || sNamespace === ID_MARKER_NAMESPACE
 									   || sName.startsWith("xmlns:") ) {
 								// ignore namespaced attributes that are handled by the XMLTP itself
 							} else {
@@ -1155,31 +1125,6 @@ function(
 				}
 
 				return oRequireModules;
-			}).catch(function(oError) {
-				// Errors caught here are expected UI5 issues, e.g. DataType errors, broken BindingSyntax, missing event handler functions etc.
-				// we enrich the error message with XML information, e.g. the node causing the issue
-				if (!oError.isEnriched) {
-					var sType = oView.getMetadata().isA("sap.ui.core.mvc.View") ? "View" : "Fragment";
-					var sNodeSerialization = node && node.cloneNode(false).outerHTML;
-					// Logging the error like this cuts away the stack trace,
-					// but provides better information for applications.
-					// For Framework debugging, we would have to look at the error object anyway.
-					oError = new Error(
-						"Error found in " + sType + " (id: '" + oView.getId() + "').\nXML node: '" + sNodeSerialization + "':\n" +
-						oError
-					);
-					oError.isEnriched = true;
-
-					// TODO: Can be enriched with additional info for a support rule (not yet implemented)
-					Log.error(oError);
-				}
-
-				// [COMPATIBILITY]
-				// sync: we just log the error and keep on processing
-				// asnyc: throw the error, so the parseTempate Promise will reject
-				if (bAsync && oView._sProcessingMode !== XMLProcessingMode.SequentialLegacy) {
-					throw oError;
-				}
 			});
 
 			/**
@@ -1253,8 +1198,7 @@ function(
 
 							// ...and mark the stashed node as invisible.
 							// The original visibility value is still scoped in the clone (visible could be bound, yet stashed controls are never visible)
-							childNode.removeAttribute("visible");
-							setUI5Attribute(childNode, "invisible");
+							childNode.setAttribute("visible", "false");
 						}
 
 						// whether the created controls will be the template for a list binding
@@ -1340,40 +1284,22 @@ function(
 				var vNewControlInstance;
 				var pProvider = SyncPromise.resolve();
 				var pInstanceCreated = SyncPromise.resolve();
-				var sType = node.getAttribute("type");
-
-				var oOwnerComponent = Component.getOwnerComponentFor(oView);
-				var bIsAsyncComponent = oOwnerComponent && oOwnerComponent.isA("sap.ui.core.IAsyncContentCreation");
 
 				if (bEnrichFullIds && node.hasAttribute("id")) {
-					setId(oView, node);
+						setId(oView, node);
 				} else if (!bEnrichFullIds) {
-					if (oClass.getMetadata().isA("sap.ui.core.mvc.View")) {
+					// Pass processingMode to Fragments only
+					if (oClass.getMetadata().isA("sap.ui.core.Fragment") && node.getAttribute("type") !== "JS" && oView._sProcessingMode === "sequential") {
+						mSettings.processingMode = "sequential";
+					}
+
+					if (View.prototype.isPrototypeOf(oClass.prototype) && typeof oClass._sType === "string") {
 						var fnCreateViewInstance = function () {
-							if (!oClass._sType && !mSettings.viewName) {
-								// Add module view name
-								mSettings.viewName = "module:" + oClass.getMetadata().getName().replace(/\./g, "/");
+							// Pass processingMode to nested XMLViews
+							if (oClass.getMetadata().isA("sap.ui.core.mvc.XMLView") && oView._sProcessingMode === "sequential") {
+								mSettings.processingMode = "sequential";
 							}
-
-							// If the view is owned by an async-component we can propagate the asynchronous creation behavior to the nested views
-							if (bIsAsyncComponent && bAsync) {
-								// legacy check: async=false is not supported with an async-component
-								if (mSettings.async === false) {
-									throw new Error(
-										"A nested view contained in a Component implementing 'sap.ui.core.IAsyncContentCreation' is processed asynchronously by default and cannot be processed synchronously.\n" +
-										"Affected Component '" + oOwnerComponent.getMetadata().getComponentName() + "' and View '" + mSettings.viewName + "'."
-									);
-								}
-
-								mSettings.type = oClass._sType || sType;
-								pInstanceCreated = View.create(mSettings);
-							} else {
-								// Pass processingMode to nested XMLViews
-								if (oClass.getMetadata().isA("sap.ui.core.mvc.XMLView") && oView._sProcessingMode) {
-									mSettings.processingMode = oView._sProcessingMode;
-								}
-								return View._create(mSettings, undefined, oClass._sType || sType);
-							}
+							return View._legacyCreate(mSettings, undefined, oClass._sType);
 						};
 
 						// for views having a factory function defined we use the factory function!
@@ -1386,16 +1312,6 @@ function(
 						}
 
 					} else if (oClass.getMetadata().isA("sap.ui.core.Fragment") && bAsync) {
-
-						// Pass processingMode to any fragments except JS
-						// XML / HTML fragments: might include nested views / fragments,
-						//  which are processed asynchronously. Therefore the processingMode is needed
-						// JS fragments: might include synchronously or asynchronously created content. Nevertheless, the execution of the
-						//  content creation is not in the scope of the xml template processor, therefore the processing mode is not needed
-						if (sType !== ViewType.JS) {
-							mSettings.processingMode = oView._sProcessingMode;
-						}
-
 						var sFragmentPath = "sap/ui/core/Fragment";
 						var Fragment = sap.ui.require(sFragmentPath);
 
@@ -1420,7 +1336,6 @@ function(
 
 							// the scoped runWithOwner function is only during ASYNC processing!
 							if (oView.fnScopedRunWithOwner) {
-
 								oInstance = oView.fnScopedRunWithOwner(function () {
 									var oInstance = new oClass(mSettings);
 									return oInstance;
@@ -1442,8 +1357,8 @@ function(
 						}
 					}
 				}
-				return pInstanceCreated.then(function (vContent) {
-					return vContent || vNewControlInstance;
+				return pInstanceCreated.then(function (aFragmentContent) {
+					return aFragmentContent || vNewControlInstance;
 				}).then(function (vFinalInstance) {
 					if (sStyleClasses && vFinalInstance.addStyleClass) {
 						// Elements do not have a style class!
@@ -1496,13 +1411,8 @@ function(
 
 		}
 
-		function setUI5Attribute(node, name) {
-			var sPrefix = findNamespacePrefix(node, UI5_INTERNAL_NAMESPACE, sInternalPrefix);
-			node.setAttributeNS(UI5_INTERNAL_NAMESPACE, sPrefix + ":" + name, "true");
-		}
-
 		function getId(oView, xmlNode, sId) {
-			if (xmlNode.getAttributeNS(UI5_INTERNAL_NAMESPACE, "id")) {
+			if (xmlNode.getAttributeNS(ID_MARKER_NAMESPACE, "id")) {
 				return xmlNode.getAttribute("id");
 			} else {
 				return createId(sId ? sId : xmlNode.getAttribute("id"));
@@ -1511,7 +1421,7 @@ function(
 
 		function setId(oView, xmlNode) {
 			xmlNode.setAttribute("id", createId(xmlNode.getAttribute("id")));
-			setUI5Attribute(xmlNode, "id");
+			xmlNode.setAttributeNS(ID_MARKER_NAMESPACE, "id", true);
 		}
 
 	}

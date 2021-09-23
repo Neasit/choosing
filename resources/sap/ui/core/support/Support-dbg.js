@@ -5,10 +5,11 @@
  */
 
 // Provides the basic UI5 support functionality
-sap.ui.define(['sap/ui/base/EventProvider', './Plugin', "sap/base/util/UriParameters", "sap/ui/thirdparty/jquery", "sap/base/Log", "sap/base/util/deepExtend", "sap/base/security/encodeURL"],
+sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/base/util/UriParameters", "sap/ui/thirdparty/jquery", "sap/base/Log", "sap/base/util/deepExtend", "sap/base/security/encodeURL"],
 	function(
 		EventProvider,
 		Plugin,
+		Device,
 		UriParameters,
 		jQuery,
 		Log,
@@ -26,7 +27,7 @@ sap.ui.define(['sap/ui/base/EventProvider', './Plugin', "sap/base/util/UriParame
 	 * @class This class provides the support tool functionality of UI5. This class is internal and all its functions must not be used by an application.
 	 *
 	 * @extends sap.ui.base.EventProvider
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @private
 	 * @alias sap.ui.core.support.Support
 	 */
@@ -278,7 +279,13 @@ sap.ui.define(['sap/ui/base/EventProvider', './Plugin', "sap/base/util/UriParame
 		}
 
 		mParams = mParams ? mParams : {};
-		var oData = {"eventId": sEventId, "params": mParams};
+
+		var mParamsLocal = mParams;
+		if ( Device.browser.msie ) {// TODO remove after the end of support for Internet Explorer
+			mParamsLocal = {};
+			deepExtend(mParamsLocal, mParams);
+		}
+		var oData = {"eventId": sEventId, "params": mParamsLocal};
 		var sData = "SAPUI5SupportTool*" + JSON.stringify(oData);
 		this._oRemoteWindow.postMessage(sData, this._sRemoteOrigin);
 	};

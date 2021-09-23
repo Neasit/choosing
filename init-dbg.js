@@ -16,7 +16,7 @@ window.addEventListener('load', function () {
       oRegestration = false;
     }
 
-    navigator.serviceWorker.register('/service-worker.js').then(function (oSW) {
+    navigator.serviceWorker.register('./service-worker.js').then(function (oSW) {
       if (!oRegestration) {
         window.location.reload();
       }

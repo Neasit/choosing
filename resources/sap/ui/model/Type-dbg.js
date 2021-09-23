@@ -19,7 +19,7 @@ sap.ui.define(['sap/ui/base/Object'],
 	 *
 	 * @extends sap.ui.base.Object
 	 * @public
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 */
 	var Type = BaseObject.extend("sap.ui.model.Type", /** @lends sap.ui.model.Type.prototype */ {
 
@@ -34,9 +34,10 @@ sap.ui.define(['sap/ui/base/Object'],
 	});
 
 	/**
-	 * Types don't have a facade and therefore return themselves as their interface.
+	 * Overrides the {@link sap.ui.base.Object#getInterface} to avoid creating an
+	 * <code>Interface</code> object for types.
 	 *
-	 * @returns {this} <code>this</code> as there's no facade for types
+	 * @returns {object} this
 	 * @public
 	 */
 	Type.prototype.getInterface = function () {

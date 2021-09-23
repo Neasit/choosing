@@ -50,7 +50,7 @@ function(
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -93,7 +93,7 @@ function(
 			 * The buttons of the SegmentedButton control. The items set in this aggregation are used as an interface for the buttons displayed by the control. Only the properties ID, icon, text, enabled and textDirections of the Button control are evaluated. Setting other properties of the button will have no effect. Alternatively, you can use the createButton method to add buttons.
 			 * @deprecated as of 1.28.0, replaced by <code>items</code> aggregation
 			 */
-			buttons : {type : "sap.m.Button", multiple : true, singularName : "button", deprecated: true},
+			buttons : {type : "sap.m.Button", multiple : true, singularName : "button"},
 
 			/**
 			 * Aggregation of items to be displayed. The items set in this aggregation are used as an interface for the buttons displayed by the control.
@@ -999,8 +999,8 @@ function(
 	SegmentedButton.prototype._getIconAriaLabel = function (oIcon) {
 		var oIconInfo = IconPool.getIconInfo(oIcon.getSrc()),
 			sResult = "";
-		if (oIconInfo) {
-			sResult = oIconInfo.text ? oIconInfo.text : oIconInfo.name;
+		if (oIconInfo && oIconInfo.name) {
+			sResult = oIconInfo.name;
 		}
 		return sResult;
 	};

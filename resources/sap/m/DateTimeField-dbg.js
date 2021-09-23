@@ -52,7 +52,7 @@ sap.ui.define([
 	 * @extends sap.m.InputBase
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -204,7 +204,7 @@ sap.ui.define([
 
 		this.updateDomValue(this._formatValue(this.getDateValue()));
 
-		this.setPlaceholder(this._getPlaceholder());
+		this._updateDomPlaceholder(this._getPlaceholder());
 
 		return this;
 	};
@@ -254,9 +254,6 @@ sap.ui.define([
 	DateTimeField.prototype._parseValue = function (sValue, bDisplayFormat) {
 		var oBinding = this.getBinding("value"),
 			oBindingType = oBinding && oBinding.getType && oBinding.getType(),
-			// The internal "_getFormatter" method gets called now if there is a binding to the "value" property with
-			// a supported binding type. As a result all needed internal control variables are created.
-			oFormatter = this._getFormatter(bDisplayFormat),
 			oFormatOptions,
 			oDateLocal,
 			oDate;
@@ -291,7 +288,7 @@ sap.ui.define([
 			return oDate;
 		}
 
-		return oFormatter.parse(sValue);
+		return this._getFormatter(bDisplayFormat).parse(sValue);
 	};
 
 	/* The bValueFormat variable defines whether the result is in valueFormat(true) or displayFormat(false) */
@@ -461,6 +458,19 @@ sap.ui.define([
 	// because Date object in the test is different than the Date object in the application (due to the iframe).
 	DateTimeField.prototype._isValidDate = function (oDate) {
 		return !oDate || Object.prototype.toString.call(oDate) === "[object Date]";
+	};
+
+
+	/**
+	 * Updates the placeholder of the input element with a given valye
+	 * @param {string} sValue the new value
+	 * @private
+	 * @returns void
+	 */
+	DateTimeField.prototype._updateDomPlaceholder = function (sValue) {
+		if (this.getDomRef()) {
+			this._$input.attr("placeholder", sValue);
+		}
 	};
 
 	return DateTimeField;

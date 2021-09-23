@@ -13,8 +13,7 @@ sap.ui.define([
 	'sap/base/Log',
 	'sap/base/util/LoaderExtensions',
 	'sap/base/util/merge',
-	'sap/ui/core/Component',
-	'sap/ui/core/mvc/XMLProcessingMode'
+	'sap/ui/core/Component'
 ],
 function(
 	jQuery,
@@ -25,8 +24,7 @@ function(
 	Log,
 	LoaderExtensions,
 	merge,
-	Component,
-	XMLProcessingMode
+	Component
 ) {
 	"use strict";
 
@@ -60,7 +58,7 @@ function(
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @public
 	 * @alias sap.ui.core.Fragment
 	 */
@@ -114,7 +112,7 @@ function(
 				 * The processing mode is not used by the Fragment itself.
 				 * It is only relevant for XMLViews nested within the Fragment.
 				 */
-				processingMode: { type: 'sap.ui.core.mvc.XMLProcessingMode', visibility: 'hidden' }
+				processingMode: { type: 'string', visibility: 'hidden' }
 			}
 		},
 
@@ -144,7 +142,7 @@ function(
 	 * @public
 	 */
 	Fragment.registerType = function(sType, oFragmentImpl) {
-		if (typeof (sType) !== "string") {
+		if (!typeof (sType) === "string") {
 			Log.error("Ignoring non-string Fragment type: " + sType);
 			return;
 		}
@@ -260,8 +258,8 @@ function(
 	 * This method only adds a prefix when an ID was explicitly given when instantiating this Fragment.
 	 * If the ID was generated, it returns the unmodified given ID.
 	 *
-	 * @param {string} sId The given id
-	 * @return {string} prefixed id The prefixed id or the given id
+	 * @param {string} sId
+	 * @return {string} prefixed id
 	 */
 	Fragment.prototype.createId = function(sId) {
 		var id = this._sExplicitId ? this._sExplicitId + "--" + sId : sId; // no ID Prefixing by Fragments! This is called by the template parsers, but only if there is not a View which defines the prefix.
@@ -279,7 +277,7 @@ function(
 	/**
 	 * Always return true in case of fragment
 	 *
-	 * @returns {boolean} <code>true</code>
+	 * @returns {boolean}
 	 * @private
 	 */
 	Fragment.prototype.isSubView = function(){
@@ -354,15 +352,6 @@ function(
 
 	/**
 	 * @see sap.ui.core.Fragment.load
-	 *
-	 * @private
-	 * @param {string|object} vName The fragment name or the fragment config
-	 * @param {string|sap.ui.core.mvc.Controller} vType The type of the fragment or the controller
-	 * @param {sap.ui.core.mvc.Controller|Object} oController the Controller or Object which should be used by the controls in the Fragment.
-	 * @returns {Promise<sap.ui.core.Control|sap.ui.core.Control[]>|sap.ui.core.Fragment} If fragment is created asynchronoulsy
-	 *  a Promise is returned which resolves with the resulting {sap.ui.core.Control|sap.ui.core.Control[]}
-	 *  after fragment parsing and instantiation.
-	 *  If the fragment is created synchronoulsy the newly created fragment instance is returned
 	 */
 	function fragmentFactory(vName, vType, oController) {
 		var mSettings = {};
@@ -383,10 +372,7 @@ function(
 
 			if (mSettings.async) {
 				var fnCreateInstance = function () {
-					// owner-id is either available because the async factory was called in a sync block
-					// or: the containing view carries the owner id for us
-					var sOwnerId = mSettings.sOwnerId || mSettings.containingView && mSettings.containingView._sOwnerId;
-					var oOwnerComponent = Component.get(sOwnerId);
+					var oOwnerComponent = Component.get(mSettings.sOwnerId);
 					if (oOwnerComponent) {
 						return oOwnerComponent.runAsOwner(function () {
 							return new Fragment(mSettings);
@@ -497,7 +483,7 @@ function(
 
 		mParameters.type = mParameters.type || "XML";
 		mParameters.async = true;
-		mParameters.processingMode = mParameters.processingMode || XMLProcessingMode.Sequential;
+		mParameters.processingMode = "sequential";
 
 		// map new parameter names to classic API, delete new names to avoid assertion failures
 		mParameters.fragmentName = mParameters.fragmentName || mParameters.name;
@@ -529,21 +515,13 @@ function(
 	};
 
 	/**
-	 * Returns a promise which resolves when the content of the fragment is parsed
-	 *
-	 * @private
-	 * @returns {Promise} resolves when the content of the fragment is parsed
+	 * @returns {Promise}
 	 */
 	Fragment.prototype._parsed = function() {
 		if (this._bAsync) {
 			return this._pContentPromise;
 		}
-		// sync path: make sure to reject the Fragment promise if the SyncPromise throws an error
-		try {
-			return Promise.resolve(this._pContentPromise.unwrap());
-		} catch (err) {
-			return Promise.reject(err);
-		}
+		return Promise.resolve(this._pContentPromise.unwrap());
 	};
 
 	/**
@@ -689,17 +667,18 @@ function(
 			// plain instantiation: name only
 			return sap.ui.fragment(vName, "JS");
 
-		} else if (typeof vName === "object") {
-			// advanced mode: oConfig+[oController]
-			vName.type = "JS";
-			return sap.ui.fragment(vName, vFragmentDefinition);
+		} else { // ID+name[+Controller]  or  oConfig+[oController]
+			if (typeof vName === "object") {
+				// advanced mode: oConfig+[oController]
+				vName.type = "JS";
+				return sap.ui.fragment(vName, vFragmentDefinition);
 
-		} else if (arguments.length >= 3) {
-			// must be plain instantiation mode: ID+Name[+Controller]
-			return sap.ui.fragment({id: vName, fragmentName: vFragmentDefinition, type: "JS"}, oController);
-
-		} else {
-			Log.error("sap.ui.jsfragment() was called with wrong parameter set: " + vName + " + " + vFragmentDefinition);
+			} else if (arguments.length >= 3) {
+				// must be plain instantiation mode: ID+Name[+Controller]
+				return sap.ui.fragment({id: vName, fragmentName: vFragmentDefinition, type: "JS"}, oController);
+			} else {
+				Log.error("sap.ui.jsfragment() was called with wrong parameter set: " + vName + " + " + vFragmentDefinition);
+			}
 		}
 	};
 
@@ -972,11 +951,11 @@ function(
 					this._oTemplate.innerHTML = vHTML;
 				} else {
 					var oNodeList = vHTML;
-					var oDocumentFragment = document.createDocumentFragment();
-					for (var i = 0; i < oNodeList.length; i++) {
-						oDocumentFragment.appendChild(oNodeList.item(i));
+					var oFragment = document.createDocumentFragment();
+					for (var i = 0; i < oNodeList.length;i++) {
+						oFragment.appendChild(oNodeList.item(i));
 					}
-					this._oTemplate.appendChild(oDocumentFragment);
+					this._oTemplate.appendChild(oFragment);
 				}
 
 				var oMetaElement = this._oTemplate.getElementsByTagName("template")[0];

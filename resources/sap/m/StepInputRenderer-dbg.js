@@ -22,6 +22,9 @@ sap.ui.define([], function () {
 			sValueState = oControl.getValueState();
 
 		oRm.openStart("div", oControl);
+		if (bEnabled && bEditable) {
+			oRm.attr("tabindex", "-1");
+		}
 
 		oRm.style("width", sWidth);
 		oRm.class("sapMStepInput");

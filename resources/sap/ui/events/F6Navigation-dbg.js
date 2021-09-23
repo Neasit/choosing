@@ -9,9 +9,8 @@
  */
 sap.ui.define([
 	'sap/ui/thirdparty/jquery',
-	'sap/ui/events/PseudoEvents',
 	'sap/ui/dom/jquery/Selectors'
-], function(jQuery, PseudoEvents/*, sapTabbable */) {
+], function(jQuery/*, sapTabbable */) {
 	"use strict";
 
 	/**
@@ -226,13 +225,8 @@ sap.ui.define([
 			}
 		}
 
-		// Use PseudoEvent check in order to verify validity of shortcuts
-		var oSapSkipForward = PseudoEvents.events.sapskipforward,
-			oSapSkipBack = PseudoEvents.events.sapskipback,
-			bSapSkipForward = oSapSkipForward.aTypes.includes(oEvent.type) && oSapSkipForward.fnCheck(oEvent),
-			bIsValidShortcut = bSapSkipForward || (oSapSkipBack.aTypes.includes(oEvent.type) && oSapSkipBack.fnCheck(oEvent));
-
-		if (!bIsValidShortcut ||
+		if (oEvent.type != "keydown" ||
+			oEvent.key != 'F6' ||
 			oEvent.isMarked("sapui5_handledF6GroupNavigation") ||
 			oEvent.isMarked() ||
 			oEvent.isDefaultPrevented()) {
@@ -254,7 +248,7 @@ sap.ui.define([
 			aScopes = Array.isArray(oSettings.scope) ? oSettings.scope : [oSettings.scope];
 		}
 
-		navigate(oTarget, aScopes, /*bForward*/ bSapSkipForward);
+		navigate(oTarget, aScopes, !oEvent.shiftKey);
 	};
 
 	return F6Navigation;

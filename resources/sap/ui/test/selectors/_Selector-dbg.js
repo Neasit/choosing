@@ -44,13 +44,13 @@ sap.ui.define([
             var vResult = this._generate.apply(this, arguments);
 
             if (vResult) {
-                if (Array.isArray(vResult)) {
+                if ($.isArray(vResult)) {
                     // result is a list of selectors (e.g.: bindings for several properties)
                     return vResult.filter(function (vSelector) {
                         // filter out empty results
-                        return vSelector && (!Array.isArray(vSelector) || vSelector.length);
+                        return vSelector && (!$.isArray(vSelector) || vSelector.length);
                     }).map(function (vItem) {
-                        if (Array.isArray(vItem)) {
+                        if ($.isArray(vItem)) {
                             // selector has multiple parts (e.g.: composite binding)
                             return vItem.map(function (mItemPart) {
                                 return $.extend({}, this._createSelectorBase(oControl, mItemPart), mItemPart);

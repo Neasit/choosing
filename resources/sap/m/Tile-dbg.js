@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 *
 	 * @constructor
 	 * @public
@@ -47,7 +47,6 @@ sap.ui.define([
 	var Tile = Control.extend("sap.m.Tile", /** @lends sap.m.Tile.prototype */ { metadata : {
 
 		library : "sap.m",
-		deprecated: true,
 		properties : {
 
 			/**

@@ -21,7 +21,7 @@ sap.ui.define(['./WebSocket', "sap/base/Log"],
 	 * @class WebSocket class implementing the pcp-protocol.
 	 * @extends sap.ui.core.ws.WebSocket
 	 * @author SAP SE
-	 * @version 1.92.0
+	 * @version 1.87.0
 	 * @alias sap.ui.core.ws.SapPcpWebSocket
 	 */
 	var SapPcpWebSocket = WebSocket.extend("sap.ui.core.ws.SapPcpWebSocket", /** @lends sap.ui.core.ws.SapPcpWebSocket.prototype */ {
@@ -189,7 +189,6 @@ sap.ui.define(['./WebSocket', "sap/base/Log"],
 			sUnescaped = "";
 
 		for (var i = 0; i < aParts.length; i++) {
-			// eslint-disable-next-line no-control-regex -- \x08 is used as separator in socket messages
 			aParts[i] = aParts[i].replace(/\\\\/g, "\u0008").replace(/\\:/g, ':').replace(/\\n/g, '\n').replace(/\u0008/g, "\\");
 		}
 

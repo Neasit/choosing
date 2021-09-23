@@ -6,18 +6,29 @@
 
 // Provides class sap.ui.model.odata.ODataTreeBindingFlat
 sap.ui.define([
-	"sap/base/assert",
-	"sap/base/Log",
-	"sap/base/util/extend",
-	"sap/base/util/isEmptyObject",
+	'sap/ui/model/Filter',
+	'sap/ui/model/TreeBinding',
+	'sap/ui/model/odata/v2/ODataTreeBinding',
+	'sap/ui/model/ChangeReason',
+	'sap/ui/model/TreeBindingUtils',
 	"sap/base/util/uid",
-	"sap/ui/model/ChangeReason",
-	"sap/ui/model/Filter",
-	"sap/ui/model/TreeBinding",
-	"sap/ui/model/TreeBindingUtils",
-	"sap/ui/model/odata/v2/ODataTreeBinding"
-], function(assert, Log, extend, isEmptyObject, uid, ChangeReason, Filter, TreeBinding,
-		TreeBindingUtils, ODataTreeBinding) {
+	"sap/base/Log",
+	"sap/base/assert",
+	"sap/ui/thirdparty/jquery",
+	"sap/base/util/isEmptyObject"
+],
+	function(
+		Filter,
+		TreeBinding,
+		ODataTreeBinding,
+		ChangeReason,
+		TreeBindingUtils,
+		uid,
+		Log,
+		assert,
+		jQuery,
+		isEmptyObject
+	) {
 	"use strict";
 
 	/**
@@ -139,7 +150,7 @@ sap.ui.define([
 	 */
 	ODataTreeBindingFlat.prototype._getContextsOrNodes = function (bReturnNodes, iStartIndex,
 			iLength, iThreshold) {
-		if (!this.isResolved() || this.isInitial()) {
+		if (this.isInitial()) {
 			return [];
 		}
 
@@ -729,7 +740,7 @@ sap.ui.define([
 			// TODO: Add additional filters to the read call, as soon as back-end implementations support it
 			// Something like this: aFilters = [new sap.ui.model.Filter([hierarchyFilters].concat(this.aFilters))];
 
-			var sAbsolutePath = this.getResolvedPath();
+			var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			if (sAbsolutePath) {
 				oRequest.oRequestHandle = this.oModel.read(sAbsolutePath, {
 					urlParameters: aUrlParameters,
@@ -1024,7 +1035,7 @@ sap.ui.define([
 
 			// TODO: Add additional filters to the read call, as soon as back-end implementations support it
 			// Something like this: aFilters = [new sap.ui.model.Filter([hierarchyFilters].concat(this.aFilters))];
-			var sAbsolutePath = this.getResolvedPath();
+			var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			if (sAbsolutePath) {
 				oRequest.oRequestHandle = this.oModel.read(sAbsolutePath, {
 					urlParameters: aUrlParameters,
@@ -1260,7 +1271,7 @@ sap.ui.define([
 				aFilters = aFilters.concat(this.aApplicationFilters);
 			}
 
-			var sAbsolutePath = this.getResolvedPath();
+			var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 			if (sAbsolutePath) {
 				oRequest.oRequestHandle = this.oModel.read(sAbsolutePath, {
 					urlParameters: aUrlParameters,
@@ -1821,7 +1832,7 @@ sap.ui.define([
 						var iVisibilityFactor = (aCheckMatrix[bVisible | 0][bVisibleNewParent | 0]);
 						// iVisibilityFactor is either 0, 1 or -1.
 						// 1 and -1 are the relevant factors here, otherwise the node is not visible
-						if (iVisibilityFactor) {
+						if (!!iVisibilityFactor) {
 							if (oNode.isDeepOne) {
 								iDelta += iVisibilityFactor * 1;
 							} else {
@@ -1922,6 +1933,7 @@ sap.ui.define([
 	};
 
 	/**
+	 * @override
 	 * @see sap.ui.model.odata.v2.ODataTreeBinding
 	 */
 	ODataTreeBindingFlat.prototype._hasChangedEntity = function (mChangedEntities) {
@@ -2746,7 +2758,7 @@ sap.ui.define([
 	 */
 	ODataTreeBindingFlat.prototype._getCorrectChangeGroup = function (sKey) {
 		if (!sKey) {
-			sKey = this.getResolvedPath();
+			sKey = this.oModel.resolve(this.getPath(), this.getContext());
 		}
 		return this.oModel._resolveGroup(sKey).groupId;
 	};
@@ -2755,7 +2767,7 @@ sap.ui.define([
 	 * Creates a new entry, which can be added to this binding instance via addContexts(...).
 	 */
 	ODataTreeBindingFlat.prototype.createEntry = function (mParameters) {
-		var sAbsolutePath = this.getResolvedPath();
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 		var oNewEntry;
 
 		if (sAbsolutePath) {
@@ -2778,7 +2790,7 @@ sap.ui.define([
 		mParameters = mParameters || {};
 
 		// group id
-		var sAbsolutePath = this.getResolvedPath(),
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext()),
 			oOptimizedChanges = this._optimizeChanges();
 
 		if (!sAbsolutePath) {
@@ -2937,7 +2949,7 @@ sap.ui.define([
 			this.oTreeProperties["hierarchy-level-for"], "LE", this.getNumberOfExpandedLevels()
 		));
 
-		mUrlParameters = extend({}, this.mParameters);
+		mUrlParameters = jQuery.extend({}, this.mParameters);
 		mUrlParameters.select =  sKeySelect +
 									"," + this.oTreeProperties["hierarchy-node-for"] +
 									"," + this.oTreeProperties["hierarchy-node-descendant-count-for"] +
@@ -2945,7 +2957,7 @@ sap.ui.define([
 									"," + this.oTreeProperties["hierarchy-preorder-rank-for"];
 
 		// request the magnitude and preorder
-		var sAbsolutePath = this.getResolvedPath();
+		var sAbsolutePath = this.oModel.resolve(this.getPath(), this.getContext());
 		if (sAbsolutePath) {
 			this.oModel.read(sAbsolutePath, {
 				urlParameters: this.oModel.createCustomParams(mUrlParameters),
@@ -2981,7 +2993,7 @@ sap.ui.define([
 		));
 		*/
 
-		mUrlParameters = extend({}, this.mParameters);
+		mUrlParameters = jQuery.extend({}, this.mParameters);
 		mUrlParameters.select =  this.oTreeProperties["hierarchy-sibling-rank-for"];
 
 		// request the siblings position for moved nodes only as siblings position are already available for added nodes

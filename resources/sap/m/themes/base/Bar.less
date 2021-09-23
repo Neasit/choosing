@@ -69,9 +69,15 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 	left: 0px;
 }
 
+/* IE / Edge does not support "text-align: end" */
+/* use "right" and "left" instead        */
 .sapMBarRight {
-	text-align: end;
+	text-align: right;
 	right: 0px;
+}
+
+.sapMBarRight.sapMRTL {
+	text-align: left;
 }
 
 .sapMBarPH {
@@ -220,4 +226,16 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 
 html[data-sap-ui-browser^="ff"].sap-desktop .sapMBarTitleAlignStart .sapMBarPH {
 	justify-content: start;
+}
+
+html[data-sap-ui-browser^="ie"] .sapMBarTitleAlignStart .sapMBarPH,
+html[data-sap-ui-browser^="ie"] .sapMBarTitleAlignStart .sapMBarMiddle,
+html[data-sap-ui-browser^="ed"] .sapMBarTitleAlignStart .sapMBarPH {
+	text-align: left;
+}
+
+html[dir="rtl"][data-sap-ui-browser^="ie"] .sapMBarTitleAlignStart .sapMBarPH,
+html[dir="rtl"][data-sap-ui-browser^="ie"] .sapMBarTitleAlignStart .sapMBarMiddle,
+html[dir="rtl"][data-sap-ui-browser^="ed"] .sapMBarTitleAlignStart .sapMBarPH {
+	text-align: right;
 }
