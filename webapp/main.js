@@ -6,12 +6,6 @@ sap.ui.define(['sap/m/Shell', 'sap/ui/core/ComponentContainer'], function(Shell,
     async: true,
   });
 
-  sap.ui.getCore().loadLibrary('sap.ui.core', { async: true });
-  sap.ui.getCore().loadLibrary('sap.ui.layout', { async: true });
-  sap.ui.getCore().loadLibrary('sap.m', { async: true });
-  sap.ui.getCore().loadLibrary('sap.f', { async: true });
-  sap.ui.getCore().loadLibrary('sap.ui.export', { async: true });
-
   sap.ui
     .component({
       name: 'ui2.choosingtech',

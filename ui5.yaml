@@ -28,7 +28,7 @@ server:
     httpsPort: 3071
 framework:
   name: SAPUI5
-  version: '1.87.0'
+  version: '1.92.2'
   libraries:
     - name: sap.f
     - name: sap.m

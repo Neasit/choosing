@@ -28,7 +28,6 @@ if (workbox) {
       'Component-preload.js',
       'index.html',
       'init.js',
-      'LoadScript.js',
       'manifest-bundle.zip',
   ]);
 } else {
