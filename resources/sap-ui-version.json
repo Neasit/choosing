@@ -1,7 +1,90 @@
 {
 	"name": "ui2.choosingtech",
 	"version": "1.0.1",
-	"buildTimestamp": "202109231044",
+	"buildTimestamp": "202109231146",
 	"scmRevision": "",
-	"libraries": []
+	"libraries": [
+		{
+			"name": "sap.f",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": "",
+			"manifestHints": {
+				"dependencies": {
+					"libs": {
+						"sap.m": {},
+						"sap.ui.core": {},
+						"sap.ui.layout": {},
+						"sap.ui.unified": {
+							"lazy": true
+						}
+					}
+				}
+			}
+		},
+		{
+			"name": "sap.m",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": "",
+			"manifestHints": {
+				"dependencies": {
+					"libs": {
+						"sap.ui.core": {},
+						"sap.ui.layout": {
+							"lazy": true
+						},
+						"sap.ui.unified": {
+							"lazy": true
+						}
+					}
+				}
+			}
+		},
+		{
+			"name": "sap.ui.core",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": ""
+		},
+		{
+			"name": "sap.ui.export",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": "",
+			"manifestHints": {
+				"dependencies": {
+					"libs": {
+						"sap.ui.core": {}
+					}
+				}
+			}
+		},
+		{
+			"name": "sap.ui.layout",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": "",
+			"manifestHints": {
+				"dependencies": {
+					"libs": {
+						"sap.ui.core": {}
+					}
+				}
+			}
+		},
+		{
+			"name": "sap.ui.unified",
+			"version": "1.92.0",
+			"buildTimestamp": "202109231146",
+			"scmRevision": "",
+			"manifestHints": {
+				"dependencies": {
+					"libs": {
+						"sap.ui.core": {}
+					}
+				}
+			}
+		}
+	]
 }
