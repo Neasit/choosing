@@ -16,7 +16,7 @@ window.addEventListener('load', function() {
         oRegestration = false;
       }
       navigator.serviceWorker
-        .register('/service-worker.js')
+        .register('./service-worker.js')
         .then(function(oSW) {
           console.log('Service worker is registered!');
           if (!oRegestration) {

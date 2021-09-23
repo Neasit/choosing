@@ -19,17 +19,17 @@ if (workbox) {
     })
   );
   workbox.precaching.precacheAndRoute([
-      '/resources/sap/ui/export/js/XLSXBuilder.js',
-      '/resources/sap/ui/export/js/SpreadsheetWorker.js',
-      '/resources/sap/ui/export/js/libs/JSZip3.js',
-      '/resources/sap/ui/export/js/libs/uri.all.min.js',
-      '/data/main.json',
-      '/manifest.json',
-      '/Component-preload.js',
-      '/index.html',
-      '/init.js',
-      '/LoadScript.js',
-      '/manifest-bundle.zip',
+      'resources/sap/ui/export/js/XLSXBuilder.js',
+      'resources/sap/ui/export/js/SpreadsheetWorker.js',
+      'resources/sap/ui/export/js/libs/JSZip3.js',
+      'resources/sap/ui/export/js/libs/uri.all.min.js',
+      'data/main.json',
+      'manifest.json',
+      'Component-preload.js',
+      'index.html',
+      'init.js',
+      'LoadScript.js',
+      'manifest-bundle.zip',
   ]);
 } else {
   console.log('Workbox didnt load');
