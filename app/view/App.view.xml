@@ -1,0 +1,16 @@
+<mvc:View
+  controllerName="ui2.choosingtech.controller.App"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.f"
+  displayBlock="true"
+  height="100%"
+>
+  <FlexibleColumnLayout
+    autoFocus="false"
+    id="appexample"
+    stateChange="onStateChanged"
+    restoreFocusOnBackNavigation="true"
+    layout="{appModel>/layout}"
+    backgroundDesign="Translucent" />
+</mvc:View>

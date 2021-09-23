@@ -1,0 +1,1 @@
+"use strict";sap.ui.define(["ui2/choosingtech/controller/BaseController"],function(t){"use strict";return t.extend("ui2.choosingtech.controller.NotFound",{onLinkPressed:function t(){this.getRouter().navTo("StartPage")}})});

@@ -1,0 +1,127 @@
+<mvc:View
+  controllerName="ui2.choosingtech.controller.CostCalculation"
+  xmlns="sap.m"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:l="sap.ui.layout"
+  xmlns:f="sap.ui.layout.form"
+  xmlns:sf="sap.f"
+  height="100%"
+  width="100%"
+>
+  <sf:DynamicPage
+    showFooter="false"
+    class="sapUiNoContentPadding"
+    fitContent="true"
+  >
+    <sf:title>
+      <sf:DynamicPageTitle primaryArea="Middle">
+        <sf:heading>
+          <Title text="Расчет трудозатрат" />
+        </sf:heading>
+        <sf:navigationActions>
+          <OverflowToolbarButton type="Transparent" icon="sap-icon://full-screen" press="handleFullScreen" id="enterFullScreenBtn" tooltip="Enter Full Screen Mode" visible="{= ${appModel>/actionButtonsInfo/endColumn/fullScreen} !== null }"/>
+          <OverflowToolbarButton type="Transparent" icon="sap-icon://exit-full-screen" press="handleExitFullScreen" id="exitFullScreenBtn" tooltip="Exit Full Screen Mode" visible="{= ${appModel>/actionButtonsInfo/endColumn/exitFullScreen} !== null }"/>
+          <OverflowToolbarButton type="Transparent" icon="sap-icon://decline" press="handleClose"  tooltip="Close column" visible="{= ${appModel>/actionButtonsInfo/endColumn/closeColumn} !== null }"/>
+        </sf:navigationActions>
+      </sf:DynamicPageTitle>
+    </sf:title>
+    <sf:header>
+      <sf:DynamicPageHeader pinnable="true">
+        <f:SimpleForm
+          editable="true"
+          layout="ResponsiveGridLayout"
+          labelSpanXL="4"
+          labelSpanL="4"
+          labelSpanM="12"
+          labelSpanS="12"
+          adjustLabelSpan="false"
+          emptySpanXL="0"
+          emptySpanL="0"
+          emptySpanM="0"
+          emptySpanS="0"
+          columnsXL="2"
+          columnsL="2"
+          columnsM="1"
+          singleContainerFullSize="false"
+        >
+          <Label text="Технология" />
+          <ObjectStatus text="{ path: 'dataModel>technology', formatter: '.getTechnologyText'}" state="{ path: 'dataModel>technology', formatter: '.getStatusText'}" />
+
+          <Label text="Трудозатраты" />
+          <ObjectStatus text="{ path: 'dataModel>cost', formatter: '.getCostText'}" state="{ path: 'dataModel>cost', formatter: '.getStatusText'}" />
+        </f:SimpleForm>
+      </sf:DynamicPageHeader>
+    </sf:header>
+    <sf:content>
+      <IconTabBar id="idIconTab" select="onTechSelect" class="sapUiResponsiveContentPadding" items="{/tech/list}">
+        <items>
+          <IconTabFilter key="{key}" text="{text}" />
+        </items>
+        <content>
+          <MessageStrip
+            id="idInfo"
+            text="{text}"
+            type="Information"
+            showCloseButton="false"
+            class="sapUiTinyMarginBottom">
+            <link>
+              <Link text="{linkText}"
+                target="_blank"
+                href="{link}" />
+            </link>
+          </MessageStrip>
+          <l:BlockLayout id="idContentBlock" background="Light">
+            <l:BlockLayoutRow>
+              <l:BlockLayoutCell title="{1/title}">
+                <FormattedText htmlText="{1/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{1/back}" class="sapUiSmallMarginBottom" visible="{= !${1/backInvisible}}"/>
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%">
+                  <ToggleButton id="idBtn1" text="{ path: '1/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+              <l:BlockLayoutCell title="{2/title}">
+                <FormattedText htmlText="{2/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{2/back}" class="sapUiSmallMarginBottom" visible="{= !${2/backInvisible}}" />
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%" >
+                  <ToggleButton id="idBtn2" text="{ path: '2/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+            </l:BlockLayoutRow>
+            <l:BlockLayoutRow>
+              <l:BlockLayoutCell title="{3/title}">
+                <FormattedText htmlText="{3/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{3/back}" class="sapUiSmallMarginBottom" visible="{= !${3/backInvisible}}" />
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%">
+                  <ToggleButton id="idBtn3" text="{ path: '3/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+              <l:BlockLayoutCell title="{4/title}">
+                <FormattedText htmlText="{4/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{4/back}" class="sapUiSmallMarginBottom" visible="{= !${4/backInvisible}}" />
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%">
+                  <ToggleButton id="idBtn4" text="{ path: '4/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+            </l:BlockLayoutRow>
+            <l:BlockLayoutRow visible="{= !${5/invisible}}" >
+              <l:BlockLayoutCell title="{5/title}">
+                <FormattedText htmlText="{5/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{5/back}" class="sapUiSmallMarginBottom" visible="{= !${5/backInvisible}}" />
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%">
+                  <ToggleButton id="idBtn5" text="{ path: '5/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+              <l:BlockLayoutCell title="{6/title}" visible="{= !${6/invisible}}">
+                <FormattedText htmlText="{6/front}" class="sapUiTinyMarginBottom" />
+                <FormattedText htmlText="{6/back}" class="sapUiSmallMarginBottom" visible="{= !${6/backInvisible}}" />
+                <HBox alignContent="Center" alignItems="Center" justifyContent="Center" width="100%" >
+                  <ToggleButton id="idBtn6" text="{ path: '6/cost', formatter: '.getCostButtonText' }" enabled="{dataModel>/display/costSelectVisible}" press="onCostSelect" />
+                </HBox>
+              </l:BlockLayoutCell>
+            </l:BlockLayoutRow>
+          </l:BlockLayout>
+        </content>
+      </IconTabBar>
+    </sf:content>
+  </sf:DynamicPage>
+</mvc:View>

@@ -5,7 +5,7 @@ type: application
 resources:
   configuration:
     paths:
-      webapp: dist
+      webapp: webapp
 builder:
   customTasks:
   - name: ui5-task-transpile

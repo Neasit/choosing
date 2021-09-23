@@ -1,0 +1,1 @@
+"use strict";sap.ui.define(["sap/ui/model/json/JSONModel","sap/ui/Device"],function(e,t){"use strict";return{createDeviceModel:function n(){var i=new e(t);i.setDefaultBindingMode("OneWay");return i},createAppModel:function t(){return new e},createDataModel:function t(){return new e({name:"",department:"",transactions:[],display:{costSelectVisible:true}})}}});

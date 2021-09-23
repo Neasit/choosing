@@ -1,0 +1,185 @@
+{
+	"_version": "1.17.0",
+	"sap.app": {
+		"id": "ui2.choosingtech",
+		"type": "application",
+		"i18n": "i18n/i18n.properties",
+		"applicationVersion": {
+			"version": "1.0.1"
+		},
+		"title": "{{appTitle}}",
+		"subTitle": "{{subTitle}}",
+		"shortTitle": "{{shorttitle}}",
+		"description": "{{description}}",
+		"info": "{{info}}",
+		"tags": {
+			"keywords": ["Example"]
+		},
+		"dataSources": {
+			"main": {
+				"uri": "./data/main.json",
+				"type": "JSON"
+			}
+		},
+		"resources": "resources.json",
+		"offline": true,
+		"destination": {
+			"name": "SAP_ERP"
+		}
+	},
+	"sap.ui": {
+		"technology": "UI5",
+		"icons": {
+			"icon": "",
+			"favIcon": "",
+			"phone": "",
+			"phone@2": "",
+			"tablet": "",
+			"tablet@2": ""
+		},
+		"deviceTypes": {
+			"desktop": true,
+			"tablet": true,
+			"phone": true
+		}
+	},
+	"sap.ui5": {
+		"rootView": {
+			"viewName": "ui2.choosingtech.view.App",
+			"async": true,
+			"id": "choosing",
+			"type": "XML"
+		},
+		"dependencies": {
+			"minUI5Version": "1.78.0",
+			"libs": {
+				"sap.ui.core": {},
+				"sap.m": {},
+				"sap.ui.layout": {},
+				"sap.f": {},
+				"sap.ui.export": {}
+			}
+		},
+		"contentDensities": {
+			"compact": true,
+			"cozy": true
+		},
+		"models": {
+			"i18n": {
+				"type": "sap.ui.model.resource.ResourceModel",
+				"settings": {
+					"bundleName": "ui2.choosingtech.i18n.i18n"
+				}
+			},
+			"": {
+				"dataSource": "main",
+				"settings": {
+					"defaultBindingMode": "TwoWay"
+				},
+				"preload": true
+			}
+		},
+		"resources": {
+			"css": [
+				{
+					"uri": "css/style.css"
+				}
+			]
+		},
+		"routing": {
+			"config": {
+				"routerClass": "sap.f.routing.Router",
+				"viewType": "XML",
+				"viewPath": "ui2.choosingtech.view",
+				"controlId": "appexample",
+				"transition": "slide",
+				"bypassed": {
+					"target": "notFound"
+				},
+				"async": true
+			},
+			"routes": [
+				{
+					"pattern": ":layout:",
+					"name": "StartPage",
+					"target": ["StartPage"]
+				},
+				{
+					"pattern": "details/{transaction}/{layout}",
+					"name": "Detail",
+					"target": ["StartPage", "Details"]
+				},
+				{
+					"pattern": "cost/{transaction}/{layout}",
+					"name": "CostCalculation",
+					"target": ["StartPage", "CostCalculation"]
+				},
+				{
+					"pattern": "choosing/{transaction}/{layout}",
+					"name": "ChoosingTech",
+					"target": ["StartPage", "ChoosingTech"]
+				}
+			],
+			"targets": {
+				"StartPage": {
+					"viewName": "StartPage",
+					"viewId": "StartPage",
+					"controlAggregation": "beginColumnPages"
+				},
+				"Details": {
+					"viewName": "Details",
+					"viewId": "Details",
+					"controlAggregation": "midColumnPages"
+				},
+				"CostCalculation": {
+					"viewName": "CostCalculation",
+					"viewId": "CostCalculation",
+					"controlAggregation": "midColumnPages"
+				},
+				"ChoosingTech": {
+					"viewName": "ChoosingTech",
+					"viewId": "ChoosingTech",
+					"controlAggregation": "midColumnPages"
+				},
+				"notFound": {
+					"viewName": "NotFound",
+					"viewId": "notFound"
+				}
+			}
+		}
+	},
+	"sap.platform.abap": {
+		"uri": "",
+		"uriNwbc": ""
+	},
+	"theme_color": "#f69435",
+	"background_color": "#f69435",
+	"display": "standalone",
+	"scope": "/",
+	"start_url": "/index.html",
+	"name": "Choosing Tech",
+	"short_name": "Choosing",
+	"description": "UI5 Choosing Tech",
+	"icons": [
+		{
+			"src": "/icon-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-256x256.png",
+			"sizes": "256x256",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-384x384.png",
+			"sizes": "384x384",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
+}

@@ -1,0 +1,1 @@
+"use strict";var fLoadScript=function t(e,a,c){var r=document.head;var n=document.createElement("script");n.type="text/javascript";n.src=e;if(a){Object.keys(a).forEach(function(t){n.setAttribute(t,a[t])})}n.onreadystatechange=c;n.onload=c;r.appendChild(n)};
